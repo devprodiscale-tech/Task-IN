@@ -222,7 +222,7 @@ async function tryRestoreSession() {
 }
 
 // Point 6 : applyRoleUI renforcé — masquage strict timer/quickstart pour sup/admin,
-// Point 5 : masquage strict admin-panel et tab-admin si rôle !== admin
+// Point 5 : masquage strict de l’ancien panneau Administration
 function applyRoleUI() {
   const role = currentUser.role;
   const badge = document.getElementById('role-badge');
@@ -247,7 +247,6 @@ function applyRoleUI() {
 
   // Onglets
   document.getElementById('tab-team').classList.remove('hidden');
-  document.getElementById('tab-admin').classList.toggle('hidden', role !== 'admin');
   document.getElementById('tab-home').classList.toggle('hidden', role !== 'admin' && role !== 'agent');
   document.getElementById('tab-week-role').classList.toggle('hidden', role !== 'admin' && role !== 'agent');
   document.getElementById('tab-leaderboard').classList.toggle('hidden', role !== 'admin' && role !== 'supervisor');
@@ -291,6 +290,8 @@ function applyRoleUI() {
   document.getElementById('leaderboard-panel').classList.add('hidden');
   document.getElementById('channel-matrix-panel').classList.add('hidden');
   document.getElementById('team-live-panel').classList.add('hidden');
+  const adminOverviewPanel = document.getElementById('admin-overview-panel');
+  if (adminOverviewPanel) adminOverviewPanel.classList.toggle('hidden', role !== 'admin');
   document.getElementById('training-panel').classList.add('hidden');
   const svPanel = document.getElementById('supervision-panel');
   if (svPanel) svPanel.classList.add('hidden');
@@ -334,6 +335,7 @@ function applyRoleUI() {
     if (homeTab) homeTab.classList.add('active');
     document.querySelector('.toolbar').classList.add('hidden');
     document.querySelector('.entries-table-wrap').classList.add('hidden');
+    document.getElementById('team-live-panel').classList.remove('hidden');
 
     startLiveRefresh();
   }

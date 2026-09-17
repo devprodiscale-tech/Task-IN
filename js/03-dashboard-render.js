@@ -445,6 +445,9 @@ async function switchTab(view, btn) {
 // ===== ROLE HOME =====
 async function renderRoleHome() {
   const activeTimers = await loadActiveTimers();
+  document.querySelectorAll('.admin-home-legacy').forEach(element => {
+    element.classList.toggle('hidden', currentUser.role === 'admin');
+  });
   if (currentUser.role === 'supervisor') { renderSupervisorBanner(activeTimers); }
   if (currentUser.role === 'admin') {
     renderAdminBanner();

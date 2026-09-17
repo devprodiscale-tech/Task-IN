@@ -234,7 +234,7 @@
     </div>
   </details>
 
-  <div class="stats-grid hidden" id="stats-grid-admin-home" style="grid-template-columns:repeat(3,1fr)">
+  <div class="stats-grid hidden admin-home-legacy" id="stats-grid-admin-home" style="grid-template-columns:repeat(3,1fr)">
     <div class="stat-card">
       <div class="stat-label">Total semaine</div>
       <div class="stat-value" id="adm-home-total" style="color:var(--ocean)">0h00</div>
@@ -251,7 +251,7 @@
       <div class="stat-sub">sur 5</div>
     </div>
   </div>
-  <div id="ops-viz-admin-home" class="ops-viz-section hidden"></div>
+  <div id="ops-viz-admin-home" class="ops-viz-section hidden admin-home-legacy"></div>
 
   <div class="tabs">
     <button class="tab agent-only active" onclick="switchTab('today',this)">Aujourd'hui</button>
@@ -356,6 +356,7 @@
 
     <div id="team-live-panel" class="hidden">
       <div id="admin-overview-panel" class="admin-overview-section hidden"></div>
+      <div class="admin-home-legacy">
       <div class="admin-card team-live-edit-only" style="margin-bottom:16px">
         <div class="admin-card-header">
           <h3>DMT par source</h3>
@@ -441,6 +442,7 @@
           <button class="btn btn-ghost" onclick="exportExcel()">↓ Export Excel</button>
           <button class="btn btn-ghost" style="background:var(--green-dim);color:var(--green);border-color:var(--green)" onclick="showGASModal()">📊 Script Google Sheets</button>
         </div>
+      </div>
       </div>
     </div>
 
