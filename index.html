@@ -45,7 +45,7 @@
     </div>
     <div class="form-row">
       <label class="form-label">Mot de passe</label>
-      <input class="form-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+      <input class="form-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
     </div>
     <div class="login-error" id="login-error"></div>
     <label class="portal-remember"><input type="checkbox" id="portal-remember"> Rester connecté</label>
