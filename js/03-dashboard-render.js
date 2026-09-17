@@ -407,9 +407,17 @@ async function switchTab(view, btn) {
   document.getElementById('supervision-panel').classList.toggle('hidden', !isSupervisionView);
   document.getElementById('training-panel').classList.toggle('hidden', !isTrainingView);
   document.getElementById('channel-matrix-panel').classList.toggle('hidden', !isChannelView);
+  const adminOverviewPanel = document.getElementById('admin-overview-panel');
+  if (adminOverviewPanel) adminOverviewPanel.classList.toggle('hidden', !isAdminView);
   document.getElementById('date-filter-bar').classList.toggle('hidden', isDocView || isSupervisionView || isTrainingView);
 
-  if (isAdminView) { renderAdminPanel(); renderChannelMatrix(); return; }
+  if (isAdminView) {
+    renderAdminPanel();
+    renderChannelMatrix();
+    const activeTimers = await loadActiveTimers();
+    renderAdminOverview(activeTimers);
+    return;
+  }
   if (isHomeView || isTeamView) { renderRoleHome(); if(isTeamView) renderChannelMatrix(); return; }
   if (isLeaderboard) { renderLeaderboard(); return; }
   if (isDocView) {

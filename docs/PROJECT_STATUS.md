@@ -56,6 +56,10 @@ accès aux données métier
 | Extension Chrome | Migration à finaliser | P0 |
 | Pilote OnSpot Travel | À préparer | P0 |
 
+### Incrément en cours — Dashboard Admin
+
+La vue générale Admin est intégrée dans le dépôt cible. Elle lit les données déjà chargées par le provider Supabase (`TEAM`, `entries` et timers actifs) et expose les KPI d’activité, la présence équipe, la heat map, l’état SLA/FRT, le cumul par agent, l’activité récente et les accès rapides. Les états sans données restent explicites ; aucun endpoint d’écriture ni module Settings Firebase n’est activé par cet incrément.
+
 ---
 
 ## 2. Règle d’architecture cible : Supabase only
