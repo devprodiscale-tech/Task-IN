@@ -16,57 +16,39 @@ function trainingEmpty(text) { return `<div class="training-empty">${text}</div>
 
 async function trFetchCollection(name) {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    const tableMap = { trainingModules: 'training_modules', trainingQuizzes: 'training_quizzes', trainingProgress: 'training_progress', trainingUpdates: 'training_updates', trainingSkills: 'training_skills', trainingAcknowledgements: 'training_acknowledgements' };
-    const rows = await supabase.listTable(tableMap[name] || name, 500);
-    return (rows || []).map(row => ({ id: row.id, ...(row.data && typeof row.data === 'object' ? row.data : {}), title: row.title || row.data?.title, description: row.description || row.data?.description, status: row.status || row.data?.status, agentId: row.agent_id || row.data?.agentId, moduleId: row.module_id || row.data?.moduleId, progressPct: row.progress_pct ?? row.data?.progressPct }));
-  }
-  const res = await apiFetch(`${BASE_URL}/${name}?key=${FIREBASE_API_KEY}&pageSize=500`);
-  if (!res.ok) throw new Error(`Lecture ${name} impossible (${res.status})`);
-  const data = await res.json();
-  return (data.documents || []).map(d => ({ id: d.name.split('/').pop(), ...docFromFirestoreFields(d.fields || {}) }));
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  const tableMap = { trainingModules: 'training_modules', trainingQuizzes: 'training_quizzes', trainingProgress: 'training_progress', trainingUpdates: 'training_updates', trainingSkills: 'training_skills', trainingAcknowledgements: 'training_acknowledgements' };
+  const rows = await supabase.listTable(tableMap[name] || name, 500);
+  return (rows || []).map(row => ({ id: row.id, ...(row.data && typeof row.data === 'object' ? row.data : {}), title: row.title || row.data?.title, description: row.description || row.data?.description, status: row.status || row.data?.status, agentId: row.agent_id || row.data?.agentId, moduleId: row.module_id || row.data?.moduleId, progressPct: row.progress_pct ?? row.data?.progressPct }));
 }
 async function trCreateDoc(collection, obj) {
   if (!requireRoles('admin', 'formateur')) return null;
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    const tableMap = { trainingModules: 'training_modules', trainingQuizzes: 'training_quizzes', trainingProgress: 'training_progress', trainingUpdates: 'training_updates', trainingSkills: 'training_skills', trainingAcknowledgements: 'training_acknowledgements' };
-    const table = tableMap[collection] || collection;
-    const row = table === 'training_modules' ? { title: obj.title || '', description: obj.description || '', category: obj.category || '', duration_min: Number(obj.durationMin || 0), status: obj.status || 'draft', objectives: obj.objectives || [], modules: obj.modules || [], source_procedure_id: obj.sourceProcedureId || null, created_by: currentUser.id, data: obj }
-      : table === 'training_quizzes' ? { title: obj.title || '', description: obj.description || '', passing_score: Number(obj.passingScore || 70), status: obj.status || 'draft', questions: obj.questions || [], module_id: obj.moduleId || null, data: obj }
-        : table === 'training_progress' ? { agent_id: obj.agentId || currentUser.id, module_id: obj.moduleId, status: obj.status || 'not_started', progress_pct: Number(obj.progressPct || 0), data: obj }
-          : table === 'training_updates' ? { title: obj.title || '', summary: obj.summary || '', type: obj.type || 'processus', published_at: obj.publishedAt || null, created_by: currentUser.id, data: obj }
-            : table === 'training_skills' ? { name: obj.name || obj.title || '', description: obj.description || '', data: obj }
-              : { agent_id: obj.agentId || currentUser.id, module_id: obj.moduleId || null, update_id: obj.updateId || null, data: obj };
-    const created = await supabase.insertRow(table, row);
-    return Array.isArray(created) ? created[0]?.id || null : created?.id || null;
-  }
-  const res = await apiFetch(`${BASE_URL}/${collection}?key=${FIREBASE_API_KEY}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: docToFirestoreFields(obj) })
-  });
-  if (!res.ok) throw new Error(`Création impossible (${res.status})`);
-  const data = await res.json();
-  return data.name ? data.name.split('/').pop() : null;
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  const tableMap = { trainingModules: 'training_modules', trainingQuizzes: 'training_quizzes', trainingProgress: 'training_progress', trainingUpdates: 'training_updates', trainingSkills: 'training_skills', trainingAcknowledgements: 'training_acknowledgements' };
+  const table = tableMap[collection] || collection;
+  const row = table === 'training_modules' ? { title: obj.title || '', description: obj.description || '', category: obj.category || '', duration_min: Number(obj.durationMin || 0), status: obj.status || 'draft', objectives: obj.objectives || [], modules: obj.modules || [], source_procedure_id: obj.sourceProcedureId || null, created_by: currentUser.id, data: obj }
+    : table === 'training_quizzes' ? { title: obj.title || '', description: obj.description || '', passing_score: Number(obj.passingScore || 70), status: obj.status || 'draft', questions: obj.questions || [], module_id: obj.moduleId || null, data: obj }
+      : table === 'training_progress' ? { agent_id: obj.agentId || currentUser.id, module_id: obj.moduleId, status: obj.status || 'not_started', progress_pct: Number(obj.progressPct || 0), data: obj }
+        : table === 'training_updates' ? { title: obj.title || '', summary: obj.summary || '', type: obj.type || 'processus', published_at: obj.publishedAt || null, created_by: currentUser.id, data: obj }
+          : table === 'training_skills' ? { name: obj.name || obj.title || '', description: obj.description || '', data: obj }
+            : { agent_id: obj.agentId || currentUser.id, module_id: obj.moduleId || null, update_id: obj.updateId || null, data: obj };
+  const created = await supabase.insertRow(table, row);
+  return Array.isArray(created) ? created[0]?.id || null : created?.id || null;
 }
 async function trUpdateDoc(collection, id, obj) {
   if (!requireRoles('admin', 'formateur')) return;
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    const tableMap = { trainingModules: 'training_modules', trainingQuizzes: 'training_quizzes', trainingProgress: 'training_progress', trainingUpdates: 'training_updates', trainingSkills: 'training_skills', trainingAcknowledgements: 'training_acknowledgements' };
-    const table = tableMap[collection] || collection;
-    const row = table === 'training_modules' ? { title: obj.title || '', description: obj.description || '', category: obj.category || '', duration_min: Number(obj.durationMin || 0), status: obj.status || 'draft', objectives: obj.objectives || [], modules: obj.modules || [], data: obj }
-      : table === 'training_quizzes' ? { title: obj.title || '', description: obj.description || '', passing_score: Number(obj.passingScore || 70), status: obj.status || 'draft', questions: obj.questions || [], data: obj }
-        : table === 'training_progress' ? { status: obj.status || 'not_started', progress_pct: Number(obj.progressPct || 0), data: obj }
-          : table === 'training_updates' ? { title: obj.title || '', summary: obj.summary || '', type: obj.type || 'processus', published_at: obj.publishedAt || null, data: obj }
-            : table === 'training_skills' ? { name: obj.name || obj.title || '', description: obj.description || '', data: obj }
-              : { data: obj };
-    await supabase.updateRow(table, id, row);
-    return;
-  }
-  const res = await apiFetch(`${BASE_URL}/${collection}/${id}?key=${FIREBASE_API_KEY}`, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: docToFirestoreFields(obj) })
-  });
-  if (!res.ok) throw new Error(`Mise à jour impossible (${res.status})`);
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  const tableMap = { trainingModules: 'training_modules', trainingQuizzes: 'training_quizzes', trainingProgress: 'training_progress', trainingUpdates: 'training_updates', trainingSkills: 'training_skills', trainingAcknowledgements: 'training_acknowledgements' };
+  const table = tableMap[collection] || collection;
+  const row = table === 'training_modules' ? { title: obj.title || '', description: obj.description || '', category: obj.category || '', duration_min: Number(obj.durationMin || 0), status: obj.status || 'draft', objectives: obj.objectives || [], modules: obj.modules || [], data: obj }
+    : table === 'training_quizzes' ? { title: obj.title || '', description: obj.description || '', passing_score: Number(obj.passingScore || 70), status: obj.status || 'draft', questions: obj.questions || [], data: obj }
+      : table === 'training_progress' ? { status: obj.status || 'not_started', progress_pct: Number(obj.progressPct || 0), data: obj }
+        : table === 'training_updates' ? { title: obj.title || '', summary: obj.summary || '', type: obj.type || 'processus', published_at: obj.publishedAt || null, data: obj }
+          : table === 'training_skills' ? { name: obj.name || obj.title || '', description: obj.description || '', data: obj }
+            : { data: obj };
+  await supabase.updateRow(table, id, row);
 }
 async function loadTrainingData(force = false) {
   if (trainingLoaded && !force) return;

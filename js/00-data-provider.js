@@ -27,6 +27,16 @@
     return merged;
   }
 
+  function storeSession(session) {
+    if (!session?.access_token) throw new Error('Session Supabase invalide.');
+    global.localStorage?.setItem(ACCESS_TOKEN_KEY, session.access_token);
+    if (session.refresh_token) global.localStorage?.setItem(REFRESH_TOKEN_KEY, session.refresh_token);
+    else global.localStorage?.removeItem(REFRESH_TOKEN_KEY);
+    if (session.user) global.localStorage?.setItem(USER_KEY, JSON.stringify(session.user));
+    else global.localStorage?.removeItem(USER_KEY);
+    return session;
+  }
+
   async function parseResponse(response, label) {
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
@@ -37,7 +47,11 @@
   }
 
   async function request(table, options = {}, params = {}) {
-    const response = await fetch(restUrl(table, params), { ...options, headers: authHeaders(options.headers) });
+    let response = await fetch(restUrl(table, params), { ...options, headers: authHeaders(options.headers) });
+    if (response.status === 401 && getSession()?.refresh_token) {
+      await refreshSession();
+      response = await fetch(restUrl(table, params), { ...options, headers: authHeaders(options.headers) });
+    }
     return parseResponse(response, table);
   }
 
@@ -49,24 +63,88 @@
       body: JSON.stringify({ email: String(email || '').trim(), password })
     });
     const session = await parseResponse(response, 'Auth');
-    global.localStorage?.setItem(ACCESS_TOKEN_KEY, session.access_token);
-    if (session.refresh_token) global.localStorage?.setItem(REFRESH_TOKEN_KEY, session.refresh_token);
-    if (session.user) global.localStorage?.setItem(USER_KEY, JSON.stringify(session.user));
-    return session;
+    return storeSession(session);
   }
 
-  function signOut() {
-    global.localStorage?.removeItem(ACCESS_TOKEN_KEY);
-    global.localStorage?.removeItem(REFRESH_TOKEN_KEY);
-    global.localStorage?.removeItem(USER_KEY);
+  async function refreshSession() {
+    assertConfigured();
+    const refreshToken = global.localStorage?.getItem(REFRESH_TOKEN_KEY) || '';
+    if (!refreshToken) throw new Error('Refresh token Supabase absent.');
+    const response = await fetch(`${baseUrl}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { apikey: config.anonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+    try {
+      return storeSession(await parseResponse(response, 'Refresh Auth'));
+    } catch (error) {
+      signOut();
+      throw error;
+    }
+  }
+
+  async function getUser() {
+    assertConfigured();
+    const session = getSession();
+    if (!session?.access_token) return null;
+    let response = await fetch(`${baseUrl}/auth/v1/user`, { headers: authHeaders() });
+    if (response.status === 401 && session.refresh_token) {
+      await refreshSession();
+      response = await fetch(`${baseUrl}/auth/v1/user`, { headers: authHeaders() });
+    }
+    if (response.status === 401) {
+      signOut();
+      return null;
+    }
+    const user = await parseResponse(response, 'User');
+    if (!user?.id) {
+      signOut();
+      return null;
+    }
+    global.localStorage?.setItem(USER_KEY, JSON.stringify(user));
+    return user;
+  }
+
+  async function updatePassword(password) {
+    assertConfigured();
+    const session = getSession();
+    if (!session?.access_token) throw new Error('Session Supabase absente.');
+    let response = await fetch(`${baseUrl}/auth/v1/user`, {
+      method: 'PUT',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ password })
+    });
+    if (response.status === 401 && session.refresh_token) {
+      await refreshSession();
+      response = await fetch(`${baseUrl}/auth/v1/user`, {
+        method: 'PUT',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ password })
+      });
+    }
+    await parseResponse(response, 'Password');
+  }
+
+  async function signOut() {
+    const accessToken = global.localStorage?.getItem(ACCESS_TOKEN_KEY);
+    try {
+      if (accessToken && baseUrl && config.anonKey) {
+        await fetch(`${baseUrl}/auth/v1/logout`, { method: 'POST', headers: authHeaders() });
+      }
+    } finally {
+      global.localStorage?.removeItem(ACCESS_TOKEN_KEY);
+      global.localStorage?.removeItem(REFRESH_TOKEN_KEY);
+      global.localStorage?.removeItem(USER_KEY);
+    }
   }
 
   function getSession() {
     const accessToken = global.localStorage?.getItem(ACCESS_TOKEN_KEY) || '';
+    const refreshToken = global.localStorage?.getItem(REFRESH_TOKEN_KEY) || '';
     const rawUser = global.localStorage?.getItem(USER_KEY);
     let user = null;
     try { user = rawUser ? JSON.parse(rawUser) : null; } catch (_) { user = null; }
-    return accessToken ? { access_token: accessToken, user } : null;
+    return accessToken ? { access_token: accessToken, refresh_token: refreshToken, user } : null;
   }
 
   async function getProfile(id) {
@@ -93,10 +171,13 @@
     configured: () => Boolean(baseUrl && config.anonKey),
     signIn,
     signOut,
+    refreshSession,
     getSession,
+    getUser,
+    updatePassword,
     async getCurrentProfile() {
-      const session = getSession();
-      return session?.user ? toTaskinProfile(await getProfile(session.user.id)) : null;
+      const user = await getUser();
+      return user ? toTaskinProfile(await getProfile(user.id)) : null;
     },
     async listProfiles(limit = 200) {
       return request('profiles', {}, { select: '*', order: 'name.asc', limit: String(limit) });
@@ -167,13 +248,7 @@
     }
   });
 
-  const disabledLegacyProvider = Object.freeze({
-    name: 'firebase-removed',
-    enabled: () => false,
-    reason: 'Firebase a été détaché de Task’in. Utilise Supabase.'
-  });
   global.taskinDataProviders = Object.freeze({
-    firebase: disabledLegacyProvider,
     supabase: provider,
     active: () => provider
   });

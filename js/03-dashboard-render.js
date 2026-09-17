@@ -372,7 +372,7 @@ function editEntry(id) {
     const newDesc = input.value.trim() || current;
     entry.desc = newDesc;
     cell.textContent = newDesc;
-    saveEntryToFirestore(entry);
+    saveTimeEntry(entry);
   };
   input.addEventListener('blur', save);
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });

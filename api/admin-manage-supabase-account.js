@@ -4,6 +4,7 @@
 
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const ALLOWED_ORIGIN = String(process.env.TASKIN_ALLOWED_ORIGIN || '').replace(/\/+$/, '');
 
 function adminHeaders(extra = {}) {
   return { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', ...extra };
@@ -25,7 +26,8 @@ async function requesterProfile(accessToken) {
 }
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const requestOrigin = String(req.headers.origin || '').replace(/\/+$/, '');
+  if (ALLOWED_ORIGIN && requestOrigin === ALLOWED_ORIGIN) res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -55,15 +57,22 @@ module.exports = async (req, res) => {
       if (!email || !password || !name || !role) return res.status(400).json({ error: 'Nom, e-mail, rôle et mot de passe requis.' });
       const created = await supabase('/auth/v1/admin/users', {
         method: 'POST',
-        body: JSON.stringify({ email: String(email).trim(), password, email_confirm: true })
+        body: JSON.stringify({
+          email: String(email).trim(),
+          password,
+          email_confirm: true,
+          user_metadata: { name: String(name).trim(), initials: initials || String(name).trim().slice(0, 2).toUpperCase() }
+        })
       });
       const id = created?.id || created?.user?.id;
       if (!id) throw new Error('Utilisateur Supabase créé sans UUID.');
       try {
-        await supabase('/rest/v1/profiles', {
-          method: 'POST',
+        const profiles = await supabase(`/rest/v1/profiles?select=id&id=eq.${encodeURIComponent(id)}&limit=1`);
+        if (!Array.isArray(profiles) || !profiles.length) throw new Error('Le profil Supabase n’a pas été créé par le trigger Auth.');
+        await supabase(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}`, {
+          method: 'PATCH',
           headers: { Prefer: 'return=minimal' },
-          body: JSON.stringify({ id, name, email: String(email).trim(), role, color: color || '#2B4C7E', initials: initials || String(name).slice(0, 2).toUpperCase(), photo: '' })
+          body: JSON.stringify({ name: String(name).trim(), email: String(email).trim(), role, color: color || '#2B4C7E', initials: initials || String(name).trim().slice(0, 2).toUpperCase(), photo: '' })
         });
       } catch (profileError) {
         await supabase(`/auth/v1/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});

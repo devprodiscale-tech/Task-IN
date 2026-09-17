@@ -268,7 +268,7 @@ async function onTreatDrop(e, targetIndex) {
   dragSrcIndex = null;
   renderTreatmentList();
   populateFilters();
-  await saveTreatmentsToFirestore();
+  await saveTreatments();
 }
 
 async function moveTreatment(i, dir) {
@@ -279,20 +279,20 @@ async function moveTreatment(i, dir) {
   customTreatmentTypes[newIndex] = tmp;
   renderTreatmentList();
   populateFilters();
-  await saveTreatmentsToFirestore();
+  await saveTreatments();
 }
 
 // ===== P5 : SNIPPET GOOGLE APPS SCRIPT =====
-// Ce bloc génère et affiche le script GAS à copier dans Google Sheets
+// Ce bloc génère un export Google Sheets basé sur Supabase.
 function showGASModal() {
   const script = `// ============================================================
 // Task'in → Google Sheets — Script de synchronisation nocturne
 // Coller dans : Extensions > Apps Script > Code.gs
 // Déclencher : Déclencheurs > Quotidien (ex: 06:00–07:00)
 // ============================================================
-const FIREBASE_PROJECT_ID = "${typeof FIREBASE_PROJECT_ID !== 'undefined' ? FIREBASE_PROJECT_ID : 'trackingcallro'}";
-const FIREBASE_API_KEY    = "${typeof FIREBASE_API_KEY !== 'undefined' ? FIREBASE_API_KEY : ''}";
-const BASE_URL = \`https://firestore.googleapis.com/v1/projects/\${FIREBASE_PROJECT_ID}/databases/(default)/documents\`;
+const SUPABASE_URL = "${window.TASKIN_SUPABASE_CONFIG?.url || ''}";
+const SUPABASE_ANON_KEY = "${window.TASKIN_SUPABASE_CONFIG?.anonKey || ''}";
+const SUPABASE_ACCESS_TOKEN = "COLLER_ICI_UN_JETON_UTILISATEUR_SUPABASE";
 
 function syncTaskinToSheets() {
   const ss     = SpreadsheetApp.getActiveSpreadsheet();
@@ -309,27 +309,25 @@ function syncTaskinToSheets() {
   const dayStart  = new Date(yesterday); dayStart.setHours(0,0,0,0);
   const dayEnd    = new Date(yesterday); dayEnd.setHours(23,59,59,999);
   
-  // Récupération Firestore
-  const url = \`\${BASE_URL}/time_entries?key=\${FIREBASE_API_KEY}&pageSize=1000\`;
-  const res  = UrlFetchApp.fetch(url);
-  const data = JSON.parse(res.getContentText());
-  const docs  = data.documents || [];
+  // Récupération Supabase avec un jeton utilisateur soumis aux policies RLS
+  const url = \`\${SUPABASE_URL}/rest/v1/time_entries?select=id,source,description,agent_id,inbound_time,started_at,duration_seconds&order=started_at.desc&limit=1000\`;
+  const res  = UrlFetchApp.fetch(url, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: \`Bearer \${SUPABASE_ACCESS_TOKEN}\` } });
+  const docs  = JSON.parse(res.getContentText());
   
   let newRows = 0;
   docs.forEach(doc => {
-    const f       = doc.fields || {};
-    const rawTime = f.startTime?.stringValue || "";
+    const rawTime = doc.started_at || "";
     if (!rawTime) return;
     const dt = new Date(rawTime);
     if (dt < dayStart || dt > dayEnd) return;
     
     const d       = dt;
     const start   = Utilities.formatDate(d, "Indian/Antananarivo", "HH:mm");
-    const source  = f.source?.stringValue   || "";
-    const desc    = f.desc?.stringValue     || "";
-    const agent   = f.agent?.stringValue    || "";
-    const dur     = Math.ceil(parseInt(f.durationSec?.integerValue||0)/60);
-    const inbound = f.inboundTime?.stringValue || "--:--";
+    const source  = doc.source || "";
+    const desc    = doc.description || "";
+    const agent   = doc.agent_id || "";
+    const dur     = Math.ceil(Number(doc.duration_seconds || 0)/60);
+    const inbound = doc.inbound_time || "--:--";
     
     sheet.appendRow([
       Utilities.formatDate(d,"Indian/Antananarivo","dd/MM/yyyy"),
