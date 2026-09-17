@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-label="Atlas opérationnel Task’in">
+<rect width="1200" height="820" fill="#dce7df"/>
+<g fill="none" stroke="#71817d" stroke-width="2" opacity=".55">
+<path d="M-80 660C140 500 180 720 360 540s260-190 420-50 250 100 500-70"/><path d="M-100 710C130 540 190 770 380 585s250-180 410-48 260 105 510-65"/><path d="M-120 760C120 580 205 820 400 630s245-170 400-46 275 110 530-60"/>
+<path d="M640 0c40 140-30 205 110 270s160 80 100 220-10 200 210 330"/><path d="M700-10c40 140-20 210 120 270s150 90 90 220-5 200 210 330"/>
+<path d="M880 130c110-100 180-80 300-20"/><path d="M850 165c125-115 220-90 350-25"/><path d="M825 200c135-125 250-100 390-30"/>
+</g>
+<g fill="none" stroke="#96a6a0" stroke-width="1.5" opacity=".48"><ellipse cx="830" cy="470" rx="330" ry="210"/><ellipse cx="830" cy="470" rx="285" ry="180"/><ellipse cx="830" cy="470" rx="240" ry="150"/><ellipse cx="830" cy="470" rx="195" ry="120"/></g>
+<path d="M95 650C260 590 355 575 475 490S690 305 850 345s180 170 340 105" fill="none" stroke="#2B4C7E" stroke-width="3" stroke-dasharray="12 15" opacity=".8"/>
+<g fill="#2B4C7E"><circle cx="95" cy="650" r="8"/><circle cx="475" cy="490" r="9"/><circle cx="850" cy="345" r="9"/><circle cx="1190" cy="450" r="8"/></g>
+<g fill="#E98A7D" stroke="#fff" stroke-width="5"><circle cx="610" cy="390" r="14"/><circle cx="1010" cy="440" r="26"/></g>
+<g fill="#1E3760" opacity=".8"><circle cx="180" cy="210" r="5"/><circle cx="360" cy="310" r="5"/><circle cx="1040" cy="170" r="5"/><circle cx="1100" cy="610" r="5"/></g>
+<g transform="translate(950 70) rotate(7)"><rect width="175" height="105" rx="4" fill="#f6f5e9" stroke="#a9b3ac"/><path d="M18 28h140M18 38h110M18 48h130" stroke="#71817d" opacity=".55"/><text x="18" y="78" fill="#E98A7D" font-family="monospace" font-size="13" font-weight="700">ATLANTIQUE</text><text x="18" y="94" fill="#2B4C7E" font-family="monospace" font-size="10">ROUTE ACTIVE</text></g>
+</svg>

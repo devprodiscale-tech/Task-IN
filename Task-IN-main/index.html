@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task’in – Suivi de tâche</title>
+<link rel="icon" type="image/png" sizes="48x48" href="assets/taskin-icon48.png?v=20260827">
+<link rel="apple-touch-icon" href="assets/taskin-icon48.png?v=20260827">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=Sigmar+One&family=Spline+Sans+Mono:wght@500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=Sigmar+One&family=Spline+Sans+Mono:wght@500;600&display=swap"></noscript>
+<link rel="stylesheet" href="css/00-base.css?v=20260827">
+<link rel="stylesheet" href="css/01-ops-dashboard.css?v=20260827">
+<link rel="stylesheet" href="css/02-core-ui.css?v=20260827">
+<link rel="stylesheet" href="css/03-features.css?v=20260827">
+<link rel="stylesheet" href="css/04-portal.css?v=20260827">
+<link rel="stylesheet" href="css/05-production-polish.css?v=20260827c">
+</head>
+<body>
+
+<div id="login-screen" class="portal-screen">
+  <div class="portal-travel-loop" aria-hidden="true">
+    <div class="portal-travel-scene travel-atlas"><span class="travel-aircraft"></span><span class="travel-country"></span></div>
+    <div class="portal-travel-scene travel-journal"><span class="travel-stamp"></span><span class="travel-route"></span><span class="travel-aircraft"></span></div>
+    <div class="portal-travel-scene travel-horizon"><span class="travel-island"></span><span class="travel-aircraft"></span><span class="travel-country"></span></div>
+  </div>
+  <div class="portal-frame split-active" id="portal-frame" data-active="split">
+  <section class="portal-login-panel" aria-label="Connexion Task’in">
+  <div class="login-card portal-login-card">
+    <svg width="64" height="64" viewBox="0 0 870 840" style="margin-bottom:16px;flex-shrink:0" aria-label="Task'in">
+  <rect x="6" y="6" width="858" height="828" rx="150" ry="150" fill="var(--surface)" stroke="var(--border)" stroke-width="10"/>
+  <g transform="translate(0.000000,840.000000) scale(0.100000,-0.100000)" fill="var(--ocean)" stroke="none">
+    <path d="M4321 6709 c-145 -16 -447 -111 -514 -162 -18 -14 -51 -33 -73 -42 -21 -9 -52 -29 -69 -44 -16 -16 -55 -45 -85 -65 -123 -80 -324 -272 -395 -376 -106 -155 -162 -261 -187 -350 -11 -41 -33 -100 -48 -130 -34 -66 -46 -112 -55 -205 -4 -38 -13 -114 -21 -167 -29 -199 10 -553 76 -698 21 -47 46 -112 55 -145 9 -33 29 -82 45 -110 16 -27 37 -73 48 -102 11 -29 34 -70 51 -92 17 -22 38 -55 46 -75 9 -20 31 -53 49 -74 18 -20 45 -60 59 -88 14 -27 40 -69 59 -92 18 -23 56 -78 83 -122 28 -44 62 -97 78 -118 15 -20 46 -65 68 -99 23 -35 45 -63 50 -63 8 0 66 -83 154 -220 36 -55 75 -106 131 -169 22 -25 61 -75 87 -111 26 -36 72 -96 102 -135 31 -38 66 -86 79 -105 13 -19 35 -46 50 -59 14 -14 38 -44 51 -67 14 -24 33 -49 44 -56 10 -7 48 -51 86 -98 91 -114 143 -167 171 -174 26 -7 94 17 94 32 0 6 41 54 91 108 50 55 107 124 126 154 20 30 48 69 63 85 15 17 37 47 49 68 13 20 27 37 31 37 5 0 24 21 41 48 18 26 48 66 68 88 20 23 48 61 64 85 15 24 46 70 70 101 23 31 58 78 77 104 19 25 54 66 77 89 23 24 48 59 56 77 8 19 28 50 44 69 16 19 40 52 53 74 13 22 36 55 52 73 15 18 42 59 58 92 16 32 34 61 40 65 5 3 26 34 46 68 20 34 49 78 66 97 40 48 112 158 144 222 15 29 37 67 50 83 12 17 31 53 42 82 11 29 35 71 55 93 21 24 41 64 51 99 9 32 29 78 45 102 33 49 39 70 78 284 51 274 43 459 -37 849 -6 26 -20 62 -31 78 -12 16 -34 64 -50 106 -15 41 -41 89 -58 106 -16 17 -39 51 -51 76 -35 71 -109 180 -163 240 -101 112 -376 338 -456 372 -25 12 -65 34 -88 51 -23 16 -70 37 -105 47 -35 10 -101 34 -148 54 -47 19 -119 40 -160 46 -101 15 -542 21 -659 9z m669 -792 c354 -2 358 -3 381 -60 17 -40 5 -119 -30 -193 -46 -98 -85 -106 -171 -33 -61 52 -91 59 -237 59 -240 0 -233 15 -233 -478 -1 -416 7 -377 -95 -484 -38 -40 -103 -112 -143 -159 -106 -127 -161 -139 -202 -45 -19 41 -19 68 -16 549 4 656 16 623 -221 619 -74 -2 -145 -7 -159 -12 -34 -13 -130 -85 -149 -112 -132 -189 -154 -211 -187 -181 -22 20 -22 40 1 265 16 159 62 258 125 270 18 3 613 1 1336 -5z m890 -157 c0 -23 -7 -33 -31 -45 -19 -10 -37 -32 -48 -59 -10 -23 -34 -55 -52 -71 -19 -15 -43 -46 -55 -69 -44 -88 -142 -236 -231 -350 -18 -22 -45 -59 -60 -81 -15 -22 -43 -57 -61 -79 -19 -21 -41 -55 -49 -75 -8 -20 -28 -52 -43 -71 -15 -19 -37 -54 -49 -77 -11 -23 -35 -56 -51 -73 -17 -17 -41 -52 -54 -78 -13 -26 -34 -56 -46 -67 -12 -11 -38 -47 -57 -80 -19 -33 -43 -69 -53 -80 -10 -11 -34 -45 -52 -77 -83 -141 -118 -195 -138 -213 -12 -11 -38 -42 -56 -70 -19 -27 -49 -69 -67 -92 -17 -23 -54 -79 -82 -124 -146 -240 -188 -231 -430 89 -11 15 -65 77 -120 139 -193 215 -265 314 -265 364 0 78 91 98 178 40 26 -17 67 -41 92 -52 25 -12 65 -39 90 -59 25 -20 59 -44 75 -53 17 -8 45 -31 64 -51 68 -70 139 -69 179 3 12 21 99 117 194 214 95 97 202 211 238 254 36 42 139 158 230 256 91 99 196 216 234 261 38 44 139 151 225 236 86 86 164 168 174 183 9 15 34 35 55 46 23 12 44 33 55 55 23 48 67 53 67 6z M2762 2596 c-25 -12 -39 -30 -59 -73 -14 -32 -40 -78 -58 -103 -17 -25 -38 -60 -45 -79 -7 -18 -29 -51 -47 -74 -19 -22 -47 -66 -63 -96 -15 -31 -38 -65 -50 -76 -12 -11 -33 -43 -45 -72 -13 -29 -37 -72 -53 -95 -16 -24 -36 -63 -46 -88 -10 -25 -28 -58 -40 -75 -13 -16 -37 -58 -55 -93 -17 -34 -41 -68 -52 -75 -11 -6 -36 -42 -55 -79 -18 -36 -38 -69 -44 -73 -6 -4 -29 -43 -52 -88 -22 -45 -51 -95 -63 -112 -13 -16 -30 -48 -40 -70 -9 -22 -27 -51 -39 -65 -34 -37 -46 -64 -46 -108 0 -64 27 -80 167 -102 65 -11 165 -33 223 -50 58 -17 128 -37 155 -45 61 -18 245 -30 264 -17 37 26 -33 75 -151 106 -38 10 -88 33 -115 52 -26 19 -78 46 -115 60 -67 26 -108 63 -108 98 0 35 176 8 276 -42 33 -16 104 -39 159 -52 63 -13 118 -33 150 -52 27 -16 79 -37 115 -45 160 -37 184 -44 211 -63 77 -56 128 -47 160 27 11 27 33 68 49 93 16 25 36 77 45 115 9 39 31 107 50 152 19 45 35 90 35 100 0 10 20 77 45 148 25 72 57 171 70 220 42 152 108 304 160 365 25 30 55 67 66 83 48 64 93 12 66 -76 -54 -175 -104 -312 -138 -382 -22 -44 -44 -107 -50 -140 -6 -33 -26 -93 -45 -133 -18 -40 -39 -101 -45 -135 -7 -34 -27 -103 -45 -153 -86 -240 -71 -333 45 -275 23 12 78 28 124 37 52 10 105 28 146 50 35 19 96 42 135 51 39 9 109 33 156 54 47 20 114 45 150 54 36 9 119 34 185 55 66 21 149 46 184 55 36 9 86 27 112 40 26 14 82 34 126 45 43 12 98 33 123 48 25 14 90 38 145 53 55 15 141 41 190 58 265 94 454 90 810 -19 34 -10 108 -28 165 -40 62 -13 124 -33 155 -51 36 -20 84 -34 166 -48 63 -11 151 -33 194 -49 44 -16 112 -35 150 -41 39 -6 113 -25 165 -41 240 -72 336 -58 256 37 -14 16 -34 53 -45 82 -10 28 -35 69 -54 90 -20 22 -45 61 -57 87 -11 27 -29 58 -39 69 -10 11 -37 56 -58 100 -82 164 -124 240 -147 264 -14 15 -33 46 -44 71 -11 25 -31 59 -46 77 -14 17 -38 57 -52 88 -13 32 -36 72 -49 89 -13 18 -36 59 -51 92 -14 32 -34 68 -45 80 -11 12 -36 54 -57 95 -73 146 -133 152 -397 40 -27 -11 -69 -25 -92 -31 -22 -6 -63 -26 -91 -44 -27 -19 -82 -44 -121 -56 -40 -12 -102 -37 -138 -57 -53 -29 -78 -37 -136 -40 -154 -9 -173 -43 -77 -133 40 -37 61 -90 81 -206 5 -32 13 -74 16 -91 7 -43 -10 -43 -76 -3 -50 31 -81 82 -81 134 0 13 -14 50 -32 82 -27 52 -31 68 -30 129 2 91 -18 127 -91 160 -98 46 -179 33 -235 -38 -18 -23 -59 -73 -93 -112 -33 -38 -80 -97 -105 -130 -131 -171 -252 -275 -307 -262 -37 10 -137 97 -187 164 -24 32 -65 83 -91 113 -27 30 -91 106 -144 168 -115 134 -137 141 -233 77 -126 -86 -312 -88 -452 -5 -36 21 -91 45 -123 54 -32 8 -82 30 -110 50 -29 19 -81 42 -117 51 -36 9 -104 34 -152 56 -101 46 -175 58 -226 35z M5455 1350 c-17 -11 -76 -31 -130 -46 -55 -14 -128 -39 -163 -55 -34 -15 -106 -40 -160 -54 -53 -15 -128 -39 -167 -54 -38 -16 -104 -36 -145 -46 -41 -10 -107 -31 -146 -46 -40 -16 -104 -36 -143 -44 -83 -17 -113 -35 -146 -83 -35 -51 -31 -52 168 -52 144 0 201 -4 272 -20 50 -11 185 -33 300 -50 116 -16 257 -41 315 -55 91 -23 167 -35 401 -62 85 -10 105 66 45 165 -22 36 -40 85 -50 132 -20 99 -103 350 -123 373 -21 23 -89 21 -128 -3z M5830 1320 c-27 -27 -26 -84 1 -135 12 -22 27 -52 35 -66 8 -14 21 -61 29 -105 29 -150 85 -295 123 -318 43 -24 265 -3 477 45 72 16 218 40 325 54 283 35 457 78 485 118 31 45 -8 67 -161 92 -51 8 -122 26 -157 39 -35 13 -115 34 -177 46 -62 11 -136 30 -164 41 -28 10 -132 37 -231 60 -99 22 -220 53 -270 69 -49 15 -112 31 -140 35 -27 4 -72 16 -98 26 -58 23 -53 23 -77 -1z M2714 759 c-11 -18 17 -29 74 -29 51 0 70 13 35 24 -41 13 -102 16 -109 5z"/>
+  </g>
+</svg>
+    <div class="login-logo" style="color:var(--ocean);font-size:24px;font-weight:700;">Task'in</div>
+    <div class="login-title">Connexion</div>
+    <div class="login-sub">Connecte-toi à ton espace Task’in</div>
+    <div class="form-row">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="login-email" placeholder="prenom@taskin.com" autocomplete="username">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Mot de passe</label>
+      <input class="form-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <label class="portal-remember"><input type="checkbox" id="portal-remember"> Rester connecté</label>
+    <button class="login-btn" onclick="doLogin()">Se connecter</button>
+    <button class="portal-discover-link" type="button" onclick="showPortalPanel('presentation')"><span>→</span> Voir la présentation</button>
+  </div>
+  </section>
+  <button id="portal-slider" class="portal-slider" type="button" onclick="togglePortalPanel()" aria-label="Basculer entre connexion et présentation" aria-pressed="false"><span>faire glisser</span></button>
+  <section class="portal-presentation-panel" aria-label="Présentation de Task’in">
+    <div class="portal-presentation-inner">
+      <nav class="portal-nav" aria-label="Navigation de présentation">
+        <div class="portal-brand"><span class="portal-brand-mark">T</span>Task’in</div>
+        <button class="portal-nav-link" type="button" onclick="showPortalPanel('presentation')">Documentation</button>
+        <button class="portal-nav-link" type="button" onclick="showPortalPanel('presentation')">Pilotage</button>
+        <button class="portal-nav-link" type="button" onclick="showPortalPanel('presentation')">Formation</button>
+        <button class="portal-nav-link portal-presentation-link" type="button" onclick="showPortalPanel('presentation')">Présentation</button>
+        <button class="portal-theme-btn" type="button" onclick="togglePortalPreviewTheme()" aria-label="Changer le thème de l’aperçu">☾</button>
+      </nav>
+      <div class="portal-hero">
+        <div>
+          <div class="portal-eyebrow">Portail Task’in · aperçu produit</div>
+          <h1>DÉCOUVREZ VOTRE PLATEFORME.</h1>
+          <p>Pilotage, documentation et formation réunis.</p>
+          <div class="portal-actions"><button class="portal-primary-action" type="button" onclick="openTaskinPresentation()">Explorer la plateforme <span>→</span></button><button class="portal-secondary-action" type="button" onclick="showPortalPanel('login')">Fermer l’aperçu</button></div>
+        </div>
+        <aside class="portal-route-note"><strong>Votre parcours</strong>Connectez-vous ou explorez l’écosystème avant d’entrer dans votre espace.</aside>
+      </div>
+      <div class="portal-dashboard" aria-label="Aperçu du dashboard Task’in">
+        <aside class="portal-side-menu"><div class="portal-side-title"><span class="portal-side-logo">T</span>Task’in</div><div class="portal-side-item active"><i></i>Vue d’ensemble</div><div class="portal-side-item"><i></i>Pilotage</div><div class="portal-side-item"><i></i>Documentation</div><div class="portal-side-item"><i></i>Formation</div><div class="portal-side-item"><i></i>Supervision</div><div class="portal-side-item"><i></i>Administration</div></aside>
+        <div class="portal-dashboard-main"><div class="portal-kpi-grid"><div class="portal-kpi"><div class="portal-kpi-label">Temps suivi</div><div class="portal-kpi-value">07h42</div></div><div class="portal-kpi good"><div class="portal-kpi-label">SLA</div><div class="portal-kpi-value">86<span>%</span></div></div><div class="portal-kpi"><div class="portal-kpi-label">Agents actifs</div><div class="portal-kpi-value">8</div></div></div><div class="portal-visual-grid"><div class="portal-chart-card"><div class="portal-widget-title">ACTIVITÉ — TEMPS SUIVI</div><div class="portal-bars"><i style="height:44%"></i><i style="height:65%"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:82%"></i><i style="height:30%"></i><i style="height:18%"></i></div></div><div class="portal-map-card"><div class="portal-widget-title">PARCOURS DES OPÉRATIONS</div><div class="portal-map-start"></div><div class="portal-map-node"></div><div class="portal-map-label">ROUTE ACTIVE</div></div></div></div>
+      </div>
+      <div class="portal-module-grid"><div class="portal-module"><i>▱</i><b>Documentation</b><em>›</em></div><div class="portal-module"><i>◇</i><b>Formation</b><em>›</em></div><div class="portal-module"><i>◫</i><b>Supervision</b><em>›</em></div><div class="portal-module"><i>⚙</i><b>Administration</b><em>›</em></div></div>
+    </div>
+    <div class="portal-live-site" id="portal-live-site" aria-label="Site de présentation Task’in">
+      <div class="portal-live-toolbar"><span><i>T</i>Présentation Task’in</span><div class="portal-live-toolbar-actions"><a class="portal-download-btn" href="downloads/taskin-extension-v1.9.3.zip" download>↓ Télécharger l’extension</a><button type="button" onclick="showPortalPanel('split')">↔ Portail</button><button type="button" onclick="openPortalFullscreen()">⛶ Plein écran</button><button class="portal-live-primary" type="button" onclick="showPortalPanel('login')">→ Se connecter</button></div></div>
+      <iframe id="portal-site-frame" title="Site de présentation Task’in" loading="lazy"></iframe>
+    </div>
+  </section>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo"><svg width="28" height="28" viewBox="0 0 870 840" style="border-radius:4px;flex-shrink:0" aria-label="Task'in">
+  <rect x="6" y="6" width="858" height="828" rx="150" ry="150" fill="var(--surface)" stroke="var(--border)" stroke-width="10"/>
+  <g transform="translate(0.000000,840.000000) scale(0.100000,-0.100000)" fill="var(--ocean)" stroke="none">
+    <path d="M4321 6709 c-145 -16 -447 -111 -514 -162 -18 -14 -51 -33 -73 -42 -21 -9 -52 -29 -69 -44 -16 -16 -55 -45 -85 -65 -123 -80 -324 -272 -395 -376 -106 -155 -162 -261 -187 -350 -11 -41 -33 -100 -48 -130 -34 -66 -46 -112 -55 -205 -4 -38 -13 -114 -21 -167 -29 -199 10 -553 76 -698 21 -47 46 -112 55 -145 9 -33 29 -82 45 -110 16 -27 37 -73 48 -102 11 -29 34 -70 51 -92 17 -22 38 -55 46 -75 9 -20 31 -53 49 -74 18 -20 45 -60 59 -88 14 -27 40 -69 59 -92 18 -23 56 -78 83 -122 28 -44 62 -97 78 -118 15 -20 46 -65 68 -99 23 -35 45 -63 50 -63 8 0 66 -83 154 -220 36 -55 75 -106 131 -169 22 -25 61 -75 87 -111 26 -36 72 -96 102 -135 31 -38 66 -86 79 -105 13 -19 35 -46 50 -59 14 -14 38 -44 51 -67 14 -24 33 -49 44 -56 10 -7 48 -51 86 -98 91 -114 143 -167 171 -174 26 -7 94 17 94 32 0 6 41 54 91 108 50 55 107 124 126 154 20 30 48 69 63 85 15 17 37 47 49 68 13 20 27 37 31 37 5 0 24 21 41 48 18 26 48 66 68 88 20 23 48 61 64 85 15 24 46 70 70 101 23 31 58 78 77 104 19 25 54 66 77 89 23 24 48 59 56 77 8 19 28 50 44 69 16 19 40 52 53 74 13 22 36 55 52 73 15 18 42 59 58 92 16 32 34 61 40 65 5 3 26 34 46 68 20 34 49 78 66 97 40 48 112 158 144 222 15 29 37 67 50 83 12 17 31 53 42 82 11 29 35 71 55 93 21 24 41 64 51 99 9 32 29 78 45 102 33 49 39 70 78 284 51 274 43 459 -37 849 -6 26 -20 62 -31 78 -12 16 -34 64 -50 106 -15 41 -41 89 -58 106 -16 17 -39 51 -51 76 -35 71 -109 180 -163 240 -101 112 -376 338 -456 372 -25 12 -65 34 -88 51 -23 16 -70 37 -105 47 -35 10 -101 34 -148 54 -47 19 -119 40 -160 46 -101 15 -542 21 -659 9z m669 -792 c354 -2 358 -3 381 -60 17 -40 5 -119 -30 -193 -46 -98 -85 -106 -171 -33 -61 52 -91 59 -237 59 -240 0 -233 15 -233 -478 -1 -416 7 -377 -95 -484 -38 -40 -103 -112 -143 -159 -106 -127 -161 -139 -202 -45 -19 41 -19 68 -16 549 4 656 16 623 -221 619 -74 -2 -145 -7 -159 -12 -34 -13 -130 -85 -149 -112 -132 -189 -154 -211 -187 -181 -22 20 -22 40 1 265 16 159 62 258 125 270 18 3 613 1 1336 -5z m890 -157 c0 -23 -7 -33 -31 -45 -19 -10 -37 -32 -48 -59 -10 -23 -34 -55 -52 -71 -19 -15 -43 -46 -55 -69 -44 -88 -142 -236 -231 -350 -18 -22 -45 -59 -60 -81 -15 -22 -43 -57 -61 -79 -19 -21 -41 -55 -49 -75 -8 -20 -28 -52 -43 -71 -15 -19 -37 -54 -49 -77 -11 -23 -35 -56 -51 -73 -17 -17 -41 -52 -54 -78 -13 -26 -34 -56 -46 -67 -12 -11 -38 -47 -57 -80 -19 -33 -43 -69 -53 -80 -10 -11 -34 -45 -52 -77 -83 -141 -118 -195 -138 -213 -12 -11 -38 -42 -56 -70 -19 -27 -49 -69 -67 -92 -17 -23 -54 -79 -82 -124 -146 -240 -188 -231 -430 89 -11 15 -65 77 -120 139 -193 215 -265 314 -265 364 0 78 91 98 178 40 26 -17 67 -41 92 -52 25 -12 65 -39 90 -59 25 -20 59 -44 75 -53 17 -8 45 -31 64 -51 68 -70 139 -69 179 3 12 21 99 117 194 214 95 97 202 211 238 254 36 42 139 158 230 256 91 99 196 216 234 261 38 44 139 151 225 236 86 86 164 168 174 183 9 15 34 35 55 46 23 12 44 33 55 55 23 48 67 53 67 6z M2762 2596 c-25 -12 -39 -30 -59 -73 -14 -32 -40 -78 -58 -103 -17 -25 -38 -60 -45 -79 -7 -18 -29 -51 -47 -74 -19 -22 -47 -66 -63 -96 -15 -31 -38 -65 -50 -76 -12 -11 -33 -43 -45 -72 -13 -29 -37 -72 -53 -95 -16 -24 -36 -63 -46 -88 -10 -25 -28 -58 -40 -75 -13 -16 -37 -58 -55 -93 -17 -34 -41 -68 -52 -75 -11 -6 -36 -42 -55 -79 -18 -36 -38 -69 -44 -73 -6 -4 -29 -43 -52 -88 -22 -45 -51 -95 -63 -112 -13 -16 -30 -48 -40 -70 -9 -22 -27 -51 -39 -65 -34 -37 -46 -64 -46 -108 0 -64 27 -80 167 -102 65 -11 165 -33 223 -50 58 -17 128 -37 155 -45 61 -18 245 -30 264 -17 37 26 -33 75 -151 106 -38 10 -88 33 -115 52 -26 19 -78 46 -115 60 -67 26 -108 63 -108 98 0 35 176 8 276 -42 33 -16 104 -39 159 -52 63 -13 118 -33 150 -52 27 -16 79 -37 115 -45 160 -37 184 -44 211 -63 77 -56 128 -47 160 27 11 27 33 68 49 93 16 25 36 77 45 115 9 39 31 107 50 152 19 45 35 90 35 100 0 10 20 77 45 148 25 72 57 171 70 220 42 152 108 304 160 365 25 30 55 67 66 83 48 64 93 12 66 -76 -54 -175 -104 -312 -138 -382 -22 -44 -44 -107 -50 -140 -6 -33 -26 -93 -45 -133 -18 -40 -39 -101 -45 -135 -7 -34 -27 -103 -45 -153 -86 -240 -71 -333 45 -275 23 12 78 28 124 37 52 10 105 28 146 50 35 19 96 42 135 51 39 9 109 33 156 54 47 20 114 45 150 54 36 9 119 34 185 55 66 21 149 46 184 55 36 9 86 27 112 40 26 14 82 34 126 45 43 12 98 33 123 48 25 14 90 38 145 53 55 15 141 41 190 58 265 94 454 90 810 -19 34 -10 108 -28 165 -40 62 -13 124 -33 155 -51 36 -20 84 -34 166 -48 63 -11 151 -33 194 -49 44 -16 112 -35 150 -41 39 -6 113 -25 165 -41 240 -72 336 -58 256 37 -14 16 -34 53 -45 82 -10 28 -35 69 -54 90 -20 22 -45 61 -57 87 -11 27 -29 58 -39 69 -10 11 -37 56 -58 100 -82 164 -124 240 -147 264 -14 15 -33 46 -44 71 -11 25 -31 59 -46 77 -14 17 -38 57 -52 88 -13 32 -36 72 -49 89 -13 18 -36 59 -51 92 -14 32 -34 68 -45 80 -11 12 -36 54 -57 95 -73 146 -133 152 -397 40 -27 -11 -69 -25 -92 -31 -22 -6 -63 -26 -91 -44 -27 -19 -82 -44 -121 -56 -40 -12 -102 -37 -138 -57 -53 -29 -78 -37 -136 -40 -154 -9 -173 -43 -77 -133 40 -37 61 -90 81 -206 5 -32 13 -74 16 -91 7 -43 -10 -43 -76 -3 -50 31 -81 82 -81 134 0 13 -14 50 -32 82 -27 52 -31 68 -30 129 2 91 -18 127 -91 160 -98 46 -179 33 -235 -38 -18 -23 -59 -73 -93 -112 -33 -38 -80 -97 -105 -130 -131 -171 -252 -275 -307 -262 -37 10 -137 97 -187 164 -24 32 -65 83 -91 113 -27 30 -91 106 -144 168 -115 134 -137 141 -233 77 -126 -86 -312 -88 -452 -5 -36 21 -91 45 -123 54 -32 8 -82 30 -110 50 -29 19 -81 42 -117 51 -36 9 -104 34 -152 56 -101 46 -175 58 -226 35z M5455 1350 c-17 -11 -76 -31 -130 -46 -55 -14 -128 -39 -163 -55 -34 -15 -106 -40 -160 -54 -53 -15 -128 -39 -167 -54 -38 -16 -104 -36 -145 -46 -41 -10 -107 -31 -146 -46 -40 -16 -104 -36 -143 -44 -83 -17 -113 -35 -146 -83 -35 -51 -31 -52 168 -52 144 0 201 -4 272 -20 50 -11 185 -33 300 -50 116 -16 257 -41 315 -55 91 -23 167 -35 401 -62 85 -10 105 66 45 165 -22 36 -40 85 -50 132 -20 99 -103 350 -123 373 -21 23 -89 21 -128 -3z M5830 1320 c-27 -27 -26 -84 1 -135 12 -22 27 -52 35 -66 8 -14 21 -61 29 -105 29 -150 85 -295 123 -318 43 -24 265 -3 477 45 72 16 218 40 325 54 283 35 457 78 485 118 31 45 -8 67 -161 92 -51 8 -122 26 -157 39 -35 13 -115 34 -177 46 -62 11 -136 30 -164 41 -28 10 -132 37 -231 60 -99 22 -220 53 -270 69 -49 15 -112 31 -140 35 -27 4 -72 16 -98 26 -58 23 -53 23 -77 -1z M2714 759 c-11 -18 17 -29 74 -29 51 0 70 13 35 24 -41 13 -102 16 -109 5z"/>
+  </g>
+</svg> Task'in</div>
+    <div class="topbar-sep">/</div>
+    <div class="topbar-title">Time Tracker</div>
+    <span class="role-badge hidden" id="role-badge"></span>
+    <div class="topbar-right">
+      <span id="network-status" class="network-status hidden" role="status" aria-live="polite"></span>
+      <button class="btn btn-ghost presentation-topbar-btn" onclick="window.open('presentation.html?v=20260827b','_blank','noopener,noreferrer')">Présentation</button><a class="btn btn-primary extension-download-topbar" href="downloads/taskin-extension-v1.9.3.zip" download>↓ Télécharger l’extension</a>
+      <button class="btn btn-ghost" onclick="refreshApp()">↻ Actualiser</button>
+      <button class="theme-toggle-btn" id="theme-toggle" onclick="toggleTheme()" title="Changer de thème">☾</button>
+      <div class="user-pill" onclick="openProfileModal()" style="cursor:pointer"><div class="mini-avatar" id="topbar-avatar"></div><span id="topbar-name"></span></div>
+      <button class="btn btn-ghost" onclick="logout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="ops-page-heading hidden" id="ops-page-heading">
+    <div>
+      <div class="ops-eyebrow">Task'in Operations</div>
+      <h1 id="ops-page-title">Vue opérationnelle</h1>
+      <p id="ops-page-subtitle">Suivi des performances, des traitements et des alertes de l’équipe.</p>
+    </div>
+    <div class="ops-context-chip"><span class="ops-context-dot"></span><span id="ops-context-label">Données en direct</span></div>
+  </div>
+
+  <div class="live-header-panel hidden" id="permanent-live-panel">
+     <div class="live-header-title"><div class="live-pulse-dot"></div> Équipe en direct</div>
+     <div class="live-header-grid" id="live-agents-grid"></div>
+  </div>
+
+  <div class="timer-banner agent-only" id="timer-banner">
+    <div class="timer-clock idle" id="timer-clock">00:00:00</div>
+    <div class="timer-info">
+      <div class="timer-label">Tâche en cours</div>
+      <div class="timer-task placeholder" id="timer-task">Aucun timer actif — démarre une tâche ci-dessous</div>
+    </div>
+    <div class="timer-controls">
+      <button class="timer-btn timer-btn-play" id="play-btn" onclick="openModal()" title="Démarrer">▶</button>
+      <button class="timer-btn timer-btn-stop hidden" id="stop-btn" onclick="stopTimer()" title="Arrêter">■</button>
+    </div>
+  </div>
+
+  <div class="role-banner supervisor-banner hidden" id="supervisor-banner">
+    <div class="role-banner-avatars" id="sup-banner-avatars"></div>
+    <div class="role-banner-info">
+      <div class="role-banner-title" id="sup-banner-title">— sur — agents actifs</div>
+      <div class="role-banner-sub" id="sup-banner-sub"></div>
+    </div>
+    <div class="role-banner-dot" id="sup-banner-dot"></div>
+  </div>
+
+  <div class="role-banner admin-banner hidden" id="admin-banner">
+    <div class="role-banner-metric">
+      <div class="role-banner-metric-value" id="adm-banner-total">0h</div>
+      <div class="role-banner-metric-label">Cette semaine</div>
+    </div>
+    <div class="role-banner-info">
+      <div class="role-banner-title" id="adm-banner-title" style="font-family:var(--font);font-size:13px;font-weight:400;color:var(--text)"></div>
+      <div class="role-banner-sub role-banner-alert" id="adm-banner-sub"></div>
+    </div>
+    <button class="role-banner-link" onclick="switchTab('admin', document.getElementById('tab-admin'))">Détails →</button>
+  </div>
+
+  <div class="quickstart agent-only">
+    <button class="qs-btn" onclick="quickStart('inbound')"><span class="qs-dot" style="background:#E58787"></span>Appel entrant</button>
+    <button class="qs-btn" onclick="quickStart('outbound')"><span class="qs-dot" style="background:#D6A848"></span>Appel sortant</button>
+    <button class="qs-btn" onclick="quickStart('chat')"><span class="qs-dot" style="background:#84A9DE"></span>Crisp Chat</button>
+    <button class="qs-btn" onclick="quickStart('email')"><span class="qs-dot" style="background:#2A61A3"></span>Crisp Email</button>
+    <button class="qs-btn" onclick="quickStart('ticket')"><span class="qs-dot" style="background:#6DB36D"></span>Ticket / Manuel</button>
+    <button class="qs-btn" onclick="syncRingover()"><span class="qs-dot" style="background:var(--ocean)"></span>Sync RingOver (auto)</button>
+  </div>
+
+  <div class="stats-grid agent-only" id="stats-grid-agent">
+    <div class="stat-card">
+      <div class="stat-label">Durée totale (Jour)</div>
+      <div class="stat-value" id="s-total">0h00</div>
+      <div class="kpi-progress-bar"><div class="kpi-progress-fill good" id="pb-total" style="width:0%"></div></div>
+      <div class="kpi-goal-label" id="gl-total"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">DMT Moyenne</div>
+      <div class="stat-value" id="s-dmt" style="color:var(--ocean)">0min</div>
+      <div class="kpi-progress-bar"><div class="kpi-progress-fill good" id="pb-dmt" style="width:0%"></div></div>
+      <div class="kpi-goal-label" id="gl-dmt"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">First Reply Time</div>
+      <div class="stat-value" id="s-frt" style="color:var(--clay)">0min</div>
+      <div class="kpi-progress-bar"><div class="kpi-progress-fill good" id="pb-frt" style="width:0%"></div></div>
+      <div class="kpi-goal-label" id="gl-frt"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tâches traitées</div>
+      <div class="stat-value" id="s-count" style="color:var(--text2)">0</div>
+      <div class="kpi-progress-bar"><div class="kpi-progress-fill good" id="pb-count" style="width:0%"></div></div>
+      <div class="kpi-goal-label" id="gl-count"></div>
+    </div>
+  </div>
+
+  <!-- FEAT 2 : Historique 7 jours agent -->
+  <div class="agent-history-bar agent-only" id="agent-history-bar">
+    <div class="agent-history-title">Mes 7 derniers jours</div>
+    <div class="agent-history-bars" id="agent-history-bars"></div>
+  </div>
+
+  <!-- P1 : Vue Globale Équipe & KPIs — filtres temporels + analyse individuelle -->
+  <details class="team-accordion hidden" id="team-accordion" style="margin-top:20px;">
+    <summary class="team-summary">Vue Globale Équipe & KPIs</summary>
+
+    <!-- Contrôles : période + agent -->
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface2)">
+      <div style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:3px">
+        <button class="sup-period-btn active" data-p="day"   onclick="setSupPeriod('day',this)">Jour</button>
+        <button class="sup-period-btn"        data-p="week"  onclick="setSupPeriod('week',this)">Semaine</button>
+        <button class="sup-period-btn"        data-p="month" onclick="setSupPeriod('month',this)">Mois</button>
+      </div>
+      <select class="filter-select" id="sup-agent-filter" onchange="renderSupKpis()" style="font-size:12px;padding:6px 10px">
+        <option value="">Équipe entière</option>
+      </select>
+      <span class="count-badge" id="sup-period-label" style="margin-left:auto"></span>
+    </div>
+
+    <div class="stats-grid" id="stats-grid-supervisor" style="grid-template-columns:repeat(4,1fr); padding-bottom:20px; border-bottom:1px solid var(--border);">
+      <div class="stat-card">
+        <div class="stat-label" id="sup-s-total-label">Total (Jour)</div>
+        <div class="stat-value" id="sup-s-total" style="color:var(--ocean)">0h00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">DMT</div>
+        <div class="stat-value" id="sup-s-dmt" style="color:var(--ocean)">0min</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">FRT</div>
+        <div class="stat-value" id="sup-s-frt" style="color:var(--clay)">0min</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tâches</div>
+        <div class="stat-value" id="sup-s-count" style="color:var(--text2)">0</div>
+      </div>
+    </div>
+  </details>
+
+  <div class="stats-grid hidden" id="stats-grid-admin-home" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat-card">
+      <div class="stat-label">Total semaine</div>
+      <div class="stat-value" id="adm-home-total" style="color:var(--ocean)">0h00</div>
+      <div class="stat-sub">toute l'équipe</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Entrées enregistrées</div>
+      <div class="stat-value" id="adm-home-entries" style="color:var(--ocean)">0</div>
+      <div class="stat-sub">au total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Agents actifs (jour)</div>
+      <div class="stat-value" id="adm-home-active" style="color:var(--ocean)">0</div>
+      <div class="stat-sub">sur 5</div>
+    </div>
+  </div>
+  <div id="ops-viz-admin-home" class="ops-viz-section hidden"></div>
+
+  <div class="tabs">
+    <button class="tab agent-only active" onclick="switchTab('today',this)">Aujourd'hui</button>
+    <button class="tab hidden" id="tab-home" onclick="switchTab('home',this)">Vue d'ensemble</button>
+    <button class="tab hidden" id="tab-week-role" onclick="switchTab('week',this)">Cette semaine</button>
+    <button class="tab" id="tab-team" onclick="switchTab('team',this)">Équipe</button>
+    <button class="tab hidden" id="tab-leaderboard" onclick="switchTab('leaderboard',this)">🏆 Classement</button>
+    <button class="tab hidden" id="tab-supervision" onclick="switchTab('supervision',this)">🎯 Supervision<span id="sv-alert-count" class="hidden" style="background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;font-weight:700"></span></button>
+    <button class="tab hidden" id="tab-training" onclick="switchTab('training',this)">🎓 Formation</button>
+    <button class="tab" id="tab-documentation" onclick="switchTab('documentation',this)">📄 Documentation</button>
+    <button class="tab" id="tab-admin" onclick="switchTab('admin',this)">Administration</button>
+  </div>
+
+  <div class="content">
+    <!-- P1 : Filtres dates — visibles sur tous les onglets (Sup/Admin) ou agent -->
+    <div class="date-filter-bar" id="date-filter-bar">
+      <label>De</label>
+      <input type="date" class="date-input" id="filter-date-from" onchange="onDateInputChange()">
+      <span class="date-sep">→</span>
+      <label>À</label>
+      <input type="date" class="date-input" id="filter-date-to" onchange="onDateInputChange()">
+      <button class="date-action-btn pending" id="date-action-btn" onclick="onDateActionBtn()">Appliquer</button>
+      <span class="count-badge" id="date-range-label" style="margin-left:auto"></span>
+    </div>
+
+    <!-- P3 : Matrice canaux -->
+    <div id="channel-matrix-panel">
+      <div class="matrix-controls">
+        <div class="channel-filter-row" id="channel-filter-row">
+          <button class="channel-filter-btn active" data-ch="all" onclick="setChannelFilter('all',this)">Tous les canaux</button>
+          <button class="channel-filter-btn" data-ch="inbound" onclick="setChannelFilter('inbound',this)">📞↘ Entrant</button>
+          <button class="channel-filter-btn" data-ch="outbound" onclick="setChannelFilter('outbound',this)">📞↗ Sortant</button>
+          <button class="channel-filter-btn" data-ch="chat" onclick="setChannelFilter('chat',this)">💬 Chat</button>
+          <button class="channel-filter-btn" data-ch="email" onclick="setChannelFilter('email',this)">✉️ Email</button>
+          <button class="channel-filter-btn" data-ch="ticket" onclick="setChannelFilter('ticket',this)">🎫 Ticket</button>
+        </div>
+        <div class="matrix-toggle-group" style="margin-left:auto">
+          <button class="matrix-toggle active" data-period="day" onclick="setMatrixPeriod('day',this)">Jour</button>
+          <button class="matrix-toggle" data-period="week" onclick="setMatrixPeriod('week',this)">Semaine</button>
+          <button class="matrix-toggle" data-period="month" onclick="setMatrixPeriod('month',this)">Mois</button>
+        </div>
+      </div>
+      <div id="channel-matrix-grid" class="channel-grid"></div>
+    </div>
+
+    <div class="toolbar">
+      <select class="filter-select" id="filter-source" onchange="renderAll()">
+        <option value="">Toutes sources</option>
+        <option value="inbound">Appel entrant</option>
+        <option value="outbound">Appel sortant</option>
+        <option value="chat">Crisp Chat</option>
+        <option value="email">Crisp Email</option>
+        <option value="ticket">Ticket / Manuel</option>
+      </select>
+      <select class="filter-select" id="filter-agent" onchange="renderAll()">
+        <option value="">Tous les agents</option>
+      </select>
+      <select class="filter-select" id="filter-treatment" onchange="renderAll()">
+        <option value="">Tous traitements</option>
+      </select>
+      <input class="search-input" id="search-input" placeholder="Rechercher..." oninput="onSearchInput()">
+      <span class="count-badge" id="entry-count">0 entrées</span>
+    </div>
+
+    <div class="entries-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Inbound Time</th>
+            <th>Start Time</th>
+            <th>Source</th>
+            <th>Description</th>
+            <th>Agent</th>
+            <th>Durée</th>
+            <th></th>
+          </tr>
+          <tr class="filter-row hidden" id="table-filters">
+            <th style="background:var(--surface);border-bottom:2px solid var(--border)"><input type="text" class="filter-input-tbl" id="f-inb" placeholder="Filtrer..." oninput="onSearchInput()"></th>
+            <th style="background:var(--surface);border-bottom:2px solid var(--border)"><input type="text" class="filter-input-tbl" id="f-start" placeholder="Filtrer..." oninput="onSearchInput()"></th>
+            <th style="background:var(--surface);border-bottom:2px solid var(--border)">
+              <select class="filter-select-tbl" id="f-src" onchange="onSearchInput()">
+                <option value="">Toutes</option>
+                <option value="inbound">Entrant</option>
+                <option value="outbound">Sortant</option>
+                <option value="chat">Chat</option>
+                <option value="email">Email</option>
+                <option value="ticket">Ticket</option>
+              </select>
+            </th>
+            <th style="background:var(--surface);border-bottom:2px solid var(--border)"><input type="text" class="filter-input-tbl" id="f-desc-tbl" placeholder="Filtrer..." oninput="onSearchInput()"></th>
+            <th style="background:var(--surface);border-bottom:2px solid var(--border)">
+              <select class="filter-select-tbl" id="f-agt" onchange="onSearchInput()">
+                <option value="">Tous</option>
+              </select>
+            </th>
+            <th style="background:var(--surface);border-bottom:2px solid var(--border)"><input type="text" class="filter-input-tbl" id="f-dur" placeholder="Filtrer..." oninput="onSearchInput()"></th>
+            <th style="background:var(--surface);border-bottom:2px solid var(--border)"></th>
+          </tr>
+        </thead>
+        <tbody id="entries-body"></tbody>
+      </table>
+    </div>
+
+    <div id="team-live-panel" class="hidden">
+      <div class="admin-card team-live-edit-only" style="margin-bottom:16px">
+        <div class="admin-card-header">
+          <h3>DMT par source</h3>
+          <span class="count-badge">Durée moyenne de traitement cible</span>
+        </div>
+        <div class="dmt-row">
+          <span class="dmt-label">Appels (Inbound/Outbound)</span>
+          <input class="form-input dmt-input" id="dmt-ringover" type="number" min="0">
+          <span class="dmt-unit">secondes</span>
+        </div>
+        <div class="dmt-row">
+          <span class="dmt-label">Crisp (Chat/Email)</span>
+          <input class="form-input dmt-input" id="dmt-crisp" type="number" min="0">
+          <span class="dmt-unit">secondes</span>
+        </div>
+        <div class="dmt-row">
+          <span class="dmt-label">Ticket OS / Manuel</span>
+          <input class="form-input dmt-input" id="dmt-manual" type="number" min="0">
+          <span class="dmt-unit">secondes</span>
+        </div>
+        <div style="padding:12px 18px"><button class="btn btn-primary" onclick="saveDMT()">Enregistrer les DMT</button></div>
+      </div>
+
+      <!-- Vue mosaïque KPI -->
+      <div id="mosaic-section" style="margin-bottom:16px">
+        <div class="mosaic-header">
+          <h3>Vue mosaïque — KPI individuels</h3>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-size:11px;color:var(--text2);font-weight:600">Période :</span>
+            <div style="display:flex;gap:3px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:2px">
+              <button class="mosaic-period-btn active" data-mp="day"   onclick="setMosaicPeriod('day',this)">Jour</button>
+              <button class="mosaic-period-btn"        data-mp="week"  onclick="setMosaicPeriod('week',this)">Sem.</button>
+              <button class="mosaic-period-btn"        data-mp="month" onclick="setMosaicPeriod('month',this)">Mois</button>
+            </div>
+          </div>
+        </div>
+                <div class="mosaic-grid" id="mosaic-grid"></div>
+      </div>
+      <details class="team-accordion" id="team-live-accordion" style="margin-bottom:16px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)">
+        <summary class="team-summary" style="background:var(--surface2)">
+          <span>Équipe en direct (liste)</span>
+          <span class="count-badge" id="team-live-count" style="margin-left:8px"></span>
+        </summary>
+        <div id="team-live-list"></div>
+      </details>
+
+      <!-- FEAT 3 : Objectifs journaliers visibles Sup -->
+      <div class="admin-card team-live-edit-only" id="goals-sup-card" style="margin-bottom:16px">
+        <div class="admin-card-header">
+          <h3>Objectifs journaliers</h3>
+          <span class="count-badge">Modifiable par Admin &amp; Sup</span>
+        </div>
+        <div class="goals-section">
+          <h4>Seuils cibles pour les agents</h4>
+          <div class="goal-row">
+            <label>Tâches / jour</label>
+            <input class="goal-input" type="number" id="goal-count-sup" min="1" placeholder="20">
+            <span class="goal-unit">tâches</span>
+          </div>
+          <div class="goal-row">
+            <label>Durée totale / jour</label>
+            <input class="goal-input" type="number" id="goal-total-sup" min="1" placeholder="360">
+            <span class="goal-unit">minutes</span>
+          </div>
+          <div class="goal-row">
+            <label>DMT cible max.</label>
+            <input class="goal-input" type="number" id="goal-dmt-sup" min="1" placeholder="8">
+            <span class="goal-unit">minutes</span>
+          </div>
+          <div class="goal-row">
+            <label>FRT cible max.</label>
+            <input class="goal-input" type="number" id="goal-frt-sup" min="1" placeholder="3">
+            <span class="goal-unit">minutes</span>
+          </div>
+          <button class="btn btn-primary" style="margin-top:8px" onclick="saveGoalsSup()">Enregistrer les objectifs</button>
+        </div>
+      </div>
+
+      <div class="admin-card team-live-edit-only">
+        <div class="admin-card-header"><h3>Extraction des données</h3></div>
+        <div style="padding:14px 18px;display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="exportCSV()">↓ Export CSV</button>
+          <button class="btn btn-ghost" onclick="exportExcel()">↓ Export Excel</button>
+          <button class="btn btn-ghost" style="background:var(--green-dim);color:var(--green);border-color:var(--green)" onclick="showGASModal()">📊 Script Google Sheets</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-panel" class="hidden">
+      <div class="admin-grid">
+        <!-- FEAT 6 : Comptes équipe en accordéon -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3>Comptes équipe</h3>
+            <span class="count-badge" id="team-count">0 comptes</span>
+          </div>
+          <button class="btn btn-primary" style="width:calc(100% - 36px);margin:12px 18px 0" onclick="openCreateAccountModal()">+ Ajouter un compte</button>
+          <details class="team-accordion" id="team-list-accordion" style="margin:8px 0 0;border-radius:0;border:none;border-top:1px solid var(--border)">
+            <summary class="team-summary" style="background:var(--surface2);font-size:12px;padding:10px 18px">
+              Voir la liste des comptes
+            </summary>
+            <div id="team-list"></div>
+          </details>
+        </div>
+        <!-- FEAT 7 : Types de traitement en accordéon -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3>Types de traitement</h3>
+            <span class="count-badge" id="treatment-count">0 types</span>
+          </div>
+          <div class="treatment-add-row" style="position:relative; align-items:center;">
+            <button class="btn btn-ghost" id="emoji-toggle-btn" type="button" onclick="toggleEmojiPicker(event)" title="Ajouter un emoji" style="padding: 8px 10px; font-size: 16px; flex-shrink:0;">😀</button>
+            <input class="form-input" id="new-treatment-input" placeholder="Nouveau type (ex: ✈️ Vols)..." onkeydown="if(event.key==='Enter') addTreatmentType()">
+            <button class="btn btn-primary" onclick="addTreatmentType()">Ajouter</button>
+            <div class="emoji-picker hidden" id="emoji-picker" onclick="event.stopPropagation()"></div>
+          </div>
+          <details class="team-accordion" id="treatment-list-accordion" style="border-radius:0;border:none;border-top:1px solid var(--border)">
+            <summary class="team-summary" style="background:var(--surface2);font-size:12px;padding:10px 18px">
+              Voir la liste des types
+            </summary>
+            <div id="treatment-list"></div>
+          </details>
+        </div>
+      </div>
+      <div class="admin-card migration-accounts-card" style="margin-top:16px">
+        <div class="admin-card-header">
+          <div><h3>Comptes historiques à vérifier</h3><div class="admin-note" style="padding:4px 0 0">Gestion Supabase réservée aux administrateurs. Aucune suppression automatique.</div></div>
+          <span class="count-badge" id="migration-accounts-count">0 à vérifier</span>
+        </div>
+        <div class="migration-accounts-toolbar">
+          <div class="migration-accounts-auth">
+            <input class="form-input" id="migration-admin-email" type="email" placeholder="E-mail Supabase Admin" autocomplete="username">
+            <input class="form-input" id="migration-admin-password" type="password" placeholder="Mot de passe" autocomplete="current-password">
+            <button class="btn btn-primary" onclick="connectMigrationAdmin()">Se connecter</button>
+          </div>
+          <div class="migration-accounts-actions">
+            <label class="migration-checkbox"><input type="checkbox" id="migration-only-missing-email" checked onchange="renderMigrationAccounts()"> Sans adresse uniquement</label>
+            <button class="btn btn-ghost" onclick="loadMigrationAccounts()">Actualiser</button>
+          </div>
+        </div>
+        <div id="migration-accounts-status" class="migration-accounts-status">Connecte-toi avec un compte Supabase ayant le rôle Admin pour charger la liste.</div>
+        <div id="migration-accounts-list" class="migration-accounts-list"></div>
+      </div>
+      <div class="admin-card" style="margin-top:16px">
+        <div class="admin-card-header">
+          <h3>Statistiques globales</h3>
+        </div>
+        <div class="stats-grid" style="margin:0;padding:16px">
+          <div class="stat-card">
+            <div class="stat-label">Total équipe (semaine)</div>
+            <div class="stat-value" id="admin-s-total">0h00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Entrées enregistrées</div>
+            <div class="stat-value" id="admin-s-count">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Agents actifs</div>
+            <div class="stat-value" id="admin-s-active">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Export</div>
+            <button class="btn btn-ghost" onclick="exportCSV()" style="margin-top:4px">↓ CSV</button>
+            <button class="btn btn-ghost" onclick="exportExcel()" style="margin-top:4px">↓ Excel</button>
+          </div>
+        </div>
+        <div id="ops-viz-admin" class="ops-viz-section"></div>
+      </div>
+
+      <div class="admin-card" style="margin-top:16px">
+        <div class="admin-card-header">
+          <h3>Courbe d'évolution</h3>
+        </div>
+        <div class="chart-toolbar">
+          <select class="filter-select" id="chart-scope" onchange="renderEvolutionChart()">
+            <option value="team">Équipe entière</option>
+          </select>
+          <select class="filter-select" id="chart-period" onchange="renderEvolutionChart()">
+            <option value="week">Cette semaine</option>
+            <option value="month">Ce mois</option>
+          </select>
+        </div>
+        <div id="evolution-chart" class="evolution-chart"></div>
+        <!-- FEAT 8 : Donut répartition types de traitement -->
+        <div class="donut-section">
+          <div class="donut-section-title">Répartition des types de traitement</div>
+          <div class="chart-toolbar" style="border-bottom:none;padding:0 0 14px 0">
+            <select class="filter-select" id="donut-agent" onchange="renderDonutChart()">
+              <option value="team">Équipe entière</option>
+            </select>
+            <select class="filter-select" id="donut-period" onchange="renderDonutChart()">
+              <option value="day">Aujourd'hui</option>
+              <option value="week" selected>Cette semaine</option>
+              <option value="month">Ce mois</option>
+            </select>
+          </div>
+          <div class="donut-layout">
+            <svg id="donut-svg" width="140" height="140" viewBox="0 0 140 140"></svg>
+            <div class="donut-legend" id="donut-legend"></div>
+          </div>
+        </div>
+      </div>
+      <!-- FEAT 3 : Section objectifs journaliers (Admin + Sup) -->
+      <div class="admin-card" style="margin-top:16px" id="goals-admin-card">
+        <div class="admin-card-header">
+          <h3>Objectifs journaliers</h3>
+          <span class="count-badge">Admin &amp; Superviseur</span>
+        </div>
+        <div class="goals-section">
+          <h4>Seuils cibles pour les agents</h4>
+          <div class="goal-row">
+            <label>Tâches / jour</label>
+            <input class="goal-input" type="number" id="goal-count" min="1" placeholder="20">
+            <span class="goal-unit">tâches</span>
+          </div>
+          <div class="goal-row">
+            <label>Durée totale / jour</label>
+            <input class="goal-input" type="number" id="goal-total" min="1" placeholder="360">
+            <span class="goal-unit">minutes</span>
+          </div>
+          <div class="goal-row">
+            <label>DMT cible max.</label>
+            <input class="goal-input" type="number" id="goal-dmt" min="1" placeholder="8">
+            <span class="goal-unit">minutes</span>
+          </div>
+          <div class="goal-row">
+            <label>FRT cible max.</label>
+            <input class="goal-input" type="number" id="goal-frt" min="1" placeholder="3">
+            <span class="goal-unit">minutes</span>
+          </div>
+          <button class="btn btn-primary" style="margin-top:8px" onclick="saveGoals()">Enregistrer les objectifs</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- P2 : Leaderboard panel -->
+    <div id="leaderboard-panel" class="hidden" style="padding:0">
+      <div id="lb-print-zone">
+        <div class="lb-print-header" style="display:none" id="lb-print-header">
+          <div class="lb-print-title">🏆 Task'in — Classement des agents</div>
+          <div class="lb-print-sub" id="lb-print-sub"></div>
+        </div>
+      <div class="lb-header">
+        <span style="font-family:var(--display);font-size:16px;font-weight:600;color:var(--text)">🏆 Classement des agents</span>
+        <button class="lb-period-btn active" data-lbp="day" onclick="setLbPeriod('day',this)">Aujourd'hui</button>
+        <button class="lb-period-btn" data-lbp="week" onclick="setLbPeriod('week',this)">Cette semaine</button>
+        <button class="lb-period-btn" data-lbp="month" onclick="setLbPeriod('month',this)">Ce mois</button>
+        <button class="lb-period-btn" data-lbp="all" onclick="setLbPeriod('all',this)">Tout</button>
+        <button class="btn btn-ghost" onclick="exportLeaderboardPDF()" style="margin-left:auto;background:var(--surface);color:var(--text2);border-color:var(--border)">↓ PDF</button>
+      </div>
+      <div class="lb-table">
+        <table>
+          <thead>
+            <tr>
+              <th id="lbth-rank" onclick="sortLeaderboard('rank')"># <span class="sort-arrow">↕</span></th>
+              <th id="lbth-name" onclick="sortLeaderboard('name')">Agent <span class="sort-arrow">↕</span></th>
+              <th id="lbth-volume" onclick="sortLeaderboard('volume')">Volume <span class="sort-arrow">↕</span></th>
+              <th id="lbth-frt" onclick="sortLeaderboard('frt')">FRT moy. <span class="sort-arrow">↕</span></th>
+              <th id="lbth-dmt" onclick="sortLeaderboard('dmt')">DMT moy. <span class="sort-arrow">↕</span></th>
+              <th id="lbth-quality" onclick="sortLeaderboard('quality')">Score qualité <span class="sort-arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body"></tbody>
+        </table>
+      </div>
+      </div><!-- /lb-print-zone -->
+    </div>
+
+    <!-- DOCUMENTATION -->
+    <div id="documentation-panel" class="hidden" style="padding:0">
+      <div class="doc-toolbar">
+        <div class="search-box-doc">
+          <input type="text" class="search-input" id="doc-search-input" placeholder="Rechercher une procédure..." oninput="docRenderList()" style="width:260px">
+        </div>
+        <select class="filter-select" id="doc-format-filter" onchange="docRenderList()">
+          <option value="__all">Tous les formats</option>
+          <option value="narrative">Narrative</option>
+          <option value="action_table">Tableau d'action</option>
+          <option value="supplier_guide">Fiche fournisseur</option>
+          <option value="role_guide">Rôle / Organisation</option>
+          <option value="hybrid">Hybride</option>
+        </select>
+        <span class="count-badge" id="doc-count-badge" style="margin-left:auto">…</span>
+        <button class="btn btn-ghost doc-admin-only hidden" onclick="docOpenApiKeyModal()">🔑 Clé API IA</button>
+        <button class="btn btn-ghost doc-edit-only hidden" onclick="docSeedInitialProcedures()">⬇ Importer les procédures OnSpot (initial)</button>
+        <button class="btn btn-ghost doc-edit-only hidden" onclick="docOpenImportModal()">⬆ Importer un fichier</button>
+        <button class="btn btn-primary doc-edit-only hidden" onclick="docOpenEditor(null)">+ Nouvelle procédure</button>
+      </div>
+      <div class="doc-card-grid" id="doc-card-grid"></div>
+    </div>
+
+    <div id="supervision-panel" class="hidden" style="padding:0">
+      <div class="sv-tabs">
+        <button class="sv-tab-btn active" id="sv-tab-overview" onclick="svSwitchSubTab('overview')">🧭 Vue d'ensemble</button>
+        <button class="sv-tab-btn" id="sv-tab-escalations" onclick="svSwitchSubTab('escalations')">🚩 Cas complexes</button>
+        <button class="sv-tab-btn" id="sv-tab-reviews" onclick="svSwitchSubTab('reviews')">🎧 Grille d'écoute</button>
+        <button class="sv-tab-btn" id="sv-tab-coaching" onclick="svSwitchSubTab('coaching')">🤝 Coaching 1:1</button>
+        <button class="sv-tab-btn" id="sv-tab-reporting" onclick="svSwitchSubTab('reporting')">📊 Reporting</button>
+      </div>
+
+            <!-- VUE D'ENSEMBLE -->
+      <div id="sv-view-overview">
+        <div id="ops-viz-supervision-overview" class="ops-viz-section"></div>
+        <div id="sv-ov-alert" class="hidden" style="background:var(--red-dim);border:1px solid var(--red);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <span style="font-size:16px">⏰</span>
+          <span style="font-size:13.5px;color:var(--red);font-weight:600" id="sv-ov-alert-text"></span>
+          <button class="btn btn-ghost" style="margin-left:auto" onclick="svSwitchSubTab('escalations')">Voir les cas →</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px" id="sv-ov-kpis"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="sv-card" style="cursor:default">
+              <div class="sv-card-title" style="margin-bottom:10px">Cas complexes prioritaires</div>
+              <div id="sv-ov-priority-cases"></div>
+            </div>
+            <div class="sv-card" style="cursor:default">
+              <div class="sv-card-title" style="margin-bottom:10px">Agents à surveiller</div>
+              <div id="sv-ov-watchlist"></div>
+            </div>
+          </div>
+          <div class="sv-card" style="cursor:default">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <div class="sv-card-title" style="margin:0">Fiche agent</div>
+              <select class="filter-select" id="sv-ov-agent-picker" style="margin-left:auto" onchange="svRenderAgentFocusCard(this.value)"></select>
+            </div>
+            <div id="sv-ov-focus-card"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CAS COMPLEXES -->
+      <div id="sv-view-escalations" class="hidden">
+        <div class="doc-toolbar">
+          <select class="filter-select" id="sv-esc-status-filter" onchange="svRenderEscalations()">
+            <option value="__all">Tous les statuts</option>
+            <option value="nouveau">Nouveau</option>
+            <option value="en_cours">En cours</option>
+            <option value="attente_client">Attente client</option>
+            <option value="resolu">Résolu</option>
+          </select>
+          <select class="filter-select" id="sv-esc-priority-filter" onchange="svRenderEscalations()">
+            <option value="__all">Toutes priorités</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">Haute</option>
+            <option value="medium">Moyenne</option>
+            <option value="low">Basse</option>
+          </select>
+          <span class="count-badge" id="sv-esc-count-badge" style="margin-left:auto">…</span>
+          <button class="btn btn-primary" onclick="svOpenEscalationModal(null)">+ Nouveau cas</button>
+        </div>
+        <div id="sv-escalations-list"></div>
+      </div>
+
+      <!-- GRILLE D'ÉCOUTE -->
+      <div id="sv-view-reviews" class="hidden">
+        <div class="doc-toolbar">
+          <select class="filter-select" id="sv-review-agent-filter" onchange="svRenderReviews()">
+            <option value="__all">Tous les agents</option>
+          </select>
+          <span class="count-badge" id="sv-review-count-badge" style="margin-left:auto">…</span>
+          <button class="btn btn-primary" onclick="svOpenReviewModal()">+ Nouvelle grille</button>
+        </div>
+        <div id="sv-review-chart-wrap"></div>
+        <div id="sv-reviews-list"></div>
+      </div>
+
+      <!-- COACHING 1:1 -->
+      <div id="sv-view-coaching" class="hidden">
+        <div class="doc-toolbar">
+          <select class="filter-select" id="sv-coaching-agent-filter" onchange="svRenderCoaching()">
+            <option value="__all">Tous les agents</option>
+          </select>
+          <span class="count-badge" id="sv-coaching-count-badge" style="margin-left:auto">…</span>
+          <button class="btn btn-primary" onclick="svOpenCoachingModal()">+ Nouvelle fiche</button>
+        </div>
+        <div id="sv-coaching-list"></div>
+      </div>
+
+      <!-- REPORTING -->
+      <div id="sv-view-reporting" class="hidden">
+        <div class="doc-toolbar">
+          <div style="font-size:13px;font-weight:700;color:var(--text)">Cette semaine <span style="font-weight:400;color:var(--text2)">vs semaine dernière</span></div>
+          <button class="btn btn-ghost" style="margin-left:auto" onclick="exportExcel()">📄 Exporter (Excel)</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px" id="sv-rep-kpis"></div>
+
+        <div class="sv-card" style="cursor:default;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div class="sv-card-title" style="margin:0">Heatmap équipe — score qualité</div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2)">
+              <span style="width:10px;height:10px;border-radius:2px;background:var(--red-dim);display:inline-block"></span>Faible
+              <span style="width:10px;height:10px;border-radius:2px;background:var(--amber-dim);display:inline-block;margin-left:4px"></span>Moyen
+              <span style="width:10px;height:10px;border-radius:2px;background:var(--green-dim);display:inline-block;margin-left:4px"></span>Bon
+            </div>
+          </div>
+          <div id="sv-rep-heatmap" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px"></div>
+        </div>
+
+        <div class="sv-card" style="cursor:default;margin-bottom:14px">
+          <div class="sv-card-title" style="margin-bottom:4px">Écart à la moyenne équipe (score qualité)</div>
+          <div id="sv-rep-deviation"></div>
+        </div>
+
+        <div class="sv-card" style="cursor:default">
+          <div class="sv-card-title" style="margin-bottom:10px">Activité de la journée <span style="font-weight:400;font-size:11.5px;color:var(--text2)">(8h–18h)</span></div>
+          <div id="sv-rep-timeline"></div>
+          <div style="display:flex;align-items:center;gap:14px;font-size:11px;color:var(--text2);margin-top:10px">
+            <span><span style="width:10px;height:10px;background:var(--ocean);border-radius:2px;display:inline-block;margin-right:4px"></span>Tâche active</span>
+            <span><span style="width:10px;height:10px;background:var(--red);border-radius:2px;display:inline-block;margin-right:4px"></span>Trou d'activité &gt; 15 min</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+</div>
+
+    <!-- FORMATION -->
+    <div id="training-panel" class="hidden" style="padding:0">
+      <div class="training-shell">
+        <div id="training-header"></div>
+        <div id="training-content"></div>
+      </div>
+    </div>
+
+<!-- MODALE CAS COMPLEXE -->
+<div class="modal-overlay hidden" id="sv-esc-overlay" onclick="if(event.target===this) svCloseEscalationModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="sv-esc-modal-title">Nouveau cas complexe</div>
+      <button class="modal-close" onclick="svCloseEscalationModal()">×</button>
+    </div>
+    <div class="modal-body" style="max-height:65vh;overflow-y:auto">
+      <div class="form-row"><label class="form-label">Titre</label><input class="form-input" id="sv-esc-title"></div>
+      <div class="form-row"><label class="form-label">Description</label><textarea class="form-input" id="sv-esc-description" rows="4"></textarea></div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">Agent concerné</label><select class="form-input" id="sv-esc-agent"></select></div>
+        <div><label class="form-label">Canal</label>
+          <select class="form-input" id="sv-esc-channel">
+            <option value="inbound">📞↘ Appel entrant</option>
+            <option value="outbound">📞↗ Appel sortant</option>
+            <option value="chat">💬 Chat</option>
+            <option value="email">✉️ Email</option>
+            <option value="ticket">🎫 Ticket / Manuel</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">Priorité</label>
+          <select class="form-input" id="sv-esc-priority">
+            <option value="low">Basse</option>
+            <option value="medium" selected>Moyenne</option>
+            <option value="high">Haute</option>
+            <option value="urgent">Urgent</option>
+          </select>
+        </div>
+        <div><label class="form-label">Statut</label>
+          <select class="form-input" id="sv-esc-status">
+            <option value="nouveau">Nouveau</option>
+            <option value="en_cours">En cours</option>
+            <option value="attente_client">Attente client</option>
+            <option value="resolu">Résolu</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">Échéance</label><input class="form-input" type="datetime-local" id="sv-esc-deadline"></div>
+        <div><label class="form-label">Procédure liée (optionnel)</label><select class="form-input" id="sv-esc-procedure"><option value="">—</option></select></div>
+      </div>
+      <div class="form-row" id="sv-esc-updates-wrap" style="display:none">
+        <label class="form-label">Suivi</label>
+        <div id="sv-esc-updates-list" style="max-height:160px;overflow-y:auto;margin-bottom:8px"></div>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" id="sv-esc-new-update" placeholder="Ajouter une note de suivi…" style="flex:1">
+          <button class="btn btn-ghost" onclick="svAddEscalationUpdate()">Ajouter</button>
+        </div>
+      </div>
+      <div class="form-row" id="sv-esc-error" style="color:var(--red);font-size:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="color:var(--red);margin-right:auto" id="sv-esc-delete-btn" onclick="svDeleteEscalation()">Supprimer</button>
+      <button class="btn btn-ghost" onclick="svCloseEscalationModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="svSaveEscalation()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE GRILLE D'ÉCOUTE -->
+<div class="modal-overlay hidden" id="sv-review-overlay" onclick="if(event.target===this) svCloseReviewModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nouvelle grille d'écoute</div>
+      <button class="modal-close" onclick="svCloseReviewModal()">×</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">Agent évalué</label><select class="form-input" id="sv-review-agent"></select></div>
+        <div><label class="form-label">Canal</label>
+          <select class="form-input" id="sv-review-channel">
+            <option value="inbound">📞↘ Appel entrant</option>
+            <option value="outbound">📞↗ Appel sortant</option>
+            <option value="chat">💬 Chat</option>
+            <option value="email">✉️ Email</option>
+            <option value="ticket">🎫 Ticket / Manuel</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">Date de l'évaluation</label><input class="form-input" type="date" id="sv-review-date"></div>
+        <div><label class="form-label">Numéro de comm</label><input class="form-input" id="sv-review-commnum"></div>
+      </div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">Date du contact</label><input class="form-input" type="date" id="sv-review-contactdate"></div>
+        <div><label class="form-label">ID du contact</label><input class="form-input" id="sv-review-contactid"></div>
+      </div>
+      <div class="form-row"><label class="form-label">Motif du contact</label><input class="form-input" id="sv-review-reason"></div>
+
+      <div id="sv-review-total-banner" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin:14px 0;display:flex;align-items:center;gap:12px">
+        <span style="font-size:12.5px;color:var(--text2)">Score total</span>
+        <span id="sv-review-total-val" style="font-family:var(--display);font-weight:700;font-size:22px;margin-left:auto">0%</span>
+      </div>
+      <div id="sv-review-si-banner" class="hidden" style="background:var(--red-dim);border:1px solid var(--red);color:var(--red);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;font-weight:600">
+        🚫 Situation inacceptable déclenchée — score ramené à 0%
+      </div>
+
+      <div id="sv-review-grid"></div>
+
+      <div class="form-row" id="sv-review-error" style="color:var(--red);font-size:12px;margin-top:10px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="svCloseReviewModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="svSaveReview()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE FICHE COACHING -->
+<div class="modal-overlay hidden" id="sv-coaching-overlay" onclick="if(event.target===this) svCloseCoachingModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nouvelle fiche de coaching</div>
+      <button class="modal-close" onclick="svCloseCoachingModal()">×</button>
+    </div>
+    <div class="modal-body" style="max-height:65vh;overflow-y:auto">
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">Agent</label><select class="form-input" id="sv-coaching-agent"></select></div>
+        <div><label class="form-label">Date</label><input class="form-input" type="date" id="sv-coaching-date"></div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Objectifs</label>
+        <div id="sv-coaching-objectifs-list"></div>
+        <button class="btn btn-ghost" onclick="svAddObjectifRow()" style="margin-top:6px">+ Ajouter un objectif</button>
+      </div>
+      <div class="form-row"><label class="form-label">Notes de l'entretien</label><textarea class="form-input" id="sv-coaching-notes" rows="4"></textarea></div>
+      <div class="form-row"><label class="form-label">Prochain point (optionnel)</label><input class="form-input" type="date" id="sv-coaching-next"></div>
+      <div class="form-row" id="sv-coaching-error" style="color:var(--red);font-size:12px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="color:var(--red);margin-right:auto" id="sv-coaching-delete-btn" onclick="svDeleteCoaching()">Supprimer</button>
+      <button class="btn btn-ghost" onclick="svCloseCoachingModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="svSaveCoaching()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODALES INCHANGÉES -->
+<div class="modal-overlay hidden" id="account-modal-overlay" onclick="closeAccountModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="account-modal-title">Modifier le compte</div>
+      <button class="modal-close" onclick="closeAccountEditModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="profile-photo-row">
+        <div class="profile-photo-preview" id="account-photo-preview"></div>
+        <div>
+          <input type="file" id="account-photo-input" accept="image/*" class="hidden" onchange="onAccountPhotoSelected(event)">
+          <button class="btn btn-ghost" onclick="document.getElementById('account-photo-input').click()">Changer la photo</button>
+          <button class="btn btn-ghost" onclick="removeAccountPhoto()" style="margin-left:6px">Retirer</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Nom affiché</label>
+        <input class="form-input" id="account-name-input">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Rôle</label>
+        <select class="form-select" id="account-role-input">
+          <option value="agent">Agent</option>
+          <option value="supervisor">Superviseur</option>
+          <option value="formateur">Formateur</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="form-row" id="account-error" style="color:var(--red);font-size:12px;min-height:16px"></div>
+      <div class="admin-note" style="font-size:11px;line-height:1.45;margin-top:4px">Les modifications de comptes Firebase et la suppression définitive nécessitent une configuration serveur Admin. Pour les comptes historiques, utilise la section « Comptes historiques à vérifier » du panneau Admin Supabase.</div>
+      <div class="form-row" style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+        <label class="form-label">Mot de passe</label>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" id="account-password-input" type="text" placeholder="Laisser vide pour ne pas changer" style="flex:1">
+          <button class="btn btn-ghost" type="button" onclick="generateAccountPassword()" title="Générer un mot de passe">🎲</button>
+        </div>
+        <div id="account-password-status" style="font-size:11.5px;color:var(--text2);margin-top:6px;min-height:14px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="color:var(--red);margin-right:auto" onclick="deleteAccountFromModal()">Supprimer le compte</button>
+      <button class="btn btn-ghost" onclick="closeAccountEditModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveAccountEdit()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="create-account-overlay" onclick="closeCreateAccountModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Ajouter un compte</div>
+      <button class="modal-close" onclick="closeCreateAccountModal()">×</button>
+    </div>
+    <div class="modal-body" id="create-account-form">
+      <div class="form-row">
+        <label class="form-label">Nom affiché</label>
+        <input class="form-input" id="new-account-name" placeholder="Ex: Miora">
+      </div>
+            <div class="form-row">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="new-account-email" placeholder="prenom@taskin.com">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Rôle</label>
+        <select class="form-select" id="new-account-role">
+          <option value="agent">Agent</option>
+          <option value="supervisor">Superviseur</option>
+          <option value="formateur">Formateur</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="form-row" id="create-account-error" style="color:var(--red);font-size:12px;min-height:16px"></div>
+    </div>
+    <div class="modal-body hidden" id="create-account-result">
+      <div class="form-row" style="text-align:center">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Compte créé. Transmets ces identifiants à la personne :</div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;text-align:left">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:2px">Email</div>
+          <div style="font-family:var(--mono);font-size:13px;margin-bottom:10px" id="result-email"></div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:2px">Mot de passe temporaire</div>
+          <div style="font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ocean)" id="result-password"></div>
+        </div>
+        <button class="btn btn-ghost" style="margin-top:10px" onclick="copyCreatedCredentials()">Copier email + mot de passe</button>
+      </div>
+    </div>
+    <div class="modal-footer" id="create-account-footer">
+      <button class="btn btn-ghost" onclick="closeCreateAccountModal()">Annuler</button>
+      <button class="btn btn-primary" id="create-account-submit" onclick="submitCreateAccount()">Créer le compte</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="doc-editor-overlay" onclick="docCloseModalOutside(event)">
+  <div class="modal" style="max-width:720px">
+    <div class="modal-header">
+      <div class="modal-title" id="doc-editor-title">Nouvelle procédure</div>
+      <button class="modal-close" onclick="docCloseEditor()">×</button>
+    </div>
+    <div class="modal-body" style="max-height:60vh;overflow-y:auto">
+      <div class="doc-import-banner hidden" id="doc-import-banner">
+        📄 Contenu importé automatiquement — vérifie et corrige avant d'enregistrer.
+      </div>
+      <div class="form-row"><label class="form-label">Titre</label><input class="form-input" id="doc-f-title"></div>
+      <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="form-label">Catégorie</label><input class="form-input" id="doc-f-category"></div>
+        <div><label class="form-label">Format</label>
+          <select class="form-select" id="doc-f-format">
+            <option value="narrative">Narrative</option>
+            <option value="action_table">Tableau d'action</option>
+            <option value="supplier_guide">Fiche fournisseur</option>
+            <option value="role_guide">Rôle / Organisation</option>
+            <option value="hybrid">Hybride</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row"><label class="form-label">Description courte</label><textarea class="form-input" id="doc-f-description" rows="2" style="resize:vertical"></textarea></div>
+      <div class="form-row" style="display:grid;grid-template-columns:120px 1fr 160px;gap:10px">
+        <div><label class="form-label">Version</label><input class="form-input" id="doc-f-version" placeholder="1.0"></div>
+        <div><label class="form-label">Résumé de modification</label><input class="form-input" id="doc-f-change-summary" placeholder="Ex: ajout du nouveau processus"></div>
+        <div><label class="form-label">Validation</label><select class="form-select" id="doc-f-validation-status"><option value="draft">Brouillon</option><option value="validated">Validé pour l’IA</option></select></div>
+      </div>
+      <div class="form-row"><label class="form-label">Tags (séparés par virgule)</label><input class="form-input" id="doc-f-tags"></div>
+      <div class="form-row">
+        <label class="form-label">Visible pour</label>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px">
+          <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" class="doc-visibleTo" value="agent" checked> Agent</label>
+          <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" class="doc-visibleTo" value="supervisor" checked> Superviseur</label>
+          <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" class="doc-visibleTo" value="formateur" checked> Formateur</label>
+          <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" class="doc-visibleTo" value="admin" checked> Admin</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Contenu</label>
+        <div id="doc-blocks-container"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="btn btn-ghost" onclick="docAddBlock('text')">+ Texte</button>
+          <button class="btn btn-ghost" onclick="docAddBlock('list')">+ Liste</button>
+          <button class="btn btn-ghost" onclick="docAddBlock('table')">+ Tableau d'action</button>
+          <button class="btn btn-ghost" onclick="docAddBlock('callout')">+ Callout</button>
+          <button class="btn btn-ghost" onclick="docAddBlock('contact')">+ Contact</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="doc-delete-btn" style="display:none;margin-right:auto;color:var(--red)" onclick="docDeleteProcedure()">Supprimer</button>
+      <button class="btn btn-ghost" onclick="docCloseEditor()">Annuler</button>
+      <button class="btn btn-primary" onclick="docSaveProcedure()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="doc-import-overlay" onclick="docCloseImportModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Importer un fichier</div>
+      <button class="modal-close" onclick="docCloseImportModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px">PDF (texte ou scanné), image (JPEG/PNG/WEBP) ou fichier texte (.txt, .md). Relecture obligatoire avant enregistrement — rien n'est publié automatiquement.</p>
+      <label class="doc-ai-toggle" style="display:flex;align-items:flex-start;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;cursor:pointer">
+        <input type="checkbox" id="doc-import-ai-toggle" checked style="margin-top:2px">
+        <span>
+          <span style="font-weight:600;font-size:13px;color:var(--text)">✨ Structurer avec l'IA</span><br>
+          <span style="font-size:11.5px;color:var(--text2)">L'IA lit le document (même une photo ou un scan) et propose titre, catégorie, tags, format et blocs de contenu prêts à publier. Obligatoire pour les images et PDF scannés. Pour un .txt/.md/PDF texte, tu peux désactiver pour un simple découpage par règles (sans IA).</span>
+        </span>
+      </label>
+      <div class="doc-dropzone" id="doc-dropzone" onclick="document.getElementById('doc-file-input').click()">
+        Clique ici ou dépose un PDF, une image ou un fichier texte
+      </div>
+      <input type="file" id="doc-file-input" accept=".pdf,.txt,.md,.png,.jpg,.jpeg,.webp,.gif" class="hidden">
+      <div id="doc-import-status" style="font-size:12px;color:var(--text2);min-height:16px;margin-top:8px"></div>
+      <p style="font-size:11px;color:var(--text2);opacity:.75;margin-top:6px">Taille max ~4 Mo par fichier.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="docCloseImportModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="doc-apikey-overlay" onclick="docCloseApiKeyModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔑 Clé API IA (Gemini)</div>
+      <button class="modal-close" onclick="docCloseApiKeyModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Cette clé permet à Task'in de transformer automatiquement les documents importés en procédures (option "Structurer avec l'IA"). Elle est stockée dans Firestore, accessible aux administrateurs uniquement, et envoyée uniquement au moment de l'import.</p>
+      <div class="form-row">
+        <label class="form-label">Clé API Gemini (commence par AIza)</label>
+        <input class="form-input" id="doc-apikey-input" type="password" placeholder="AIza…" autocomplete="off">
+      </div>
+      <p style="font-size:11px;color:var(--text2);opacity:.8;margin-top:-2px">Récupérable gratuitement sur <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</p>
+      <div id="doc-apikey-status" style="font-size:12px;color:var(--text2);min-height:16px;margin-top:6px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="docClearApiKey()">Supprimer la clé</button>
+      <button class="btn btn-ghost" onclick="docCloseApiKeyModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="docSaveApiKey()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="doc-read-overlay" onclick="docCloseReadModalOutside(event)">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <div class="modal-title" id="doc-read-title">Procédure</div>
+      <button class="modal-close" onclick="docCloseReadModal()">×</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto" id="doc-read-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="docCloseReadModal()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="profile-modal-overlay" onclick="closeProfileModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Mon profil</div>
+      <button class="modal-close" onclick="closeProfileModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="profile-photo-row">
+        <div class="profile-photo-preview" id="profile-photo-preview"></div>
+        <div>
+          <input type="file" id="profile-photo-input" accept="image/*" class="hidden" onchange="onProfilePhotoSelected(event)">
+          <button class="btn btn-ghost" onclick="document.getElementById('profile-photo-input').click()">Changer la photo</button>
+          <button class="btn btn-ghost" id="profile-photo-remove" onclick="removeProfilePhoto()" style="margin-left:6px">Retirer</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Nom affiché</label>
+        <input class="form-input" id="profile-name-input">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Nouveau mot de passe</label>
+        <input class="form-input" type="password" id="profile-password-input" placeholder="Laisser vide pour ne pas changer">
+      </div>
+      <div class="form-row" id="profile-error" style="color:var(--red);font-size:12px;min-height:16px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeProfileModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Point 7 : Modale timer nettoyée — un seul #modal-overlay, structure propre -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Démarrer un timer</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label class="form-label">Source</label>
+        <div class="source-picker" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="source-opt opt-inbound selected" id="src-inbound" onclick="selectSource('inbound')">
+            <span>📞↘</span> Appel entrant
+          </div>
+          <div class="source-opt opt-outbound" id="src-outbound" onclick="selectSource('outbound')">
+            <span>📞↗</span> Appel sortant
+          </div>
+          <div class="source-opt opt-chat" id="src-chat" onclick="selectSource('chat')">
+            <span>💬</span> Crisp (chat)
+          </div>
+          <div class="source-opt opt-email" id="src-email" onclick="selectSource('email')">
+            <span>✉️</span> Crisp (email)
+          </div>
+          <div class="source-opt opt-ticket" id="src-ticket" onclick="selectSource('ticket')" style="grid-column:span 2;">
+            <span>🎫</span> Traitement ticket
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row" id="time-picker-container" style="position:relative;">
+        <label class="form-label">Inbound time (Heure d'arrivée)</label>
+        <input class="form-input" id="inbound-time-input" readonly onclick="toggleTimePicker(event)" style="cursor:pointer; font-family:var(--mono);" placeholder="--:--">
+        <div class="time-dropdown hidden" id="time-dropdown" onclick="event.stopPropagation()">
+          <div class="time-col" id="col-hours" onscroll="handleTimeScroll(this, 'h')"></div>
+          <div class="time-sep">:</div>
+          <div class="time-col" id="col-mins" onscroll="handleTimeScroll(this, 'm')"></div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label">Description / Ticket</label>
+        <input class="form-input" id="modal-desc" placeholder="Ex: Ticket #68554 ou description de la tâche">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="startTimer()">Démarrer le timer</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/00-supabase-config.js?v=20260901" defer></script>
+<script src="js/00-data-provider.js?v=20260901" defer></script>
+<script src="js/00-core-init.js?v=20260827b" defer></script>
+<script src="js/01-core-auth-network.js?v=20260827b" defer></script>
+<script src="js/02-time-data.js?v=20260827b" defer></script>
+<script src="js/03-dashboard-render.js?v=20260827b" defer></script>
+<script src="js/04-admin.js?v=20260827" defer></script>
+<script src="js/06-ui-modals.js?v=20260827" defer></script>
+<script src="js/07-analytics.js?v=20260827" defer></script>
+<script src="js/08-analytics-advanced.js?v=20260827" defer></script>
+<script src="js/99-init.js?v=20260827" defer></script>
+</body>
+</html>

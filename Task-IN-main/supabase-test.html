@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Task’in — Test Supabase</title>
+  <style>
+    body{margin:0;padding:40px;background:#f4f7fb;color:#173957;font:16px system-ui,sans-serif}.card{max-width:560px;margin:auto;padding:28px;border-radius:16px;background:#fff;box-shadow:0 12px 35px #17395718}h1{margin-top:0}.muted{color:#60758a;font-size:14px;line-height:1.6}label{display:block;margin:15px 0 6px;font-weight:600}input{box-sizing:border-box;width:100%;padding:11px;border:1px solid #cbd7e4;border-radius:8px;font:inherit}button{margin-top:18px;padding:11px 15px;border:0;border-radius:8px;background:#2b4c7e;color:#fff;font-weight:700;cursor:pointer}#status{margin-top:20px;padding:12px;border-radius:8px;background:#edf4fb;white-space:pre-wrap}.ok{background:#e5f6ef!important;color:#176a4b}.error{background:#fff0ed!important;color:#9c3c2f}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Test du socle Supabase</h1>
+    <p class="muted">Cette page de test envoie directement les identifiants à Supabase pour vérifier Auth et la lecture RLS. Le mot de passe n’est ni affiché ni enregistré par Task’in.</p>
+    <form id="test-form">
+      <label for="email">E-mail du compte de test</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="password">Mot de passe</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button type="submit">Tester Supabase</button>
+    </form>
+    <div id="status" role="status">En attente du test.</div>
+  </main>
+  <script src="js/00-supabase-config.js?v=20260901"></script>
+  <script>
+    const config = window.TASKIN_SUPABASE_CONFIG;
+    const status = document.getElementById('status');
+    const form = document.getElementById('test-form');
+    function show(text, kind=''){ status.textContent=text; status.className=kind; }
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      show('Test en cours…');
+      try {
+        const auth = await fetch(`${config.url}/auth/v1/token?grant_type=password`, {
+          method:'POST', headers:{'Content-Type':'application/json', apikey:config.anonKey},
+          body:JSON.stringify({email,password})
+        });
+        const authData = await auth.json().catch(()=>null);
+        if (!auth.ok) throw new Error(authData?.msg || authData?.error_description || `Auth HTTP ${auth.status}`);
+        const profile = await fetch(`${config.url}/rest/v1/profiles?select=id,name,email,role&id=eq.${encodeURIComponent(authData.user.id)}&limit=1`, {
+          headers:{apikey:config.anonKey, Authorization:`Bearer ${authData.access_token}`}
+        });
+        const profileData = await profile.json().catch(()=>null);
+        if (!profile.ok) throw new Error(profileData?.message || `Profiles HTTP ${profile.status}`);
+        if (!Array.isArray(profileData) || !profileData.length) throw new Error('Authentification réussie, mais profil introuvable.');
+        const authHeaders = {apikey:config.anonKey, Authorization:`Bearer ${authData.access_token}`};
+        const [timersResponse, entriesResponse] = await Promise.all([
+          fetch(`${config.url}/rest/v1/active_timers?select=agent_id,source,started_at&limit=20`, {headers:authHeaders}),
+          fetch(`${config.url}/rest/v1/time_entries?select=id,agent_id,source,started_at,duration_seconds&order=started_at.desc&limit=20`, {headers:authHeaders})
+        ]);
+        const timersData = await timersResponse.json().catch(()=>null);
+        const entriesData = await entriesResponse.json().catch(()=>null);
+        if (!timersResponse.ok) throw new Error(timersData?.message || `active_timers HTTP ${timersResponse.status}`);
+        if (!entriesResponse.ok) throw new Error(entriesData?.message || `time_entries HTTP ${entriesResponse.status}`);
+        show(`Connexion Supabase réussie.\nProfil lu avec RLS : ${profileData[0].name} · rôle ${profileData[0].role}\n\nPilote suivi du temps :\n• Timers visibles : ${Array.isArray(timersData) ? timersData.length : 0}\n• Entrées visibles : ${Array.isArray(entriesData) ? entriesData.length : 0}\n\nLecture RLS validée. Aucune donnée n’a été écrite.`, 'ok');
+        form.reset();
+      } catch (error) {
+        show(`Échec du test : ${error.message}`, 'error');
+      }
+    });
+  </script>
+</body>
+</html>
