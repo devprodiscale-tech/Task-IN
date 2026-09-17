@@ -3,7 +3,7 @@
 // Ne jamais placer ici une clé Secret/service_role.
 window.TASKIN_SUPABASE_CONFIG = Object.freeze({
   enabled: true,
-  url: 'https://ckfmsnvedjwcqkvctvwp.supabase.co',
-  anonKey: 'sb_publishable_DLjOv5Ej_ZldN443rYcppw_ZtYD-HmK',
+  url: 'https://srwwyqmtwgxfblarwvhg.supabase.co',
+  anonKey: 'sb_publishable_udYvF2o3_c0ws5gGDHuc7A_VGEpzghQ',
   schemaVersion: '001_taskin_initial_schema'
 });
