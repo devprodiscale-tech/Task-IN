@@ -5,5 +5,5 @@ window.TASKIN_SUPABASE_CONFIG = Object.freeze({
   enabled: true,
   url: 'https://srwwyqmtwgxfblarwvhg.supabase.co',
   anonKey: 'sb_publishable_udYvF2o3_c0ws5gGDHuc7A_VGEpzghQ',
-  schemaVersion: '001_taskin_initial_schema'
+  schemaVersion: '005_supabase_auth_profile_cutover'
 });

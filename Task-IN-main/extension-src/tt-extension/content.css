@@ -1,0 +1,54 @@
+#onspot-float-btn {
+  position: fixed;
+  top: 40%;
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #1E3760;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .28);
+  z-index: 2147483647;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  will-change: left, top;
+  transition: box-shadow .15s ease, transform .1s ease;
+}
+
+#onspot-float-btn:hover { box-shadow: 0 6px 18px rgba(0, 0, 0, .36); }
+#onspot-float-btn.onspot-dragging { cursor: grabbing; transform: scale(1.05); }
+#onspot-float-btn.onspot-panel-open { box-shadow: 0 0 0 3px rgba(233, 138, 125, .5), 0 4px 14px rgba(0, 0, 0, .28); }
+#onspot-float-btn .taskin-mark { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 9px; background: #fff; pointer-events: none; }
+#onspot-float-btn .taskin-mark img { width: 31px; height: 31px; display: block; border-radius: 7px; pointer-events: none; }
+
+
+#onspot-float-panel {
+  position: fixed;
+  width: 320px;
+  height: 500px;
+  max-height: 82vh;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .32);
+  z-index: 2147483647;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+#onspot-float-panel.onspot-open { display: flex; }
+#onspot-float-panel-header { height: 34px; flex: 0 0 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 7px 0 10px; background: #1E3760; color: #fff; cursor: grab; user-select: none; }
+#onspot-float-panel-header.onspot-dragging { cursor: grabbing; }
+#onspot-float-panel .panel-brand { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 11px; font-weight: 700; }
+#onspot-float-panel .panel-brand-mark { width: 23px; height: 23px; flex: 0 0 23px; display: grid; place-items: center; padding: 2px; overflow: hidden; border-radius: 6px; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .18); }
+#onspot-float-panel .panel-brand-mark img { width: 100%; height: 100%; max-width: none; display: block; object-fit: contain; object-position: center; border-radius: 4px; }
+#onspot-float-panel-close { border: 0; padding: 2px 6px; border-radius: 5px; background: transparent; color: #fff; font-size: 19px; line-height: 1; cursor: pointer; }
+#onspot-float-panel-close:hover { background: rgba(255, 255, 255, .16); }
+#onspot-float-panel iframe { flex: 1 1 auto; width: 100%; min-height: 0; border: 0; background: #fff; }

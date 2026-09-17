@@ -4,8 +4,7 @@
 // La clé API reste côté serveur. Gemini lit nativement les PDF et images (OCR/vision inclus),
 // donc les scans/photos sont supportés sans extraction de texte préalable.
 //
-// Variable d'environnement optionnelle sur Vercel : GEMINI_API_KEY (sinon la clé stockée
-// dans Firestore par l'admin, transmise par le front, est utilisée).
+// Variable d'environnement serveur requise sur Vercel : GEMINI_API_KEY.
 
 const GEMINI_MODEL = 'gemini-3.6-flash';
 const ALLOWED_FORMATS = ['narrative', 'action_table', 'supplier_guide', 'role_guide', 'hybrid'];
@@ -52,7 +51,7 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
 
   try {
-    const { text, fileBase64, mediaType, filename, apiKey: clientApiKey } = req.body || {};
+    const { text, fileBase64, mediaType, filename } = req.body || {};
 
     let userParts;
     if (fileBase64) {
@@ -76,9 +75,9 @@ module.exports = async (req, res) => {
       userParts = [{ text: `Nom du fichier source : ${filename || 'inconnu'}\n\nTexte brut extrait du document :\n"""\n${truncated}\n"""` }];
     }
 
-    const apiKey = (typeof clientApiKey === 'string' && clientApiKey.trim()) || process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: "Aucune clé API configurée. Ajoute-la depuis Documentation → 🔑 Clé API IA (admin), ou définis GEMINI_API_KEY côté serveur." });
+      return res.status(500).json({ error: 'GEMINI_API_KEY serveur non configurée.' });
     }
 
     const response = await fetch(

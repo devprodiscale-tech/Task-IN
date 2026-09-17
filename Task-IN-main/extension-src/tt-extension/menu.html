@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Task'in</title>
+<style>
+  :root{
+    --ocean:#2B4C7E; --ocean-deep:#1E3760; --border:#E2E8F0;
+    --text:#1E2A3A; --text2:#6B7C93; --surface2:#F7FAFC; --green:#3B8C6E;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; width:270px; font-family:system-ui,-apple-system,sans-serif;
+    background:#fff; color:var(--text);
+  }
+  .menu-header{
+    background:var(--ocean-deep); color:#fff; padding:10px 14px;
+    display:flex; align-items:center; gap:8px; font-weight:700; font-size:13px;
+    font-family:'Fraunces',Georgia,serif;
+  }
+  .menu-header img{width:16px;height:16px;border-radius:3px;}
+  .menu-body{padding:8px;}
+  .menu-item{
+    display:flex; align-items:center; gap:10px; padding:10px 8px;
+    border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:600;
+    transition: background .12s;
+  }
+  .menu-item:hover{background:var(--surface2);}
+  .menu-icon{
+    width:26px; height:26px; border-radius:7px; background:var(--surface2);
+    display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0;
+  }
+  .menu-item.toggle-row{cursor:default;}
+  .menu-item.toggle-row:hover{background:transparent;}
+  .switch{
+    position:relative; width:36px; height:20px; margin-left:auto; flex-shrink:0;
+  }
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{
+    position:absolute; cursor:pointer; inset:0; background:#D3DDE8;
+    border-radius:20px; transition:.15s;
+  }
+  .slider::before{
+    content:""; position:absolute; width:16px; height:16px; left:2px; top:2px;
+    background:#fff; border-radius:50%; transition:.15s;
+  }
+  .switch input:checked + .slider{background:var(--green);}
+  .switch input:checked + .slider::before{transform:translateX(16px);}
+  .menu-sub{font-size:9.5px; color:var(--text2); font-weight:400; margin-top:1px;}
+  .menu-divider{height:1px; background:var(--border); margin:4px 8px;}
+</style>
+</head>
+<body>
+  <div class="menu-header"><img src="icons/icon16.png" alt="">Task'in</div>
+  <div class="menu-body">
+    <div class="menu-item" id="open-window">
+      <div class="menu-icon">↗</div>
+      <div>Transférer le bouton ici<div class="menu-sub">Vers la fenêtre active</div></div>
+    </div>
+    <div class="menu-item" id="open-doc">
+      <div class="menu-icon">📄</div>
+      <div>Documentation<div class="menu-sub">Procédures OnSpot</div></div>
+    </div>
+    <div class="menu-divider"></div>
+    <div class="menu-item toggle-row">
+      <div class="menu-icon">◍</div>
+      <div style="flex:1">Pop-up flottant<div class="menu-sub" id="toggle-status">Activé</div></div>
+      <label class="switch">
+        <input type="checkbox" id="float-toggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+  <script src="menu.js"></script>
+</body>
+</html>

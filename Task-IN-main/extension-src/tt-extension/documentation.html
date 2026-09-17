@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Task'in — Documentation</title>
+<style>
+  :root{
+    --ocean:#2B4C7E; --ocean-deep:#1E3760; --border:#E2E8F0;
+    --text:#1E2A3A; --text2:#6B7C93; --text3:#A0AAB8;
+    --surface:#fff; --surface2:#F7FAFC; --amber:#DCAE1D;
+    --clay:#E98A7D; --bloom:#D4537E; --green:#3B8C6E;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%; margin:0; min-width:280px; min-height:340px;}
+  body{
+    font-family:system-ui,-apple-system,sans-serif; color:var(--text);
+    display:flex; flex-direction:column;
+  }
+  header{
+    background:linear-gradient(135deg,var(--ocean-deep),var(--ocean));
+    color:#fff; padding:14px 16px; display:flex; align-items:center; gap:10px; flex-shrink:0;
+  }
+  header img{width:20px;height:20px;border-radius:5px;}
+  header .title{font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:15px;}
+  header .sub{font-size:9.5px; background:rgba(255,255,255,.18); color:#fff; padding:2px 8px; border-radius:20px; margin-left:auto;}
+
+  .tabs{display:flex; gap:4px; padding:8px 12px 0; background:var(--surface2); flex-shrink:0;}
+  .tab-btn{
+    border:none; background:transparent; padding:8px 12px; font-size:12px; font-weight:600;
+    color:var(--text2); cursor:pointer; border-bottom:2px solid transparent;
+  }
+  .tab-btn.active{color:var(--ocean); border-bottom-color:var(--ocean);}
+
+  .search-bar{padding:10px 14px; border-bottom:1px solid var(--border); flex-shrink:0;}
+  .search-bar input{
+    width:100%; border:1px solid var(--border); border-radius:20px; padding:8px 14px;
+    font-size:12.5px; font-family:inherit;
+  }
+
+  main{flex:1; overflow:hidden; display:flex; flex-direction:column;}
+  .view{flex:1; overflow-y:auto; padding:8px 12px;}
+  .hidden{display:none !important;}
+
+  .doc-item{position:relative; display:flex; align-items:center; gap:10px; padding:9px 10px 9px 14px; border-radius:10px; cursor:pointer; margin-bottom:4px;}
+  .doc-item:hover{background:var(--surface2);}
+  .doc-item::before{content:""; position:absolute; left:0; top:6px; bottom:6px; width:4px; border-radius:0;}
+  .doc-item-icon{width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;}
+  .doc-item-title{font-size:12.5px; font-weight:700; color:var(--text);}
+  .doc-item-cat{font-size:9.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; margin-top:1px;}
+
+  .doc-detail-header{margin:-8px -12px 12px; padding:18px 16px 20px; display:flex; align-items:center; gap:10px; color:#fff;}
+  .back-btn{width:28px; height:28px; border-radius:7px; border:none; background:rgba(255,255,255,.22); color:#fff; cursor:pointer; font-size:16px; flex-shrink:0;}
+  .doc-detail-icon{width:38px; height:38px; border-radius:10px; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;}
+  .doc-detail-title{font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:17px;}
+  .doc-detail-cat{font-size:10px; font-weight:700; letter-spacing:.04em; opacity:.85;}
+
+  .doc-block-text{font-size:12.5px; color:var(--text2); line-height:1.55; margin-bottom:10px;}
+  .doc-block-text strong{color:var(--text);}
+  .doc-block-list{font-size:12.5px; color:var(--text2); line-height:1.55; margin:0 0 10px 18px;}
+  .doc-block-callout{font-size:12px; border-radius:10px; padding:10px 13px; margin-bottom:10px; border:1px solid transparent;}
+
+  .doc-step{display:flex; align-items:flex-start; gap:10px; margin-bottom:10px;}
+  .doc-step-num{width:22px; height:22px; border-radius:50%; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .doc-step-body{font-size:11.5px; color:var(--text2); line-height:1.5;}
+  .doc-step-body b{color:var(--text);}
+
+  .doc-urgent{border-radius:10px; padding:11px 13px; margin-bottom:10px; border:1px solid transparent;}
+  .doc-urgent-tag{font-size:9.5px; font-weight:700; letter-spacing:.03em; margin-bottom:4px; display:inline-block;}
+  .doc-urgent-title{font-size:12px; font-weight:700; color:var(--text); margin-bottom:3px;}
+  .doc-urgent-body{font-size:11px; color:var(--text2); line-height:1.5;}
+
+  .doc-empty{text-align:center; color:var(--text3); font-size:12px; padding:24px;}
+
+  .add-case-btn{
+    width:100%; padding:9px; border-radius:10px; border:1.5px dashed var(--ocean);
+    background:var(--surface2); color:var(--ocean); font-size:12px; font-weight:700;
+    cursor:pointer; margin-bottom:10px;
+  }
+  .add-case-btn:hover{background:#E6EDF6;}
+
+  .case-form{background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px;}
+  .case-form-title{font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:13.5px; margin-bottom:10px; color:var(--text);}
+  .case-form label{display:block; font-size:10px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--text3); margin:8px 0 3px;}
+  .case-form input, .case-form textarea{
+    width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px;
+    font-size:12px; font-family:inherit; resize:vertical;
+  }
+  .case-form-actions{display:flex; gap:8px; margin-top:12px;}
+  .case-form-cancel, .case-form-save{flex:1; padding:8px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; border:none;}
+  .case-form-cancel{background:var(--surface); border:1px solid var(--border) !important; color:var(--text2);}
+  .case-form-save{background:var(--ocean); color:#fff;}
+  .case-form-error{font-size:10.5px; color:#B0392E; margin-top:6px;}
+
+  .doc-item-assist{font-size:9.5px; color:var(--text3); margin-top:2px;}
+</style>
+</head>
+<body>
+  <header><img src="icons/icon32.png" alt=""><span class="title">Task'in</span><span class="sub">Documentation</span></header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="docs">Documentation</button>
+    <button class="tab-btn" data-tab="cases">Cas complexes</button>
+  </div>
+
+  <div class="search-bar"><input type="text" id="search-input" placeholder="Rechercher..."></div>
+
+  <main>
+    <div class="view" id="docs-view">
+      <div id="docs-list"></div>
+      <div id="docs-detail" class="hidden"></div>
+    </div>
+    <div class="view hidden" id="cases-view">
+      <button class="add-case-btn" id="add-case-btn">+ Ajouter un cas</button>
+      <div id="cases-form" class="case-form hidden">
+        <div class="case-form-title">Nouveau cas complexe</div>
+        <label>Titre</label>
+        <input type="text" id="case-title" placeholder="Ex: Annulation groupe avec DMC injoignable">
+        <label>Catégorie</label>
+        <input type="text" id="case-category" placeholder="Ex: Transport, Hébergement...">
+        <label>Assisté par</label>
+        <input type="text" id="case-assisted-by" placeholder="Nom de la personne">
+        <label>Description</label>
+        <textarea id="case-description" rows="4" placeholder="Détail du cas et de la résolution..."></textarea>
+        <div class="case-form-actions">
+          <button class="case-form-cancel" id="case-form-cancel">Annuler</button>
+          <button class="case-form-save" id="case-form-save">Enregistrer</button>
+        </div>
+      </div>
+      <div id="cases-list"></div>
+      <div id="cases-detail" class="hidden"></div>
+    </div>
+  </main>
+
+  <script src="documentation.js"></script>
+</body>
+</html>
