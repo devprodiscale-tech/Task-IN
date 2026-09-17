@@ -246,14 +246,9 @@ function applyRoleUI() {
   badge.classList.toggle('hidden', role === 'agent');
 
   // Onglets
-  document.getElementById('tab-team').classList.remove('hidden');
-  document.getElementById('tab-home').classList.toggle('hidden', role !== 'agent');
-  document.getElementById('tab-week-role').classList.toggle('hidden', role !== 'admin' && role !== 'agent');
-  document.getElementById('tab-leaderboard').classList.toggle('hidden', role !== 'admin' && role !== 'supervisor');
-  document.getElementById('tab-supervision').classList.toggle('hidden', role !== 'admin' && role !== 'supervisor');
-  document.getElementById('tab-training').classList.toggle('hidden', role !== 'admin' && role !== 'formateur' && role !== 'agent');
+  const setTabHidden = (id, hidden) => document.getElementById(id)?.classList.toggle('hidden', hidden);
+  setTabHidden('tab-admin', role !== 'admin');
   document.querySelectorAll('.team-live-edit-only').forEach(el => el.classList.toggle('hidden', role === 'agent'));
-  document.querySelector('.tab.agent-only').classList.toggle('hidden', role !== 'agent');
 
   // Point 6 : Timer et Quickstart stritement réservés aux agents
   document.getElementById('timer-banner').classList.toggle('hidden', role !== 'agent');
