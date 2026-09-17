@@ -1,8 +1,3 @@
-const FIREBASE_PROJECT_ID = "trackingcallro";
-const FIREBASE_API_KEY = "AIzaSyD1Weyc2zdtdaO7JgrMRskXZaDOGTIbyqc";
-const BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
-const AUTH_BASE = `https://identitytoolkit.googleapis.com/v1`;
-
 let currentUser = null;
 let activeTimer = null; 
 let timerInterval = null;
@@ -99,24 +94,16 @@ async function doLogin() {
   const err = document.getElementById('login-error');
   err.textContent = '';
   if (!email || !password) { err.textContent = 'Remplissez les champs.'; return; }
-
   try {
-    const res = await fetch(`${AUTH_BASE}/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, returnSecureToken: true })
-    });
-    const data = await res.json();
-    if (data.error) { err.textContent = 'Identifiants incorrects.'; return; }
-    
-    await chrome.storage.local.set({ onspot_idToken: data.idToken, onspot_uid: data.localId });
-    enterApp(data.localId);
-  } catch(e) { err.textContent = 'Erreur réseau.'; }
+    const session = await supabaseClient.signIn(email, password);
+    await enterApp(session.user.id);
+  } catch (e) { err.textContent = 'Erreur réseau.'; }
 }
 
 async function tryRestoreSession() {
-  const data = await chrome.storage.local.get(['onspot_uid']);
-  if (!data.onspot_uid) return false;
-  await enterApp(data.onspot_uid);
+  const user = await supabaseClient.getUser();
+  if (!user?.id) return false;
+  await enterApp(user.id);
   return true;
 }
 
@@ -124,27 +111,23 @@ async function enterApp(uid) {
   currentUser = { id: uid, initials: '??', name: 'Chargement...', color: '#3B8C6E' };
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').classList.remove('hidden');
-  
   await checkActiveTimer();
   document.getElementById('app-loading').classList.add('hidden');
-
   fetchAccountProfile(uid).then(() => updateTopbarUI());
-  loadTreatmentsFromFirestore();
+  loadTreatments();
   loadHistoryAndStats();
 }
 
 async function fetchAccountProfile(uid) {
   try {
-    const res = await fetch(`${BASE_URL}/accounts/${uid}?key=${FIREBASE_API_KEY}`);
-    if (res.ok) {
-      const doc = await res.json();
-      if (doc.fields) {
-        currentUser.name = doc.fields.name?.stringValue || 'Utilisateur';
-        currentUser.initials = doc.fields.initials?.stringValue || '??';
-        currentUser.color = doc.fields.color?.stringValue || '#3B8C6E';
-      }
+    const profile = await supabaseClient.getProfile(uid);
+    if (profile) {
+      currentUser.name = profile.name || 'Utilisateur';
+      currentUser.initials = profile.initials || '??';
+      currentUser.color = profile.color || '#3B8C6E';
+      currentUser.role = profile.role || 'agent';
     }
-  } catch(e) {}
+  } catch (e) {}
 }
 
 function updateTopbarUI() {
@@ -155,7 +138,7 @@ function updateTopbarUI() {
 
 async function logout() {
   if (activeTimer) { alert('Arrêtez le timer en cours avant de vous déconnecter.'); return; }
-  await chrome.storage.local.remove(['onspot_idToken', 'onspot_uid']);
+  await supabaseClient.signOut();
   currentUser = null;
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').classList.add('hidden');
@@ -168,7 +151,6 @@ function toggleHistory() {
   historyVisible = !historyVisible;
   const btn = document.getElementById('toggle-history-btn');
   const list = document.getElementById('history-list');
-  
   if (historyVisible) {
     btn.textContent = "Masquer le détail ▲";
     list.classList.remove('hidden');
@@ -203,14 +185,12 @@ async function loadTeamLiveMini() {
   const el = document.getElementById('team-live-mini');
   if (!el) return;
   try {
-    const res = await fetch(`${BASE_URL}/active_timers?key=${FIREBASE_API_KEY}&pageSize=50`);
-    const data = await res.json();
-    const docs = data.documents || [];
-    if (docs.length === 0) {
+    const rows = await supabaseClient.request('/rest/v1/active_timers?select=agent_id&limit=50');
+    if (!rows.length) {
       el.innerHTML = '<div class="mini-empty">Aucun agent actif pour le moment.</div>';
       return;
     }
-    el.innerHTML = `<div class="mini-team-count">${docs.length} agent${docs.length > 1 ? 's' : ''} actif${docs.length > 1 ? 's' : ''}</div>`;
+    el.innerHTML = `<div class="mini-team-count">${rows.length} agent${rows.length > 1 ? 's' : ''} actif${rows.length > 1 ? 's' : ''}</div>`;
   } catch (e) {
     el.innerHTML = '<div class="mini-empty">—</div>';
   }
@@ -218,33 +198,17 @@ async function loadTeamLiveMini() {
 
 async function loadHistoryAndStats() {
   const list = document.getElementById('history-list');
-  
   try {
-    // SOLUTION : "cache: 'no-store'" force Chrome à télécharger les vraies données au lieu d'utiliser le cache vide.
-    const res = await fetch(`${BASE_URL}/time_entries?key=${FIREBASE_API_KEY}&pageSize=1000`, { cache: 'no-store' });
-    const data = await res.json();
-    const docs = data.documents || [];
-    
+    const rows = await supabaseClient.request('/rest/v1/time_entries?select=*&order=started_at.desc&limit=1000');
     const now = new Date();
-    
-    let todayEntries = docs.map(doc => {
-      const f = doc.fields || {};
-      
-      // Parseur de date robuste
-      let stRaw = f.startTime?.stringValue || f.startTime?.integerValue || '';
-      let d = new Date(stRaw);
-      if (isNaN(d.getTime())) d = new Date(parseInt(stRaw, 10));
-      if (isNaN(d.getTime())) d = new Date(); // Sécurité ultime
-
-      return {
-        source: f.source?.stringValue || 'ticket',
-        treatment: f.treatment?.stringValue || '',
-        desc: f.desc?.stringValue || '',
-        agent: f.agent?.stringValue || '',
-        startTimeDate: d,
-        durationSec: parseInt(f.durationSec?.integerValue || 0)
-      };
-    }).filter(e => {
+    const todayEntries = rows.map(row => ({
+      source: row.source || 'ticket',
+      treatment: row.treatment || '',
+      desc: row.description || '',
+      agent: row.agent_id || '',
+      startTimeDate: new Date(row.started_at),
+      durationSec: Number(row.duration_seconds || 0)
+    })).filter(e => {
       // SOLUTION : Filtrage de sécurité ultra strict sur l'ID de l'agent et vérification de la date du jour locale
       const isMyTask = String(e.agent).trim() === String(currentUser.id).trim();
       const isToday = e.startTimeDate.getDate() === now.getDate() &&
@@ -288,7 +252,7 @@ async function loadHistoryAndStats() {
       </div>`;
     }).join('');
     
-  } catch(e) {
+  } catch (e) {
     list.innerHTML = '<div style="text-align:center; padding:10px; color:var(--red); font-size:11px;">Erreur réseau ou chargement.</div>';
   }
 }
@@ -311,14 +275,12 @@ function getTreatmentColors(emoji) {
   return fallbackPalette[(emoji ? emoji.charCodeAt(0) : 0) % fallbackPalette.length];
 }
 
-async function loadTreatmentsFromFirestore() {
+async function loadTreatments() {
   try {
-    const res = await fetch(`${BASE_URL}/settings/treatments?key=${FIREBASE_API_KEY}`, { cache: 'no-store' });
-    if (res.status === 404) return;
-    const data = await res.json();
-    const values = data.fields?.list?.arrayValue?.values || [];
-    if (values.length > 0) {
-      customTreatmentTypes = values.map(v => v.stringValue);
+    const rows = await supabaseClient.request('/rest/v1/settings?select=value&key=eq.treatments&limit=1');
+    const values = rows[0]?.value?.list || [];
+    if (values.length) {
+      customTreatmentTypes = values.map(String);
       renderTreatmentList();
     }
   } catch(e) {}
@@ -370,7 +332,7 @@ async function goBackWizard() {
     clearInterval(timerInterval);
     activeTimer = null;
     await chrome.storage.local.remove('activeTimer_'+currentUser.id);
-    clearActiveTimerFromFirestore();
+    clearActiveTimer();
     
     document.getElementById('wizard-view').classList.add('hidden');
     document.getElementById('idle-view').classList.remove('hidden');
@@ -436,7 +398,7 @@ async function finishWizard() {
   
   activeTimer.desc = fullDesc;
   await chrome.storage.local.set({ ['activeTimer_'+currentUser.id]: activeTimer });
-  saveActiveTimerToFirestore();
+  saveActiveTimer();
   
   document.getElementById('wizard-view').classList.add('hidden');
   showDoneView();
@@ -462,8 +424,8 @@ async function stopTimer() {
   document.getElementById('wizard-view').classList.add('hidden');
   document.getElementById('idle-view').classList.remove('hidden');
 
-  await saveEntryToFirestore(entry);
-  await clearActiveTimerFromFirestore();
+  await saveTimeEntry(entry);
+  await clearActiveTimer();
   
   // Rafraîchit l'historique après sauvegarde pour inclure cette tâche
   loadHistoryAndStats();
@@ -513,16 +475,39 @@ function showDoneView() {
   document.getElementById('run-desc').textContent = activeTimer.desc;
 }
 
-async function saveActiveTimerToFirestore() {
-  const body = { fields: { source: { stringValue: activeTimer.source }, desc: { stringValue: activeTimer.desc }, treatment: { stringValue: activeTimer.treatment || '' }, startTime: { integerValue: String(activeTimer.startTime) } }};
-  try { await fetch(`${BASE_URL}/active_timers/${currentUser.id}?key=${FIREBASE_API_KEY}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); } catch(e) {}
+async function saveActiveTimer() {
+  await supabaseClient.request('/rest/v1/active_timers', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({
+      agent_id: currentUser.id,
+      source: activeTimer.source,
+      description: activeTimer.desc || '',
+      started_at: new Date(activeTimer.startTime).toISOString(),
+      metadata: { treatment: activeTimer.treatment || '', inbound_time: activeTimer.inboundTime || '' }
+    })
+  });
 }
-async function clearActiveTimerFromFirestore() {
-  try { await fetch(`${BASE_URL}/active_timers/${currentUser.id}?key=${FIREBASE_API_KEY}`, { method:'DELETE' }); } catch(e) {}
+async function clearActiveTimer() {
+  await supabaseClient.request(`/rest/v1/active_timers?agent_id=eq.${encodeURIComponent(currentUser.id)}`, { method: 'DELETE' });
 }
-async function saveEntryToFirestore(entry) {
-  const body = { fields: { rawId: { stringValue: '' }, source: { stringValue: entry.source }, desc: { stringValue: entry.desc }, treatment: { stringValue: entry.treatment || '' }, inboundTime: { stringValue: entry.inboundTime || '' }, agent: { stringValue: entry.agent }, startTime: { stringValue: entry.startTime }, durationSec: { integerValue: String(entry.durationSec) } }};
-  await fetch(`${BASE_URL}/time_entries/${entry.id}?key=${FIREBASE_API_KEY}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+async function saveTimeEntry(entry) {
+  await supabaseClient.request('/rest/v1/time_entries', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify({
+      id: String(entry.id),
+      raw_id: '',
+      source: entry.source,
+      description: entry.desc,
+      treatment: entry.treatment || '',
+      agent_id: entry.agent,
+      inbound_time: entry.inboundTime || '',
+      started_at: entry.startTime,
+      duration_seconds: Number(entry.durationSec || 0),
+      metadata: {}
+    })
+  });
 }
 
 // ==========================================

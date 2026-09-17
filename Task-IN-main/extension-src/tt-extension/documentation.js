@@ -1,7 +1,3 @@
-const FIREBASE_API_KEY = "AIzaSyD1Weyc2zdtdaO7JgrMRskXZaDOGTIbyqc";
-const FIREBASE_PROJECT_ID = "trackingcallro";
-const BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
-
 window.addEventListener('error', (e) => {
   const target = document.getElementById(activeTab === 'cases' ? 'cases-list' : 'docs-list');
   if (target) {
@@ -121,13 +117,17 @@ caseFormSave.addEventListener('click', async () => {
   caseFormSave.disabled = true;
   caseFormSave.textContent = 'Enregistrement…';
   try {
-    const res = await fetch(`${BASE_URL}/complexCases?key=${FIREBASE_API_KEY}`, {
+    await supabaseClient.request('/rest/v1/complex_cases', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: toFirestoreFields(data) })
+      headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({
+        title: data.title,
+        description: data.description,
+        status: 'open',
+        priority: 'normal',
+        data
+      })
     });
-    const result = await res.json();
-    if (result.error) throw new Error(`${result.error.code} — ${result.error.message}`);
     casesCache = null;
     closeCaseForm();
     await loadCases();
@@ -141,18 +141,6 @@ caseFormSave.addEventListener('click', async () => {
     caseFormSave.textContent = 'Enregistrer';
   }
 });
-
-function toFirestoreValue(v) {
-  if (v === null || v === undefined || v === '') return { nullValue: null };
-  if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: v } : { doubleValue: v };
-  if (typeof v === 'boolean') return { booleanValue: v };
-  return { stringValue: String(v) };
-}
-function toFirestoreFields(obj) {
-  const fields = {};
-  Object.entries(obj).forEach(([k, v]) => { fields[k] = toFirestoreValue(v); });
-  return fields;
-}
 
 function showList() {
   if (activeTab === 'docs') {
@@ -173,12 +161,14 @@ async function loadDocs() {
   if (docsCache) { renderCurrentList(); return; }
   docsList.innerHTML = '<div class="doc-empty">Chargement…</div>';
   try {
-    const res = await fetch(`${BASE_URL}/procedures?key=${FIREBASE_API_KEY}&pageSize=300`);
-    const data = await res.json();
-    if (data.error) throw new Error(`${data.error.code} — ${data.error.message}`);
-    docsCache = (data.documents || []).map(d => ({
-      id: d.name.split('/').pop(),
-      ...fsFields(d.fields)
+    const rows = await supabaseClient.request('/rest/v1/procedures?select=*&limit=300');
+    docsCache = (rows || []).map(row => ({
+      id: row.id,
+      title: row.title || '',
+      category: row.category || '',
+      description: row.description || '',
+      sections: row.sections || [],
+      ...(row.source_metadata?.taskin || {})
     })).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     renderCurrentList();
   } catch (e) {
@@ -191,12 +181,13 @@ async function loadCases() {
   if (casesCache) { renderCurrentList(); return; }
   casesList.innerHTML = '<div class="doc-empty">Chargement…</div>';
   try {
-    const res = await fetch(`${BASE_URL}/complexCases?key=${FIREBASE_API_KEY}&pageSize=300`);
-    const data = await res.json();
-    if (data.error) throw new Error(`${data.error.code} — ${data.error.message}`);
-    casesCache = (data.documents || []).map(d => ({
-      id: d.name.split('/').pop(),
-      ...fsFields(d.fields)
+    const rows = await supabaseClient.request('/rest/v1/complex_cases?select=*&limit=300');
+    casesCache = (rows || []).map(row => ({
+      id: row.id,
+      title: row.title || row.data?.title || '',
+      category: row.data?.category || '',
+      description: row.description || row.data?.description || '',
+      ...(row.data || {})
     })).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     renderCurrentList();
   } catch (e) {
@@ -304,20 +295,6 @@ function renderBlock(b, s) {
   return '';
 }
 
-function fsValue(v) {
-  if (!v) return null;
-  if ('stringValue' in v) return v.stringValue;
-  if ('integerValue' in v) return parseInt(v.integerValue);
-  if ('booleanValue' in v) return v.booleanValue;
-  if ('arrayValue' in v) return (v.arrayValue.values || []).map(fsValue);
-  if ('mapValue' in v) return fsFields(v.mapValue.fields || {});
-  return null;
-}
-function fsFields(fields) {
-  const o = {};
-  Object.entries(fields || {}).forEach(([k, v]) => { o[k] = fsValue(v); });
-  return o;
-}
 function esc(s) { if (!s) return ''; return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function formatBold(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'); }
 
