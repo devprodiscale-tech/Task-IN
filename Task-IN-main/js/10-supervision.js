@@ -97,70 +97,50 @@ function svNewId() { return Date.now().toString(36) + Math.random().toString(36)
 
 async function svFetchCollection(name) {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try {
-      const table = name === 'complexCases' || name === 'escalations' ? 'complex_cases' : name === 'qualityReviews' ? 'coaching_reviews' : name === 'coachingSheets' ? 'coaching_sheets' : name;
-      const rows = await supabase.listTable(table, 500);
-      return (rows || []).map(row => {
-        const data = row.data && typeof row.data === 'object' ? row.data : {};
-        if (table === 'complex_cases') return { id: row.id, ...data, title: row.title || data.title || '', description: row.description || data.description || '', agentId: row.agent_id || data.agentId || '', status: row.status || data.status || 'nouveau', priority: row.priority || data.priority || 'medium', createdAt: data.createdAt || new Date(row.created_at).getTime(), _collection: name === 'complexCases' ? 'complexCases' : 'escalations' };
-        if (table === 'coaching_reviews') return { id: row.id, ...data, agentId: row.agent_id || data.agentId || '', reviewerId: row.reviewer_id || data.reviewerId || '' };
-        if (table === 'coaching_sheets') return { id: row.id, ...data, agentId: row.agent_id || data.agentId || '', supervisorId: row.supervisor_id || data.supervisorId || '' };
-        return { id: row.id, ...data };
-      });
-    } catch (e) { console.error('svFetchCollection Supabase', name, e); return []; }
-  }
+  if (!supabase?.enabled()) return [];
   try {
-    const res = await apiFetch(`${BASE_URL}/${name}?key=${FIREBASE_API_KEY}&pageSize=500`);
-    const data = await res.json();
-    return (data.documents || []).map(d => ({ id: d.name.split('/').pop(), ...docFromFirestoreFields(d.fields) }));
-  } catch (e) { console.error('svFetchCollection', name, e); return []; }
+    const table = name === 'complexCases' || name === 'escalations' ? 'complex_cases' : name === 'qualityReviews' ? 'coaching_reviews' : name === 'coachingSheets' ? 'coaching_sheets' : name;
+    const rows = await supabase.listTable(table, 500);
+    return (rows || []).map(row => {
+      const data = row.data && typeof row.data === 'object' ? row.data : {};
+      if (table === 'complex_cases') return { id: row.id, ...data, title: row.title || data.title || '', description: row.description || data.description || '', agentId: row.agent_id || data.agentId || '', status: row.status || data.status || 'nouveau', priority: row.priority || data.priority || 'medium', createdAt: data.createdAt || new Date(row.created_at).getTime(), _collection: name === 'complexCases' ? 'complexCases' : 'escalations' };
+      if (table === 'coaching_reviews') return { id: row.id, ...data, agentId: row.agent_id || data.agentId || '', reviewerId: row.reviewer_id || data.reviewerId || '' };
+      if (table === 'coaching_sheets') return { id: row.id, ...data, agentId: row.agent_id || data.agentId || '', supervisorId: row.supervisor_id || data.supervisorId || '' };
+      return { id: row.id, ...data };
+    });
+  } catch (e) { console.error('svFetchCollection Supabase', name, e); return []; }
 }
 async function svCreateDoc(collection, obj) {
   if (!requireRoles('admin', 'supervisor')) return null;
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    const table = collection === 'complexCases' || collection === 'escalations' ? 'complex_cases' : collection === 'qualityReviews' ? 'coaching_reviews' : 'coaching_sheets';
-    const row = table === 'complex_cases'
-      ? { agent_id: obj.agentId || null, owner_id: currentUser.id, status: obj.status || 'nouveau', priority: obj.priority || 'medium', title: obj.title || '', description: obj.description || '', data: obj }
-      : table === 'coaching_reviews'
-        ? { agent_id: obj.agentId || null, reviewer_id: obj.reviewerId || currentUser.id, channel: obj.channel || '', review_date: obj.reviewDate || null, scores: obj.scores || {}, data: obj }
-        : { agent_id: obj.agentId || null, supervisor_id: obj.supervisorId || currentUser.id, sheet_date: obj.sheetDate || null, objectives: obj.objectives || [], notes: obj.notes || '', data: obj };
-    const created = await supabase.insertRow(table, row);
-    return Array.isArray(created) ? created[0]?.id || null : created?.id || null;
-  }
-  const res = await apiFetch(`${BASE_URL}/${collection}?key=${FIREBASE_API_KEY}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: docToFirestoreFields(obj) }),
-  });
-  const data = await res.json();
-  return data.name ? data.name.split('/').pop() : null;
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  const table = collection === 'complexCases' || collection === 'escalations' ? 'complex_cases' : collection === 'qualityReviews' ? 'coaching_reviews' : 'coaching_sheets';
+  const row = table === 'complex_cases'
+    ? { agent_id: obj.agentId || null, owner_id: currentUser.id, status: obj.status || 'nouveau', priority: obj.priority || 'medium', title: obj.title || '', description: obj.description || '', data: obj }
+    : table === 'coaching_reviews'
+      ? { agent_id: obj.agentId || null, reviewer_id: obj.reviewerId || currentUser.id, channel: obj.channel || '', review_date: obj.reviewDate || null, scores: obj.scores || {}, data: obj }
+      : { agent_id: obj.agentId || null, supervisor_id: obj.supervisorId || currentUser.id, sheet_date: obj.sheetDate || null, objectives: obj.objectives || [], notes: obj.notes || '', data: obj };
+  const created = await supabase.insertRow(table, row);
+  return Array.isArray(created) ? created[0]?.id || null : created?.id || null;
 }
 async function svUpdateDoc(collection, id, obj) {
   if (!requireRoles('admin', 'supervisor')) return;
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    const table = collection === 'complexCases' || collection === 'escalations' ? 'complex_cases' : collection === 'qualityReviews' ? 'coaching_reviews' : 'coaching_sheets';
-    const row = table === 'complex_cases'
-      ? { agent_id: obj.agentId || null, status: obj.status || 'nouveau', priority: obj.priority || 'medium', title: obj.title || '', description: obj.description || '', data: obj }
-      : table === 'coaching_reviews'
-        ? { agent_id: obj.agentId || null, reviewer_id: obj.reviewerId || currentUser.id, scores: obj.scores || {}, data: obj }
-        : { agent_id: obj.agentId || null, supervisor_id: obj.supervisorId || currentUser.id, objectives: obj.objectives || [], notes: obj.notes || '', data: obj };
-    await supabase.updateRow(table, id, row);
-    return;
-  }
-  await apiFetch(`${BASE_URL}/${collection}/${id}?key=${FIREBASE_API_KEY}`, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: docToFirestoreFields(obj) }),
-  });
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  const table = collection === 'complexCases' || collection === 'escalations' ? 'complex_cases' : collection === 'qualityReviews' ? 'coaching_reviews' : 'coaching_sheets';
+  const row = table === 'complex_cases'
+    ? { agent_id: obj.agentId || null, status: obj.status || 'nouveau', priority: obj.priority || 'medium', title: obj.title || '', description: obj.description || '', data: obj }
+    : table === 'coaching_reviews'
+      ? { agent_id: obj.agentId || null, reviewer_id: obj.reviewerId || currentUser.id, scores: obj.scores || {}, data: obj }
+      : { agent_id: obj.agentId || null, supervisor_id: obj.supervisorId || currentUser.id, objectives: obj.objectives || [], notes: obj.notes || '', data: obj };
+  await supabase.updateRow(table, id, row);
 }
 async function svDeleteDoc(collection, id) {
   if (!requireRoles('admin', 'supervisor')) return;
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    const table = collection === 'complexCases' || collection === 'escalations' ? 'complex_cases' : collection === 'qualityReviews' ? 'coaching_reviews' : 'coaching_sheets';
-    await supabase.deleteRow(table, id);
-    return;
-  }
-  await apiFetch(`${BASE_URL}/${collection}/${id}?key=${FIREBASE_API_KEY}`, { method: 'DELETE' });
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  const table = collection === 'complexCases' || collection === 'escalations' ? 'complex_cases' : collection === 'qualityReviews' ? 'coaching_reviews' : 'coaching_sheets';
+  await supabase.deleteRow(table, id);
 }
 
 function svAgentOptions(selectedId) {

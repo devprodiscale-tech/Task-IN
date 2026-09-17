@@ -43,36 +43,29 @@ function startTimer() {
   document.getElementById('play-btn').classList.add('hidden');
   document.getElementById('stop-btn').classList.remove('hidden');
   localStorage.setItem('activeTimer_'+currentUser.id, JSON.stringify(activeTimer));
-  saveActiveTimerToFirestore();
+  saveActiveTimer();
   timerInterval = setInterval(updateClock, 1000);
   updateClock();
 }
 
-async function saveActiveTimerToFirestore() {
+async function saveActiveTimer() {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try {
-      await supabase.upsertActiveTimer({
-        agent_id: currentUser.id,
-        source: activeTimer.source,
-        description: activeTimer.desc,
-        started_at: new Date(activeTimer.startTime).toISOString(),
-        metadata: { inbound_time: activeTimer.inboundTime || '--:--' }
-      });
-    } catch (e) { console.error('Enregistrement timer Supabase impossible:', e); }
-    return;
-  }
-  const body = { fields: { source: { stringValue: activeTimer.source }, desc: { stringValue: activeTimer.desc }, startTime: { integerValue: String(activeTimer.startTime) } }};
-  try { await apiFetch(`${BASE_URL}/active_timers/${currentUser.id}?key=${FIREBASE_API_KEY}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); } catch(e) { console.error(e); }
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  try {
+    await supabase.upsertActiveTimer({
+      agent_id: currentUser.id,
+      source: activeTimer.source,
+      description: activeTimer.desc,
+      started_at: new Date(activeTimer.startTime).toISOString(),
+      metadata: { inbound_time: activeTimer.inboundTime || '--:--' }
+    });
+  } catch (e) { console.error('Enregistrement timer Supabase impossible:', e); }
 }
 
-async function clearActiveTimerFromFirestore() {
+async function clearActiveTimer() {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try { await supabase.removeActiveTimer(currentUser.id); } catch (e) { console.error('Suppression timer Supabase impossible:', e); }
-    return;
-  }
-  try { await apiFetch(`${BASE_URL}/active_timers/${currentUser.id}?key=${FIREBASE_API_KEY}`, { method:'DELETE' }); } catch(e) { console.error(e); }
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  try { await supabase.removeActiveTimer(currentUser.id); } catch (e) { console.error('Suppression timer Supabase impossible:', e); }
 }
 
 function updateClock() {
@@ -108,8 +101,8 @@ async function stopTimer() {
   document.getElementById('play-btn').classList.remove('hidden');
   document.getElementById('stop-btn').classList.add('hidden');
   renderAll();
-  saveEntryToFirestore(entry);
-  clearActiveTimerFromFirestore();
+  saveTimeEntry(entry);
+  clearActiveTimer();
   fetchPermanentLiveAgents();
 }
 
@@ -130,20 +123,11 @@ function checkActiveTimer() {
 // ===== ACTIVE TIMERS / LIVE PERMANENT =====
 async function loadActiveTimers() {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try {
-      const rows = await supabase.listActiveTimers(100);
-      return (rows || []).map(row => ({ agentId: row.agent_id, source: row.source || 'ticket', desc: row.description || '', startTime: new Date(row.started_at).getTime() }));
-    } catch (e) { console.error('Lecture timers Supabase impossible:', e); return []; }
-  }
+  if (!supabase?.enabled()) return [];
   try {
-    const res = await apiFetch(`${BASE_URL}/active_timers?key=${FIREBASE_API_KEY}`);
-    const data = await res.json();
-    return (data.documents || []).map(doc => {
-      const f = doc.fields || {};
-      return { agentId: doc.name.split('/').pop(), source: f.source?.stringValue || 'ticket', desc: f.desc?.stringValue || '', startTime: parseInt(f.startTime?.integerValue || 0) };
-    });
-  } catch(e) { return []; }
+    const rows = await supabase.listActiveTimers(100);
+    return (rows || []).map(row => ({ agentId: row.agent_id, source: row.source || 'ticket', desc: row.description || '', startTime: new Date(row.started_at).getTime() }));
+  } catch (e) { console.error('Lecture timers Supabase impossible:', e); return []; }
 }
 
 function startLiveRefresh() {
@@ -189,82 +173,36 @@ async function syncRingover() {
   alert('Synchronisation désactivée pour cette version de démonstration.');
 }
 
-// ===== FIRESTORE =====
 async function loadEntries(shouldRender = true) {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try {
-      const rows = await supabase.listTimeEntries(1000);
-      entries = (rows || []).map(row => ({
-        id: row.id,
-        rawId: row.raw_id || '', source: row.source || 'ticket', desc: row.description || '',
-        treatment: row.treatment || '', agent: row.agent_id, inboundTime: row.inbound_time || '--:--',
-        startTimeStr: row.started_at, durationSec: Number(row.duration_seconds || 0)
-      })).filter(e => e.startTimeStr).sort((a,b)=> getEntryDate(b.startTimeStr)-getEntryDate(a.startTimeStr));
-      if (typeof invalidateFilterCache === 'function') invalidateFilterCache();
-      if (shouldRender) renderCurrentView();
-    } catch (e) { console.error('Lecture entrées Supabase impossible:', e); }
-    return;
-  }
+  if (!supabase?.enabled()) return;
   try {
-    const res = await apiFetch(`${BASE_URL}/time_entries?key=${FIREBASE_API_KEY}&pageSize=1000`);
-    const data = await res.json();
-    // Point 1 : filet de sécurité sur startTimeStr dans le mapping
-    entries = (data.documents || []).map(docToEntry).filter(e => e !== null).sort((a,b)=> getEntryDate(b.startTimeStr)-getEntryDate(a.startTimeStr));
+    const rows = await supabase.listTimeEntries(1000);
+    entries = (rows || []).map(row => ({
+      id: row.id,
+      rawId: row.raw_id || '', source: row.source || 'ticket', desc: row.description || '',
+      treatment: row.treatment || '', agent: row.agent_id, inboundTime: row.inbound_time || '--:--',
+      startTimeStr: row.started_at, durationSec: Number(row.duration_seconds || 0)
+    })).filter(e => e.startTimeStr).sort((a,b)=> getEntryDate(b.startTimeStr)-getEntryDate(a.startTimeStr));
     if (typeof invalidateFilterCache === 'function') invalidateFilterCache();
     if (shouldRender) renderCurrentView();
-  } catch(e) { console.error(e); }
+  } catch (e) { console.error('Lecture entrées Supabase impossible:', e); }
 }
 
-// Point 1 : docToEntry sécurisé — retourne null si startTimeStr invalide
-function docToEntry(doc) {
-  try {
-    const f = doc.fields || {};
-    const rawTime = f.startTime?.stringValue || '';
-    const parsedDate = new Date(rawTime);
-    // Si la date est invalide, on ignore cette entrée
-    if (!rawTime || isNaN(parsedDate.getTime())) return null;
-    return {
-      id: doc.name.split('/').pop(),
-      rawId: f.rawId?.stringValue || '',
-      source: f.source?.stringValue || 'ticket',
-      desc: f.desc?.stringValue || '',
-      treatment: f.treatment?.stringValue || '',
-      agent: f.agent?.stringValue || '',
-      inboundTime: f.inboundTime?.stringValue || '--:--',
-      startTimeStr: rawTime,
-      durationSec: parseInt(f.durationSec?.integerValue || 0),
-    };
-  } catch(e) { console.error('docToEntry erreur:', e); return null; }
-}
-
-async function saveEntryToFirestore(entry) {
+async function saveTimeEntry(entry) {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    await supabase.insertTimeEntry({
-      id: String(entry.id), raw_id: entry.rawId || '', source: entry.source,
-      description: entry.desc, treatment: entry.treatment || '', agent_id: entry.agent,
-      inbound_time: entry.inboundTime || '--:--', started_at: entry.startTimeStr,
-      duration_seconds: Number(entry.durationSec || 0), metadata: {}
-    });
-    return;
-  }
-  const body = { fields: {
-    rawId: { stringValue: entry.rawId || '' }, source: { stringValue: entry.source },
-    desc: { stringValue: entry.desc }, agent: { stringValue: entry.agent },
-    inboundTime: { stringValue: entry.inboundTime || '--:--' },
-    startTime: { stringValue: entry.startTimeStr }, durationSec: { integerValue: String(entry.durationSec) }
-  }};
-  await apiFetch(`${BASE_URL}/time_entries/${entry.id}?key=${FIREBASE_API_KEY}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  await supabase.insertTimeEntry({
+    id: String(entry.id), raw_id: entry.rawId || '', source: entry.source,
+    description: entry.desc, treatment: entry.treatment || '', agent_id: entry.agent,
+    inbound_time: entry.inboundTime || '--:--', started_at: entry.startTimeStr,
+    duration_seconds: Number(entry.durationSec || 0), metadata: {}
+  });
 }
 
 async function deleteEntry(id) {
   if (!confirm('Supprimer cette entrée ?')) return;
   entries = entries.filter(e=>e.id!==id);
   renderAll();
-  if (window.taskinDataProviders?.supabase?.enabled()) {
-    await window.taskinDataProviders.supabase.deleteTimeEntry(id);
-    return;
-  }
-  await apiFetch(`${BASE_URL}/time_entries/${id}?key=${FIREBASE_API_KEY}`, { method:'DELETE' });
+  await window.taskinDataProviders.supabase.deleteTimeEntry(id);
 }

@@ -156,7 +156,7 @@ async function saveAccountEdit() {
   errEl.textContent = '';
   const updatedUser = {...u, name, role, initials: name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)};
   if (editingAccountPhotoData !== null) updatedUser.photo = editingAccountPhotoData;
-  const saved = await saveAccountToFirestore(updatedUser);
+  const saved = await saveAccount(updatedUser);
   if (!saved) {
     errEl.textContent = 'Modification indisponible : le service Supabase Admin n’est pas configuré côté serveur.';
     return;
@@ -181,24 +181,12 @@ async function saveAccountEdit() {
 async function adminSetPassword(uid, newPassword) {
   if (!requireRoles('admin')) return { ok: false, error: 'Permission refusée' };
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try {
-      const session = supabase.getSession();
-      const res = await fetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify({ action: 'setPassword', uid, password: newPassword }) });
-      const data = await res.json().catch(() => ({}));
-      return res.ok ? { ok: true } : { ok: false, error: data.error || `Erreur (${res.status})` };
-    } catch (e) { return { ok: false, error: e.message }; }
-  }
-  if (!localStorage.getItem('onspot_idToken')) return { ok: false, error: 'Session Supabase absente.' };
+  if (!supabase?.enabled()) return { ok: false, error: 'Supabase n’est pas configuré.' };
   try {
-    const idToken = localStorage.getItem('onspot_idToken');
-    const res = await apiFetch('/api/admin-manage-account', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'setPassword', requesterIdToken: idToken, uid, newPassword }),
-    });
+    const session = supabase.getSession();
+    const res = await fetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify({ action: 'setPassword', uid, password: newPassword }) });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { ok: false, error: data.error || `Erreur (${res.status})` };
-    return { ok: true };
+    return res.ok ? { ok: true } : { ok: false, error: data.error || `Erreur (${res.status})` };
   } catch (e) { return { ok: false, error: e.message }; }
 }
 
@@ -212,24 +200,11 @@ async function deleteAccountFromModal() {
   errEl.textContent = 'Suppression…';
   try {
     const supabase = window.taskinDataProviders?.supabase;
-    if (supabase?.enabled()) {
-      const session = supabase.getSession();
-      const res = await fetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify({ action: 'delete', uid: u.id }) });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { errEl.textContent = 'Erreur : ' + (data.error || res.status); return; }
-      TEAM = TEAM.filter(t => t.id !== u.id);
-      closeAccountEditModal(); renderTeamList(); populateFilters();
-      return;
-    }
-    const idToken = localStorage.getItem('onspot_idToken');
-    if (!idToken) { errEl.textContent = 'Session Supabase absente. Reconnecte-toi avant toute suppression.'; return; }
-    const res = await apiFetch('/api/admin-manage-account', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'delete', requesterIdToken: idToken, uid: u.id }),
-    });
+    if (!supabase?.enabled()) { errEl.textContent = 'Supabase n’est pas configuré.'; return; }
+    const session = supabase.getSession();
+    const res = await fetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify({ action: 'delete', uid: u.id }) });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { errEl.textContent = 'Erreur : ' + (data.error || res.status); return; }
-    await apiFetch(`${BASE_URL}/accounts/${u.id}?key=${FIREBASE_API_KEY}`, { method: 'DELETE' });
     TEAM = TEAM.filter(t => t.id !== u.id);
     closeAccountEditModal();
     renderTeamList();
@@ -264,40 +239,18 @@ async function submitCreateAccount() {
   const tempPassword = 'Taskin' + Math.floor(1000+Math.random()*9000);
   try {
     const supabase = window.taskinDataProviders?.supabase;
-    if (supabase?.enabled()) {
-      const session = supabase.getSession();
-      const colors = ['#2B4C7E','#E98A7D','#3B8C6E','#DCAE1D','#7B68EE','#FF7F50'];
-      const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-      const res = await fetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify({ action: 'create', email, password: tempPassword, name, role, color: colors[TEAM.length % colors.length], initials }) });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { errEl.textContent = data.error || 'Erreur création.'; btn.disabled = false; btn.textContent = 'Créer le compte'; return; }
-      const newUser = { id: data.user.id, name, email, color: colors[TEAM.length % colors.length], initials, role, photo: '' };
-      TEAM.push(newUser); createdEmail = email; createdPassword = tempPassword;
-      document.getElementById('result-email').textContent = email; document.getElementById('result-password').textContent = tempPassword;
-      document.getElementById('create-account-form').classList.add('hidden'); document.getElementById('create-account-result').classList.remove('hidden'); document.getElementById('create-account-footer').classList.add('hidden');
-      renderTeamList(); populateFilters(); document.getElementById('team-count').textContent = TEAM.length + ' comptes';
-      return;
-    }
-    const res = await fetch(`${AUTH_BASE}/accounts:signUp?key=${FIREBASE_API_KEY}`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email, password: tempPassword, returnSecureToken: true })
-    });
-    const data = await res.json();
-    if (data.error) { errEl.textContent = data.error.message || 'Erreur création.'; btn.disabled=false; btn.textContent='Créer le compte'; return; }
-    const uid = data.localId;
+    if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+    const session = supabase.getSession();
     const colors = ['#2B4C7E','#E98A7D','#3B8C6E','#DCAE1D','#7B68EE','#FF7F50'];
-    const color = colors[TEAM.length % colors.length];
-    const newUser = { id: uid, name, email, color, initials: name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2), role, photo: '' };
-    await saveAccountToFirestore(newUser);
-    TEAM.push(newUser);
-    createdEmail = email; createdPassword = tempPassword;
-    document.getElementById('result-email').textContent = email;
-    document.getElementById('result-password').textContent = tempPassword;
-    document.getElementById('create-account-form').classList.add('hidden');
-    document.getElementById('create-account-result').classList.remove('hidden');
-    document.getElementById('create-account-footer').classList.add('hidden');
-    renderTeamList(); populateFilters();
-    document.getElementById('team-count').textContent = TEAM.length + ' comptes';
+    const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const res = await fetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify({ action: 'create', email, password: tempPassword, name, role, color: colors[TEAM.length % colors.length], initials }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { errEl.textContent = data.error || 'Erreur création.'; btn.disabled = false; btn.textContent = 'Créer le compte'; return; }
+    const newUser = { id: data.user.id, name, email, color: colors[TEAM.length % colors.length], initials, role, photo: '' };
+    TEAM.push(newUser); createdEmail = email; createdPassword = tempPassword;
+    document.getElementById('result-email').textContent = email; document.getElementById('result-password').textContent = tempPassword;
+    document.getElementById('create-account-form').classList.add('hidden'); document.getElementById('create-account-result').classList.remove('hidden'); document.getElementById('create-account-footer').classList.add('hidden');
+    renderTeamList(); populateFilters(); document.getElementById('team-count').textContent = TEAM.length + ' comptes';
   } catch(e) { errEl.textContent = 'Erreur réseau.'; console.error(e); btn.disabled=false; btn.textContent='Créer le compte'; }
 }
 
@@ -349,21 +302,12 @@ async function saveProfile() {
   if (profilePhotoData !== null) currentUser.photo = profilePhotoData;
   const u = TEAM.find(t => t.id === currentUser.id);
   if (u) { u.name = currentUser.name; u.initials = currentUser.initials; u.photo = currentUser.photo; }
-  await saveAccountToFirestore(currentUser);
+  await saveAccount(currentUser);
   if (password) {
     try {
       const supabase = window.taskinDataProviders?.supabase;
-      if (supabase?.enabled()) {
-        const config = window.TASKIN_SUPABASE_CONFIG;
-        const session = supabase.getSession();
-        await fetch(`${config.url}/auth/v1/user`, { method: 'PUT', headers: { apikey: config.anonKey, Authorization: `Bearer ${session?.access_token || ''}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
-        renderTopbarIdentity(); closeProfileModal(); return;
-      }
-      const idToken = localStorage.getItem('onspot_idToken');
-      await fetch(`${AUTH_BASE}/accounts:update?key=${FIREBASE_API_KEY}`, {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ idToken, password, returnSecureToken: true })
-      });
+      if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+      await supabase.updatePassword(password);
     } catch(e) { console.error(e); }
   }
   renderTopbarIdentity();

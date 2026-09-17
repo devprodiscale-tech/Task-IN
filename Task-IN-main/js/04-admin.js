@@ -36,7 +36,7 @@ async function addTreatmentType() {
   input.value = '';
   renderTreatmentList();
   populateFilters();
-  await saveTreatmentsToFirestore();
+  await saveTreatments();
 }
 
 async function removeTreatmentType(i) {
@@ -44,39 +44,25 @@ async function removeTreatmentType(i) {
   customTreatmentTypes.splice(i, 1);
   renderTreatmentList();
   populateFilters();
-  await saveTreatmentsToFirestore();
+  await saveTreatments();
 }
 
-async function saveTreatmentsToFirestore() {
+async function saveTreatments() {
   if (!requireRoles('admin')) return;
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try { await supabase.upsertSetting('treatments', { list: customTreatmentTypes }, currentUser.id); }
-    catch (e) { console.error('saveTreatmentsToSupabase:', e); }
-    return;
-  }
-  const values = customTreatmentTypes.map(t => ({ stringValue: t }));
-  const body = { fields: { list: { arrayValue: { values } } } };
-  try { await apiFetch(`${BASE_URL}/settings/treatments?key=${FIREBASE_API_KEY}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); } catch(e) { console.error(e); }
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  try { await supabase.upsertSetting('treatments', { list: customTreatmentTypes }, currentUser.id); }
+  catch (e) { console.error('saveTreatments Supabase:', e); }
 }
 
-async function loadTreatmentsFromFirestore() {
+async function loadTreatments() {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try {
-      const setting = await supabase.getSetting('treatments');
-      const values = setting?.value?.list;
-      if (Array.isArray(values) && values.length) customTreatmentTypes = values.map(String);
-    } catch (e) { console.error('loadTreatmentsFromSupabase:', e); }
-    return;
-  }
+  if (!supabase?.enabled()) return;
   try {
-    const res = await apiFetch(`${BASE_URL}/settings/treatments?key=${FIREBASE_API_KEY}`);
-    if (res.status === 404) return;
-    const data = await res.json();
-    const values = data.fields?.list?.arrayValue?.values || [];
-    if (values.length > 0) { customTreatmentTypes = values.map(v => v.stringValue); }
-  } catch(e) { console.error(e); }
+    const setting = await supabase.getSetting('treatments');
+    const values = setting?.value?.list;
+    if (Array.isArray(values) && values.length) customTreatmentTypes = values.map(String);
+  } catch (e) { console.error('loadTreatments Supabase:', e); }
 }
 
 function renderAdminStats() {
@@ -221,21 +207,12 @@ function exportExcel() { exportCSV(); }
 // ===== DMT =====
 async function loadDMT() {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try {
-      const setting = await supabase.getSetting('dmt');
-      const value = setting?.value || {};
-      sourceDMT = { ringover: Number(value.ringover ?? SOURCE_DMT_DEFAULT.ringover), crisp: Number(value.crisp ?? SOURCE_DMT_DEFAULT.crisp), manual: Number(value.manual ?? SOURCE_DMT_DEFAULT.manual) };
-    } catch (e) { console.error('loadDMT Supabase:', e); }
-    renderDMTInputs();
-    return;
-  }
+  if (!supabase?.enabled()) return renderDMTInputs();
   try {
-    const res = await apiFetch(`${BASE_URL}/settings/dmt?key=${FIREBASE_API_KEY}`);
-    if (res.status === 404) { renderDMTInputs(); return; }
-    const data = await res.json(); const f = data.fields || {};
-    sourceDMT = { ringover: parseInt(f.ringover?.integerValue ?? SOURCE_DMT_DEFAULT.ringover), crisp: parseInt(f.crisp?.integerValue ?? SOURCE_DMT_DEFAULT.crisp), manual: parseInt(f.manual?.integerValue ?? SOURCE_DMT_DEFAULT.manual) };
-  } catch(e) { console.error(e); }
+    const setting = await supabase.getSetting('dmt');
+    const value = setting?.value || {};
+    sourceDMT = { ringover: Number(value.ringover ?? SOURCE_DMT_DEFAULT.ringover), crisp: Number(value.crisp ?? SOURCE_DMT_DEFAULT.crisp), manual: Number(value.manual ?? SOURCE_DMT_DEFAULT.manual) };
+  } catch (e) { console.error('loadDMT Supabase:', e); }
   renderDMTInputs();
 }
 
@@ -248,64 +225,34 @@ async function saveDMT() {
   if (!requireRoles('admin')) return;
   sourceDMT = { ringover: parseInt(document.getElementById('dmt-ringover').value) || SOURCE_DMT_DEFAULT.ringover, crisp: parseInt(document.getElementById('dmt-crisp').value) || SOURCE_DMT_DEFAULT.crisp, manual: parseInt(document.getElementById('dmt-manual').value) || SOURCE_DMT_DEFAULT.manual };
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try { await supabase.upsertSetting('dmt', sourceDMT, currentUser.id); renderAll(); }
-    catch (e) { console.error('saveDMT Supabase:', e); }
-    return;
-  }
-  const body = { fields: { ringover: { integerValue: String(sourceDMT.ringover) }, crisp: { integerValue: String(sourceDMT.crisp) }, manual: { integerValue: String(sourceDMT.manual) } }};
-  try { await apiFetch(`${BASE_URL}/settings/dmt?key=${FIREBASE_API_KEY}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }); renderAll(); } catch(e) { console.error(e); }
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  try { await supabase.upsertSetting('dmt', sourceDMT, currentUser.id); renderAll(); }
+  catch (e) { console.error('saveDMT Supabase:', e); }
 }
 
 // ===== ACCOUNTS =====
-async function loadAccountsFromFirestore() {
+async function loadAccounts() {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try {
-      TEAM = (await supabase.listProfiles(200) || []).map(profile => ({
-        id: profile.id, name: profile.name || 'Sans nom', email: profile.email || '',
-        color: profile.color || '#2B4C7E', initials: profile.initials || '??',
-        role: profile.role || 'agent', photo: profile.photo || ''
-      }));
-      teamById = new Map(TEAM.map(member => [member.id, member]));
-    } catch (e) { console.error('loadAccountsFromSupabase:', e); }
-    return;
-  }
+  if (!supabase?.enabled()) return;
   try {
-    const res = await apiFetch(`${BASE_URL}/accounts?key=${FIREBASE_API_KEY}`);
-    const data = await res.json();
-    TEAM = (data.documents || []).map(doc => {
-      const f = doc.fields || {};
-      return {
-        id: doc.name.split('/').pop(),
-        name: f.name?.stringValue || 'Sans nom',
-        email: f.email?.stringValue || '',
-        color: f.color?.stringValue || '#2B4C7E',
-        initials: f.initials?.stringValue || '??',
-        role: f.role?.stringValue || 'agent',
-        photo: f.photo?.stringValue || '',
-      };
-    });
+    TEAM = (await supabase.listProfiles(200) || []).map(profile => ({
+      id: profile.id, name: profile.name || 'Sans nom', email: profile.email || '',
+      color: profile.color || '#2B4C7E', initials: profile.initials || '??',
+      role: profile.role || 'agent', photo: profile.photo || ''
+    }));
     teamById = new Map(TEAM.map(member => [member.id, member]));
-  } catch(e) { console.error('loadAccountsFromFirestore:', e); }
+  } catch (e) { console.error('loadAccounts Supabase:', e); }
 }
 
-async function saveAccountToFirestore(user) {
+async function saveAccount(user) {
   if (!requireRoles('admin')) return false;
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try {
-      await supabase.updateProfile(user.id, { name: user.name, email: user.email || '', color: user.color, initials: user.initials, role: user.role, photo: user.photo || '' });
-      return true;
-    } catch (e) { console.error('saveAccountToSupabase:', e); return false; }
-  }
-  const body = { fields: { name: { stringValue: user.name }, email: { stringValue: user.email || '' }, color: { stringValue: user.color }, initials: { stringValue: user.initials }, role: { stringValue: user.role }, photo: { stringValue: user.photo || '' } }};
+  if (!supabase?.enabled()) return false;
   try {
-    const response = await apiFetch(`${BASE_URL}/accounts/${user.id}?key=${FIREBASE_API_KEY}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    await supabase.updateProfile(user.id, { name: user.name, email: user.email || '', color: user.color, initials: user.initials, role: user.role, photo: user.photo || '' });
     return true;
   } catch(e) {
-    console.error('saveAccountToFirestore:', e);
+    console.error('saveAccount Supabase:', e);
     return false;
   }
 }

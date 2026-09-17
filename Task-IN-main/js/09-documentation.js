@@ -22,39 +22,6 @@ let docProcedures = [];
 let docCurrentEditingId = null;
 let docBlocks = [];
 
-// -- Conversion générique JS <-> format REST Firestore (fields/mapValue/arrayValue) --
-function docToFirestoreValue(v) {
-  if (v === null || v === undefined) return { nullValue: null };
-  if (Array.isArray(v)) return { arrayValue: { values: v.map(docToFirestoreValue) } };
-  if (v instanceof Date) return { timestampValue: v.toISOString() };
-  if (typeof v === 'object') return { mapValue: { fields: docToFirestoreFields(v) } };
-  if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: v } : { doubleValue: v };
-  if (typeof v === 'boolean') return { booleanValue: v };
-  return { stringValue: String(v) };
-}
-function docToFirestoreFields(obj) {
-  const fields = {};
-  Object.entries(obj).forEach(([k, v]) => { fields[k] = docToFirestoreValue(v); });
-  return fields;
-}
-function docFromFirestoreValue(v) {
-  if (!v) return null;
-  if ('stringValue' in v) return v.stringValue;
-  if ('integerValue' in v) return parseInt(v.integerValue);
-  if ('doubleValue' in v) return v.doubleValue;
-  if ('booleanValue' in v) return v.booleanValue;
-  if ('timestampValue' in v) return v.timestampValue;
-  if ('nullValue' in v) return null;
-  if ('arrayValue' in v) return (v.arrayValue.values || []).map(docFromFirestoreValue);
-  if ('mapValue' in v) return docFromFirestoreFields(v.mapValue.fields || {});
-  return null;
-}
-function docFromFirestoreFields(fields) {
-  const obj = {};
-  Object.entries(fields || {}).forEach(([k, v]) => { obj[k] = docFromFirestoreValue(v); });
-  return obj;
-}
-
 function docCanEdit() {
   return currentUser && ['admin', 'supervisor', 'formateur'].includes(currentUser.role);
 }
@@ -64,28 +31,18 @@ function docIsAdmin() {
 
 async function docLoadProcedures() {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try {
-      const rows = await supabase.listTable('procedures', 300);
-      docProcedures = (rows || []).map(row => ({
-        id: row.id, title: row.title, category: row.category, description: row.description,
-        version: row.version, status: row.status, validationStatus: row.validation_status,
-        ownerId: row.owner_id, trainingOwnerId: row.training_owner_id,
-        sections: row.sections || [], sourceMetadata: row.source_metadata || {},
-        createdAt: row.created_at, updatedAt: row.updated_at,
-        ...(row.source_metadata?.taskin || {})
-      }));
-    } catch (e) { console.error('docLoadProcedures Supabase', e); docProcedures = []; }
-    return;
-  }
+  if (!supabase?.enabled()) return;
   try {
-    const res = await apiFetch(`${BASE_URL}/procedures?key=${FIREBASE_API_KEY}&pageSize=300`);
-    const data = await res.json();
-    docProcedures = (data.documents || []).map(d => ({
-      id: d.name.split('/').pop(),
-      ...docFromFirestoreFields(d.fields)
+    const rows = await supabase.listTable('procedures', 300);
+    docProcedures = (rows || []).map(row => ({
+      id: row.id, title: row.title, category: row.category, description: row.description,
+      version: row.version, status: row.status, validationStatus: row.validation_status,
+      ownerId: row.owner_id, trainingOwnerId: row.training_owner_id,
+      sections: row.sections || [], sourceMetadata: row.source_metadata || {},
+      createdAt: row.created_at, updatedAt: row.updated_at,
+      ...(row.source_metadata?.taskin || {})
     }));
-  } catch (e) { console.error('docLoadProcedures', e); docProcedures = []; }
+  } catch (e) { console.error('docLoadProcedures Supabase', e); docProcedures = []; }
 }
 
 async function docRenderList() {
@@ -293,20 +250,10 @@ async function docSaveProcedure() {
   };
   try {
     const supabase = window.taskinDataProviders?.supabase;
-    if (supabase?.enabled()) {
-      const row = { title: data.title, category: data.category, description: data.description, version: data.version, status: data.validationStatus || 'draft', validation_status: data.validationStatus || 'draft', owner_id: currentUser.id, training_owner_id: data.trainingOwnerId || null, sections: data.sections || [], source_metadata: { taskin: { slug: data.slug, format: data.format, changeSummary: data.changeSummary, tags: data.tags, visibleTo: data.visibleTo, updatedBy: data.updatedBy, validatedAt: data.validatedAt, validatedBy: data.validatedBy, ownerRole: data.ownerRole, createdBy: data.createdBy } } };
-      if (docCurrentEditingId) await supabase.updateRow('procedures', docCurrentEditingId, row);
-      else await supabase.insertRow('procedures', row);
-      docCloseEditor(); docRenderList();
-      return;
-    }
-    if (docCurrentEditingId) {
-      await apiFetch(`${BASE_URL}/procedures/${docCurrentEditingId}?key=${FIREBASE_API_KEY}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: docToFirestoreFields(data) }) });
-    } else {
-      data.createdAt = new Date();
-      data.createdBy = currentUser.id;
-      await apiFetch(`${BASE_URL}/procedures?key=${FIREBASE_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: docToFirestoreFields(data) }) });
-    }
+    if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+    const row = { title: data.title, category: data.category, description: data.description, version: data.version, status: data.validationStatus || 'draft', validation_status: data.validationStatus || 'draft', owner_id: currentUser.id, training_owner_id: data.trainingOwnerId || null, sections: data.sections || [], source_metadata: { taskin: { slug: data.slug, format: data.format, changeSummary: data.changeSummary, tags: data.tags, visibleTo: data.visibleTo, updatedBy: data.updatedBy, validatedAt: data.validatedAt, validatedBy: data.validatedBy, ownerRole: data.ownerRole, createdBy: data.createdBy } } };
+    if (docCurrentEditingId) await supabase.updateRow('procedures', docCurrentEditingId, row);
+    else await supabase.insertRow('procedures', row);
     docCloseEditor();
     docRenderList();
   } catch (e) { alert('Erreur : ' + e.message); }
@@ -317,12 +264,8 @@ async function docDeleteProcedure() {
   if (!confirm('Supprimer définitivement cette procédure ?')) return;
   try {
     const supabase = window.taskinDataProviders?.supabase;
-    if (supabase?.enabled()) {
-      await supabase.deleteRow('procedures', docCurrentEditingId);
-      docCloseEditor(); docRenderList();
-      return;
-    }
-    await apiFetch(`${BASE_URL}/procedures/${docCurrentEditingId}?key=${FIREBASE_API_KEY}`, { method: 'DELETE' });
+    if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+    await supabase.deleteRow('procedures', docCurrentEditingId);
     docCloseEditor();
     docRenderList();
   } catch (e) { alert('Erreur : ' + e.message); }
@@ -453,22 +396,14 @@ async function docAIStructure(payload, filename) {
   return data.procedure;
 }
 
-// ---- Gestion de la clé API IA (stockée dans Firestore, réservé aux admins) ----
+// ---- Gestion de la clé API IA, réservée aux admins ----
 let _docApiKeyCache = null;
 async function docGetStoredApiKey() {
   if (_docApiKeyCache !== null) return _docApiKeyCache;
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try { _docApiKeyCache = (await supabase.getSetting('aiIntegration'))?.value?.geminiApiKey || ''; return _docApiKeyCache; }
-    catch (e) { console.error('docGetStoredApiKey Supabase', e); return ''; }
-  }
-  try {
-    const res = await apiFetch(`${BASE_URL}/settings/aiIntegration?key=${FIREBASE_API_KEY}`);
-    if (res.status === 404) { _docApiKeyCache = ''; return ''; }
-    const data = await res.json();
-    _docApiKeyCache = data.fields?.geminiApiKey?.stringValue || '';
-    return _docApiKeyCache;
-  } catch (e) { console.error('docGetStoredApiKey', e); return ''; }
+  if (!supabase?.enabled()) return '';
+  try { _docApiKeyCache = (await supabase.getSetting('aiIntegration'))?.value?.geminiApiKey || ''; return _docApiKeyCache; }
+  catch (e) { console.error('docGetStoredApiKey Supabase', e); return ''; }
 }
 function docOpenApiKeyModal() {
   document.getElementById('doc-apikey-overlay').classList.remove('hidden');
@@ -492,14 +427,8 @@ async function docSaveApiKey() {
   status.textContent = 'Enregistrement…';
   try {
     const supabase = window.taskinDataProviders?.supabase;
-    if (supabase?.enabled()) {
-      await supabase.upsertSetting('aiIntegration', { geminiApiKey: value }, currentUser.id);
-      _docApiKeyCache = value; status.textContent = 'Clé enregistrée ✓'; setTimeout(docCloseApiKeyModal, 900); return;
-    }
-    const body = { fields: { geminiApiKey: { stringValue: value } } };
-    await apiFetch(`${BASE_URL}/settings/aiIntegration?key=${FIREBASE_API_KEY}&updateMask.fieldPaths=geminiApiKey`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-    });
+    if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+    await supabase.upsertSetting('aiIntegration', { geminiApiKey: value }, currentUser.id);
     _docApiKeyCache = value;
     status.textContent = 'Clé enregistrée ✓';
     setTimeout(docCloseApiKeyModal, 900);
@@ -511,14 +440,8 @@ async function docClearApiKey() {
   status.textContent = 'Suppression…';
   try {
     const supabase = window.taskinDataProviders?.supabase;
-    if (supabase?.enabled()) {
-      await supabase.upsertSetting('aiIntegration', { geminiApiKey: '' }, currentUser.id);
-      _docApiKeyCache = ''; document.getElementById('doc-apikey-input').value = ''; status.textContent = 'Clé supprimée.'; return;
-    }
-    const body = { fields: { geminiApiKey: { stringValue: '' } } };
-    await apiFetch(`${BASE_URL}/settings/aiIntegration?key=${FIREBASE_API_KEY}&updateMask.fieldPaths=geminiApiKey`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-    });
+    if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+    await supabase.upsertSetting('aiIntegration', { geminiApiKey: '' }, currentUser.id);
     _docApiKeyCache = '';
     document.getElementById('doc-apikey-input').value = '';
     status.textContent = 'Clé supprimée.';
@@ -937,7 +860,9 @@ async function docSeedInitialProcedures() {
     if (existingTitles.has(proc.title)) { skipped++; continue; }
     const data = { ...proc, sections: proc.sections.map(s => ({ ...s, id: docNewId() })), createdAt: new Date(), updatedAt: new Date(), createdBy: currentUser.id, updatedBy: currentUser.id };
     try {
-      await apiFetch(`${BASE_URL}/procedures?key=${FIREBASE_API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields: docToFirestoreFields(data) }) });
+      const supabase = window.taskinDataProviders?.supabase;
+      if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+      await supabase.insertRow('procedures', { title: data.title, category: data.category || '', description: data.description || '', version: data.version || '1.0', status: 'draft', validation_status: 'draft', owner_id: currentUser.id, sections: data.sections || [], source_metadata: { taskin: data } });
       created++;
     } catch (e) { console.error('Seed error', proc.title, e); }
   }

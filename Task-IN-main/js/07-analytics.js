@@ -39,7 +39,7 @@ function renderMosaicKpis(activeTimers) {
   const agents = agentsOnly();
   if (!agents.length) { grid.innerHTML = '<div class="empty">Aucun agent.</div>'; return; }
 
-  // activeTimers optionnel : si non fourni, utiliser les données Firestore live
+  // activeTimers est optionnel pour conserver le rendu des vues sans supervision live.
   const timerByAgent = {};
   if (activeTimers) activeTimers.forEach(t => timerByAgent[t.agentId] = t);
 
@@ -143,28 +143,13 @@ let agentGoals = { count: 20, total: 360, dmt: 8, frt: 3 };
 
 async function loadGoals() {
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try {
-      const setting = await supabase.getSetting('goals');
-      const value = setting?.value || {};
-      agentGoals = { count: Number(value.count ?? 20), total: Number(value.total ?? 360), dmt: Number(value.dmt ?? 8), frt: Number(value.frt ?? 3) };
-      renderGoalInputs();
-    } catch (e) { console.error('loadGoals Supabase:', e); }
-    return;
-  }
+  if (!supabase?.enabled()) return;
   try {
-    const res = await apiFetch(`${BASE_URL}/settings/goals?key=${FIREBASE_API_KEY}`);
-    if (res.status === 404) return;
-    const data = await res.json();
-    const f = data.fields || {};
-    agentGoals = {
-      count: parseInt(f.count?.integerValue || 20),
-      total: parseInt(f.total?.integerValue || 360),
-      dmt:   parseInt(f.dmt?.integerValue   || 8),
-      frt:   parseInt(f.frt?.integerValue   || 3),
-    };
+    const setting = await supabase.getSetting('goals');
+    const value = setting?.value || {};
+    agentGoals = { count: Number(value.count ?? 20), total: Number(value.total ?? 360), dmt: Number(value.dmt ?? 8), frt: Number(value.frt ?? 3) };
     renderGoalInputs();
-  } catch(e) { console.error('loadGoals:', e); }
+  } catch (e) { console.error('loadGoals Supabase:', e); }
 }
 
 function renderGoalInputs() {
@@ -191,23 +176,13 @@ async function saveGoalsSup() {
     frt:   parseInt(document.getElementById('goal-frt-sup')?.value   || 3),
   };
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try { await supabase.upsertSetting('goals', agentGoals, currentUser.id); renderGoalInputs(); renderOpsVisuals(); alert('Objectifs enregistrés ✓'); }
-    catch (e) { console.error('saveGoalsSup Supabase:', e); }
-    return;
-  }
-  const body = { fields: {
-    count: { integerValue: String(agentGoals.count) },
-    total: { integerValue: String(agentGoals.total) },
-    dmt:   { integerValue: String(agentGoals.dmt)   },
-    frt:   { integerValue: String(agentGoals.frt)   },
-  }};
-    try {
-    await apiFetch(`${BASE_URL}/settings/goals?key=${FIREBASE_API_KEY}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
+  try {
+    await supabase.upsertSetting('goals', agentGoals, currentUser.id);
     renderGoalInputs();
     renderOpsVisuals();
     alert('Objectifs enregistrés ✓');
-  } catch(e) { console.error(e); }
+  } catch (e) { console.error('saveGoalsSup Supabase:', e); }
 }
 
 async function saveGoals() {
@@ -219,23 +194,13 @@ async function saveGoals() {
     frt:   parseInt(document.getElementById('goal-frt')?.value   || 3),
   };
   const supabase = window.taskinDataProviders?.supabase;
-  if (supabase?.enabled()) {
-    try { await supabase.upsertSetting('goals', agentGoals, currentUser.id); alert('Objectifs enregistrés ✓'); renderStats([]); renderOpsVisuals(); }
-    catch (e) { console.error('saveGoals Supabase:', e); }
-    return;
-  }
-  const body = { fields: {
-    count: { integerValue: String(agentGoals.count) },
-    total: { integerValue: String(agentGoals.total) },
-    dmt:   { integerValue: String(agentGoals.dmt)   },
-    frt:   { integerValue: String(agentGoals.frt)   },
-  }};
+  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
   try {
-    await apiFetch(`${BASE_URL}/settings/goals?key=${FIREBASE_API_KEY}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    await supabase.upsertSetting('goals', agentGoals, currentUser.id);
     alert('Objectifs enregistrés ✓');
     renderStats([]); // force refresh des barres
     renderOpsVisuals();
-  } catch(e) { console.error(e); }
+  } catch (e) { console.error('saveGoals Supabase:', e); }
 }
 
 function parseMinVal(str) {

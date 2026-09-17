@@ -13,7 +13,7 @@ function updateNetworkStatus() {
 
 function networkHeaders(headers = {}) {
   const merged = new Headers(headers);
-  const token = localStorage.getItem('onspot_idToken');
+  const token = window.taskinDataProviders?.supabase?.getSession()?.access_token;
   if (token) merged.set('Authorization', `Bearer ${token}`);
   merged.set('Accept', 'application/json');
   return merged;
@@ -218,8 +218,6 @@ async function tryRestoreSession() {
       return false;
     }
   }
-  localStorage.removeItem('onspot_idToken');
-  localStorage.removeItem('onspot_uid');
   return false;
 }
 
@@ -351,7 +349,6 @@ function logout() {
   if (activeTimer) { alert('Arrête le timer en cours avant de te déconnecter.'); return; }
   stopLiveRefresh();
   if (window.taskinDataProviders?.supabase?.enabled()) window.taskinDataProviders.supabase.signOut();
-  localStorage.removeItem('onspot_idToken'); localStorage.removeItem('onspot_uid');
   currentUser = null; entries = [];
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
@@ -384,8 +381,8 @@ async function refreshApp() {
   // leur arrivée avant le premier rendu pour éviter les écrans qui se repeignent
   // plusieurs fois avec des données partielles.
   await Promise.all([
-    loadAccountsFromFirestore(),
-    loadTreatmentsFromFirestore(),
+    loadAccounts(),
+    loadTreatments(),
     loadDMT(),
     loadGoals(),
     loadEntries(false),
