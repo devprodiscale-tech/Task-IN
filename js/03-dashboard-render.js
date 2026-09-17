@@ -383,7 +383,6 @@ async function switchTab(view, btn) {
   if (currentUser.role === 'agent' && (view === 'admin' || view === 'supervision')) return;
   if (currentUser.role !== 'admin' && view === 'admin') return;
   if (currentUser.role === 'formateur' && (view === 'supervision' || view === 'admin')) return;
-  if (view === 'admin') return;
 
   currentView = view;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -409,11 +408,11 @@ async function switchTab(view, btn) {
   document.getElementById('training-panel').classList.toggle('hidden', !isTrainingView);
   document.getElementById('channel-matrix-panel').classList.toggle('hidden', !isChannelView);
   const adminOverviewPanel = document.getElementById('admin-overview-panel');
-  if (adminOverviewPanel) adminOverviewPanel.classList.toggle('hidden', !(isHomeView && currentUser.role === 'admin'));
+  if (adminOverviewPanel) adminOverviewPanel.classList.toggle('hidden', !isAdminView);
   document.getElementById('date-filter-bar').classList.toggle('hidden', isDocView || isSupervisionView || isTrainingView);
 
   if (isAdminView) {
-    renderAdminPanel();
+    renderAdminOverview(await loadActiveTimers());
     return;
   }
   if (isHomeView || isTeamView) {

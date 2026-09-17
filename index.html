@@ -152,7 +152,7 @@
       <div class="role-banner-title" id="adm-banner-title" style="font-family:var(--font);font-size:13px;font-weight:400;color:var(--text)"></div>
       <div class="role-banner-sub role-banner-alert" id="adm-banner-sub"></div>
     </div>
-    <button class="role-banner-link" onclick="switchTab('home', document.getElementById('tab-home'))">Détails →</button>
+    <button class="role-banner-link" onclick="switchTab('admin', document.getElementById('tab-admin'))">Détails →</button>
   </div>
 
   <div class="quickstart agent-only">
@@ -262,6 +262,7 @@
     <button class="tab hidden" id="tab-supervision" onclick="switchTab('supervision',this)">🎯 Supervision<span id="sv-alert-count" class="hidden" style="background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;font-weight:700"></span></button>
     <button class="tab hidden" id="tab-training" onclick="switchTab('training',this)">🎓 Formation</button>
     <button class="tab" id="tab-documentation" onclick="switchTab('documentation',this)">📄 Documentation</button>
+    <button class="tab hidden" id="tab-admin" onclick="switchTab('admin',this)">Administration</button>
   </div>
 
   <div class="content">
@@ -355,7 +356,7 @@
     </div>
 
     <div id="team-live-panel" class="hidden">
-      <div id="admin-overview-panel" class="admin-overview-section hidden"></div>
+      <div class="admin-overview-section hidden"></div>
       <div class="admin-home-legacy">
       <div class="admin-card team-live-edit-only" style="margin-bottom:16px">
         <div class="admin-card-header">
@@ -446,7 +447,9 @@
       </div>
     </div>
 
-    <div id="admin-panel" class="hidden" aria-label="Administration" aria-live="polite"></div>
+    <div id="admin-panel" class="hidden" aria-label="Administration" aria-live="polite">
+      <div id="admin-overview-panel" class="admin-overview-section"></div>
+    </div>
     <div id="documentation-panel" class="hidden" style="padding:0">
       <div class="doc-toolbar">
         <div class="search-box-doc">

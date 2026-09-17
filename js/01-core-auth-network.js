@@ -247,7 +247,7 @@ function applyRoleUI() {
 
   // Onglets
   document.getElementById('tab-team').classList.remove('hidden');
-  document.getElementById('tab-home').classList.toggle('hidden', role !== 'admin' && role !== 'agent');
+  document.getElementById('tab-home').classList.toggle('hidden', role !== 'agent');
   document.getElementById('tab-week-role').classList.toggle('hidden', role !== 'admin' && role !== 'agent');
   document.getElementById('tab-leaderboard').classList.toggle('hidden', role !== 'admin' && role !== 'supervisor');
   document.getElementById('tab-supervision').classList.toggle('hidden', role !== 'admin' && role !== 'supervisor');
@@ -292,6 +292,8 @@ function applyRoleUI() {
   document.getElementById('team-live-panel').classList.add('hidden');
   const adminOverviewPanel = document.getElementById('admin-overview-panel');
   if (adminOverviewPanel) adminOverviewPanel.classList.toggle('hidden', role !== 'admin');
+  const adminTab = document.getElementById('tab-admin');
+  if (adminTab) adminTab.classList.toggle('hidden', role !== 'admin');
   document.getElementById('training-panel').classList.add('hidden');
   const svPanel = document.getElementById('supervision-panel');
   if (svPanel) svPanel.classList.add('hidden');
@@ -330,12 +332,11 @@ function applyRoleUI() {
     document.querySelector('.entries-table-wrap').classList.add('hidden');
     document.getElementById('date-filter-bar').classList.add('hidden');
   } else {
-    currentView = 'home';
-    const homeTab = document.getElementById('tab-home');
-    if (homeTab) homeTab.classList.add('active');
+    currentView = 'admin';
+    const adminTab = document.getElementById('tab-admin');
+    if (adminTab) adminTab.classList.add('active');
     document.querySelector('.toolbar').classList.add('hidden');
     document.querySelector('.entries-table-wrap').classList.add('hidden');
-    document.getElementById('team-live-panel').classList.remove('hidden');
 
     startLiveRefresh();
   }
@@ -402,7 +403,7 @@ async function refreshApp() {
 async function renderCurrentView() {
   if (!currentUser) return;
   if (currentView === 'home' || currentView === 'team') renderRoleHome();
-  else if (currentView === 'admin') renderAdminPanel();
+  else if (currentView === 'admin') renderAdminOverview(await loadActiveTimers());
   else if (currentView === 'supervision') {
     await loadModule('09-documentation.js');
     await loadModule('10-supervision.js');
