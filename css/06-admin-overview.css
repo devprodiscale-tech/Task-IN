@@ -112,3 +112,7 @@ body.admin-shell-active button:not(.theme-toggle-btn),body.admin-shell-active .b
 body.admin-shell-active .admin-sidebar-link{border-radius:4px!important}
 body.admin-shell-active .admin-overview-shell button,body.admin-shell-active .admin-workflow-shell button,body.admin-shell-active .admin-stat-shell button,body.admin-shell-active .admin-quality-shell button,body.admin-shell-active .admin-training-shell button,body.admin-shell-active .admin-settings-shell button{border-radius:4px!important}
 @media(max-width:850px){.admin-sidebar-brand{padding-right:0}.admin-sidebar-toggle{display:none!important}}
+
+/* Le topbar est sticky (62px) : la sidebar commence dessous pour garder le contrôle visible. */
+#admin-sidebar.admin-sidebar{top:62px;bottom:0;z-index:40}
+body.admin-shell-active .topbar .btn,body.admin-shell-active .topbar button:not(.theme-toggle-btn){border-radius:4px!important}
