@@ -99,3 +99,16 @@ body.admin-sidebar-collapsed .content{margin-left:74px;padding-left:16px}
 body.admin-shell-active button:not(.theme-toggle-btn),body.admin-shell-active select,body.admin-shell-active input{border-radius:6px!important}
 body.admin-shell-active .admin-overview-period,body.admin-shell-active .admin-overview-theme-btn,body.admin-shell-active .admin-workflow-periods button,body.admin-shell-active .admin-stat-periods button{border-radius:6px!important}
 @media(max-width:850px){body.admin-shell-active .admin-sidebar-toggle{display:none}}
+
+/* Ajustement visuel final : contrôle explicite et boutons moins arrondis */
+.admin-sidebar-brand{position:relative;padding-right:78px}
+.admin-sidebar-toggle{position:absolute;top:0;right:0;display:inline-flex;align-items:center;justify-content:center;gap:5px;width:auto;min-width:28px;height:28px;padding:0 8px;border-radius:4px!important;white-space:nowrap}
+.admin-sidebar-toggle-icon{font-size:17px;line-height:1}
+.admin-sidebar-toggle-label{font-size:10px;font-weight:700;letter-spacing:.01em}
+body.admin-sidebar-collapsed .admin-sidebar-brand{padding-right:0}
+body.admin-sidebar-collapsed .admin-sidebar-toggle{right:0;width:28px;padding:0}
+body.admin-sidebar-collapsed .admin-sidebar-toggle-label{display:none}
+body.admin-shell-active button:not(.theme-toggle-btn),body.admin-shell-active .btn,body.admin-shell-active select,body.admin-shell-active input{border-radius:4px!important}
+body.admin-shell-active .admin-sidebar-link{border-radius:4px!important}
+body.admin-shell-active .admin-overview-shell button,body.admin-shell-active .admin-workflow-shell button,body.admin-shell-active .admin-stat-shell button,body.admin-shell-active .admin-quality-shell button,body.admin-shell-active .admin-training-shell button,body.admin-shell-active .admin-settings-shell button{border-radius:4px!important}
+@media(max-width:850px){.admin-sidebar-brand{padding-right:0}.admin-sidebar-toggle{display:none!important}}

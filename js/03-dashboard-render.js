@@ -384,7 +384,11 @@ function toggleAdminSidebar(force) {
   try { localStorage.setItem('taskin_admin_sidebar_collapsed', collapsed ? '1' : '0'); } catch (_) {}
   const toggle = document.querySelector('.admin-sidebar-toggle');
   if (toggle) {
-    toggle.textContent = collapsed ? '›' : '‹';
+    const icon = toggle.querySelector('.admin-sidebar-toggle-icon');
+    const label = toggle.querySelector('.admin-sidebar-toggle-label');
+    if (icon) icon.textContent = collapsed ? '›' : '‹';
+    if (label) label.textContent = collapsed ? 'Développer' : 'Réduire';
+    if (!icon && !label) toggle.textContent = collapsed ? '›' : '‹';
     toggle.setAttribute('aria-label', collapsed ? 'Développer le menu Admin' : 'Réduire le menu Admin');
     toggle.title = collapsed ? 'Développer le menu' : 'Réduire le menu';
   }
