@@ -241,6 +241,11 @@ function applyRoleUI() {
   const adminSidebar = document.getElementById('admin-sidebar');
   if (adminSidebar) adminSidebar.classList.toggle('hidden', role !== 'admin');
   document.body.classList.toggle('admin-shell-active', role === 'admin');
+  if (role === 'admin' && typeof toggleAdminSidebar === 'function') {
+    let collapsed = false;
+    try { collapsed = localStorage.getItem('taskin_admin_sidebar_collapsed') === '1'; } catch (_) {}
+    toggleAdminSidebar(collapsed);
+  }
 
   if (role === 'agent') badge.textContent = 'Agent';
   if (role === 'supervisor') badge.textContent = 'Superviseur · Vue élargie';

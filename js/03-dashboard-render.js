@@ -378,8 +378,20 @@ function editEntry(id) {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
 }
 
+function toggleAdminSidebar(force) {
+  const collapsed = typeof force === 'boolean' ? force : !document.body.classList.contains('admin-sidebar-collapsed');
+  document.body.classList.toggle('admin-sidebar-collapsed', collapsed);
+  try { localStorage.setItem('taskin_admin_sidebar_collapsed', collapsed ? '1' : '0'); } catch (_) {}
+  const toggle = document.querySelector('.admin-sidebar-toggle');
+  if (toggle) {
+    toggle.textContent = collapsed ? '›' : '‹';
+    toggle.setAttribute('aria-label', collapsed ? 'Développer le menu Admin' : 'Réduire le menu Admin');
+    toggle.title = collapsed ? 'Développer le menu' : 'Réduire le menu';
+  }
+}
+
 function setAdminSidebarActive(view) {
-  const activeView = view === 'workflow-kpi' ? 'stat' : view === 'admin-training' ? 'training' : view;
+  const activeView = view === 'admin-training' ? 'admin-training' : view;
   document.querySelectorAll('[data-admin-nav]').forEach(link => link.classList.toggle('active', link.dataset.adminNav === activeView));
 }
 

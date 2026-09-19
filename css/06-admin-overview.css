@@ -83,3 +83,19 @@ body.admin-shell-active #admin-overview-panel{margin-top:24px}
 body.admin-shell-active #admin-panel{display:none!important}
 @media(max-width:850px){#admin-sidebar.admin-sidebar{width:74px;padding:18px 9px}.admin-sidebar-brand{justify-content:center;padding:0}.admin-sidebar-brand>span:last-child,.admin-sidebar-caption,.admin-sidebar-link>span:last-child,.admin-sidebar-footer>span:last-child{display:none}.admin-sidebar-link{justify-content:center;padding:11px 8px}.admin-sidebar-icon{width:22px;height:22px}.admin-sidebar-footer{justify-content:center;padding:10px 0}body.admin-shell-active .topbar{padding-left:88px}body.admin-shell-active .ops-page-heading{margin-left:98px;margin-right:16px}body.admin-shell-active .content{margin-left:74px;padding:0 16px}}
 @media(max-width:560px){body.admin-shell-active .topbar{padding-left:78px}.admin-sidebar-brand{margin-bottom:12px}body.admin-shell-active .ops-page-heading{margin-left:90px}.admin-overview-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Collapse du menu Admin — conserve la navigation par icônes */
+.admin-sidebar-toggle{display:grid;place-items:center;width:25px;height:25px;margin-left:auto;padding:0;border:1px solid #3B4C6B;border-radius:6px;background:#17243D;color:#CBD5E1;cursor:pointer;font:700 17px/1 var(--font)}
+.admin-sidebar-toggle:hover{border-color:#60A5FA;color:#fff}
+body.admin-sidebar-collapsed #admin-sidebar.admin-sidebar{width:74px;padding-left:9px;padding-right:9px}
+body.admin-sidebar-collapsed .admin-sidebar-brand{justify-content:center;padding:0}
+body.admin-sidebar-collapsed .admin-sidebar-brand-label,body.admin-sidebar-collapsed .admin-sidebar-caption,body.admin-sidebar-collapsed .admin-sidebar-link>span:last-child,body.admin-sidebar-collapsed .admin-sidebar-footer>span:last-child{display:none}
+body.admin-sidebar-collapsed .admin-sidebar-toggle{margin-left:0}
+body.admin-sidebar-collapsed .admin-sidebar-link{justify-content:center;padding-left:8px;padding-right:8px}
+body.admin-sidebar-collapsed .admin-sidebar-footer{justify-content:center;padding-left:0;padding-right:0}
+body.admin-sidebar-collapsed .topbar{padding-left:88px}
+body.admin-sidebar-collapsed .ops-page-heading{margin-left:98px}
+body.admin-sidebar-collapsed .content{margin-left:74px;padding-left:16px}
+body.admin-shell-active button:not(.theme-toggle-btn),body.admin-shell-active select,body.admin-shell-active input{border-radius:6px!important}
+body.admin-shell-active .admin-overview-period,body.admin-shell-active .admin-overview-theme-btn,body.admin-shell-active .admin-workflow-periods button,body.admin-shell-active .admin-stat-periods button{border-radius:6px!important}
+@media(max-width:850px){body.admin-shell-active .admin-sidebar-toggle{display:none}}
