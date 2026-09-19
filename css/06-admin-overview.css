@@ -122,3 +122,17 @@ body.admin-shell-active .content{width:calc(100% - 220px);min-width:0;overflow-x
 body.admin-sidebar-collapsed .content{width:calc(100% - 74px);min-width:0}
 body.admin-sidebar-collapsed #admin-overview-panel,body.admin-sidebar-collapsed #admin-workflow-panel,body.admin-sidebar-collapsed #admin-stat-panel,body.admin-sidebar-collapsed #admin-quality-panel,body.admin-sidebar-collapsed #admin-training-panel,body.admin-sidebar-collapsed #admin-settings-panel{max-width:100%;min-width:0}
 @media(max-width:850px){.admin-sidebar-brand-label{display:none!important}.admin-sidebar-mark{width:30px;height:30px}body.admin-shell-active .content{width:calc(100% - 74px)}}
+
+/* Sidebar thématique : blanche par défaut, surface sombre en dark mode. */
+#admin-sidebar.admin-sidebar{background:var(--surface);color:var(--text);border-right:1px solid var(--border);box-shadow:8px 0 26px rgba(15,23,42,.08)}
+.admin-sidebar-brand{color:var(--text)}
+.admin-sidebar-caption{color:var(--text3)}
+.admin-sidebar-link{color:var(--text2)}
+.admin-sidebar-link:hover{background:var(--surface2);color:var(--text)}
+.admin-sidebar-link.active{border-color:var(--ocean);background:var(--ocean);color:#fff;box-shadow:0 6px 16px rgba(37,99,235,.22)}
+.admin-sidebar-icon,.admin-sidebar-link.active .admin-sidebar-icon{color:var(--ocean)}
+.admin-sidebar-link.active .admin-sidebar-icon{color:#fff}
+.admin-sidebar-footer{border-top-color:var(--border);color:var(--text2)}
+.admin-sidebar-toggle{background:var(--surface2);border-color:var(--border2);color:var(--text2)}
+.admin-sidebar-toggle:hover{border-color:var(--ocean);color:var(--ocean);background:var(--ocean-dim)}
+[data-theme="dark"] #admin-sidebar.admin-sidebar{box-shadow:8px 0 26px rgba(2,6,23,.28)}
