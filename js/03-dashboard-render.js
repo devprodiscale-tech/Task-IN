@@ -543,7 +543,6 @@ async function renderRoleHome() {
   if (currentUser.role === 'supervisor') { renderSupervisorBanner(activeTimers); }
   if (currentUser.role === 'admin') {
     renderAdminBanner();
-    renderAdminHomeStats();
     renderAdminOverview(activeTimers);
   }
   renderTeamLiveList(activeTimers);
@@ -579,16 +578,6 @@ function renderAdminBanner() {
   document.getElementById('adm-banner-total').textContent = fmtDuration(total);
   document.getElementById('adm-banner-title').textContent = `${agentsOnly().length} agents · ${customTreatmentTypes.length} types de traitement`;
   document.getElementById('adm-banner-sub').textContent = '';
-}
-
-function renderAdminHomeStats() {
-  const now = new Date(); const weekStart = new Date(now); weekStart.setDate(now.getDate()-now.getDay()+1); weekStart.setHours(0,0,0,0);
-  const weekEntries = entries.filter(e => new Date(e.startTimeStr) >= weekStart);
-  const total = weekEntries.reduce((s,e)=>s+e.durationSec,0);
-  const activeToday = new Set(entries.filter(e=>isToday(e.startTimeStr)).map(e=>e.agent));
-  document.getElementById('adm-home-total').textContent = fmtDuration(total);
-  document.getElementById('adm-home-entries').textContent = entries.length;
-  document.getElementById('adm-home-active').textContent = activeToday.size;
 }
 
 function renderTeamLiveList(activeTimers) {

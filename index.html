@@ -203,61 +203,6 @@
     <div class="agent-history-bars" id="agent-history-bars"></div>
   </div>
 
-  <!-- P1 : Vue Globale Équipe & KPIs — filtres temporels + analyse individuelle -->
-  <details class="team-accordion hidden" id="team-accordion" style="margin-top:20px;">
-    <summary class="team-summary">Vue Globale Équipe & KPIs</summary>
-
-    <!-- Contrôles : période + agent -->
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface2)">
-      <div style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:3px">
-        <button class="sup-period-btn active" data-p="day"   onclick="setSupPeriod('day',this)">Jour</button>
-        <button class="sup-period-btn"        data-p="week"  onclick="setSupPeriod('week',this)">Semaine</button>
-        <button class="sup-period-btn"        data-p="month" onclick="setSupPeriod('month',this)">Mois</button>
-      </div>
-      <select class="filter-select" id="sup-agent-filter" onchange="renderSupKpis()" style="font-size:12px;padding:6px 10px">
-        <option value="">Équipe entière</option>
-      </select>
-      <span class="count-badge" id="sup-period-label" style="margin-left:auto"></span>
-    </div>
-
-    <div class="stats-grid" id="stats-grid-supervisor" style="grid-template-columns:repeat(4,1fr); padding-bottom:20px; border-bottom:1px solid var(--border);">
-      <div class="stat-card">
-        <div class="stat-label" id="sup-s-total-label">Total (Jour)</div>
-        <div class="stat-value" id="sup-s-total" style="color:var(--ocean)">0h00</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">DMT</div>
-        <div class="stat-value" id="sup-s-dmt" style="color:var(--ocean)">0min</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">FRT</div>
-        <div class="stat-value" id="sup-s-frt" style="color:var(--clay)">0min</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Tâches</div>
-        <div class="stat-value" id="sup-s-count" style="color:var(--text2)">0</div>
-      </div>
-    </div>
-  </details>
-
-  <div class="stats-grid hidden" id="stats-grid-admin-home" style="grid-template-columns:repeat(3,1fr)">
-    <div class="stat-card">
-      <div class="stat-label">Total semaine</div>
-      <div class="stat-value" id="adm-home-total" style="color:var(--ocean)">0h00</div>
-      <div class="stat-sub">toute l'équipe</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Entrées enregistrées</div>
-      <div class="stat-value" id="adm-home-entries" style="color:var(--ocean)">0</div>
-      <div class="stat-sub">au total</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Agents actifs (jour)</div>
-      <div class="stat-value" id="adm-home-active" style="color:var(--ocean)">0</div>
-      <div class="stat-sub">sur 5</div>
-    </div>
-  </div>
-  <div id="ops-viz-admin-home" class="ops-viz-section hidden"></div>
   <div id="admin-overview-panel" class="admin-overview-section hidden"></div>
   <div id="admin-settings-panel" class="admin-overview-section hidden"></div>
 

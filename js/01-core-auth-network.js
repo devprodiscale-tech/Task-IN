@@ -276,8 +276,7 @@ function applyRoleUI() {
 
   // Stats
   document.getElementById('stats-grid-agent').classList.toggle('hidden', role !== 'agent');
-  document.getElementById('team-accordion').classList.toggle('hidden', role !== 'admin');
-  document.getElementById('stats-grid-admin-home').classList.toggle('hidden', role !== 'admin');
+  document.getElementById('team-accordion')?.classList.add('hidden');
   // C4 : agent-history-bar uniquement pour agent
   const histBar = document.getElementById('agent-history-bar');
   if (histBar) histBar.classList.toggle('hidden', role !== 'agent');
