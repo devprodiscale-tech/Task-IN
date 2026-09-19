@@ -432,13 +432,14 @@ async function switchTab(view, btn) {
   document.getElementById('date-filter-bar').classList.toggle('hidden', isDocView || isSupervisionView || isTrainingView);
 
   if (isAdminView) {
-    renderAdminPanel();
-    renderChannelMatrix();
-    const activeTimers = await loadActiveTimers();
-    renderAdminOverview(activeTimers);
+    renderAdminOverview(await loadActiveTimers());
     return;
   }
-  if (isHomeView || isTeamView) { renderRoleHome(); if(isTeamView) renderChannelMatrix(); return; }
+  if (isHomeView || isTeamView) {
+    await renderRoleHome();
+    if (isTeamView) renderChannelMatrix();
+    return;
+  }
   if (isLeaderboard) { renderLeaderboard(); return; }
   if (isDocView) {
     await loadModule('09-documentation.js');
@@ -463,8 +464,15 @@ async function switchTab(view, btn) {
 // ===== ROLE HOME =====
 async function renderRoleHome() {
   const activeTimers = await loadActiveTimers();
+  document.querySelectorAll('.admin-home-legacy').forEach(element => {
+    element.classList.toggle('hidden', currentUser.role === 'admin');
+  });
   if (currentUser.role === 'supervisor') { renderSupervisorBanner(activeTimers); }
-  if (currentUser.role === 'admin') { renderAdminBanner(); renderAdminHomeStats(); }
+  if (currentUser.role === 'admin') {
+    renderAdminBanner();
+    renderAdminHomeStats();
+    renderAdminOverview(activeTimers);
+  }
   renderTeamLiveList(activeTimers);
   // P3 : mosaïque — passe les timers actifs pour les pastilles live
   renderMosaicKpis(activeTimers);

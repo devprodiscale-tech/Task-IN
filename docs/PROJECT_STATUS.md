@@ -58,7 +58,7 @@ accès aux données métier
 
 ### Incrément en cours — Dashboard Admin
 
-La vue générale Admin est intégrée dans le dépôt cible. Elle lit les données déjà chargées par le provider Supabase (`TEAM`, `entries` et timers actifs) et expose les KPI d’activité, la présence équipe, la heat map, l’état SLA/FRT, le cumul par agent, l’activité récente et les accès rapides. Les états sans données restent explicites ; aucun endpoint d’écriture ni module Settings Firebase n’est activé par cet incrément.
+Le travail repart sur une base minimale : la navigation actuelle est temporairement remplacée par un seul accès visible **Dashboard Admin**, affiché en première page pour le rôle Admin. Cet accès monte le dashboard de l’archive Admin (`TEAM`, `entries`, timers actifs et données disponibles), avec ses KPI, présence équipe, heat map, SLA/FRT, planning, activité récente et accès rapides. Les autres onglets ne sont pas exposés dans cette phase de refonte. Les états sans données restent explicites ; aucun endpoint d’écriture ni module Settings Firebase n’est activé par cet incrément.
 
 ---
 
