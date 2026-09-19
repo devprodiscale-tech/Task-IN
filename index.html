@@ -108,6 +108,21 @@
     </div>
   </div>
 
+  <aside id="admin-sidebar" class="admin-sidebar hidden" aria-label="Navigation Admin">
+    <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">✓</span><span>Task’in</span></div>
+    <div class="admin-sidebar-caption">Hub central</div>
+    <nav class="admin-sidebar-nav">
+      <button type="button" class="admin-sidebar-link active" data-admin-nav="admin" onclick="switchTab('admin', document.getElementById('tab-admin'))"><span class="admin-sidebar-icon">⌂</span><span>Vue d’ensemble</span></button>
+      <button type="button" class="admin-sidebar-link" data-admin-nav="supervision" onclick="switchTab('supervision', document.getElementById('tab-supervision'))"><span class="admin-sidebar-icon">◌</span><span>Supervision</span></button>
+      <button type="button" class="admin-sidebar-link" data-admin-nav="training" onclick="switchTab('training', document.getElementById('tab-training'))"><span class="admin-sidebar-icon">▣</span><span>Formation</span></button>
+      <button type="button" class="admin-sidebar-link" data-admin-nav="stat" onclick="switchTab('stat', document.getElementById('tab-stat'))"><span class="admin-sidebar-icon">▥</span><span>Statistiques</span></button>
+      <button type="button" class="admin-sidebar-link" data-admin-nav="quality" onclick="switchTab('quality', document.getElementById('tab-quality'))"><span class="admin-sidebar-icon">♡</span><span>Qualité</span></button>
+      <button type="button" class="admin-sidebar-link" data-admin-nav="team" onclick="switchTab('team', document.getElementById('tab-team'))"><span class="admin-sidebar-icon">♧</span><span>Équipe</span></button>
+      <button type="button" class="admin-sidebar-link" data-admin-nav="admin-settings" onclick="switchTab('admin-settings', document.getElementById('tab-admin-settings'))"><span class="admin-sidebar-icon">⚙</span><span>Paramètres</span></button>
+    </nav>
+    <div class="admin-sidebar-footer"><span class="admin-sidebar-status-dot"></span><span>Données synchronisées</span></div>
+  </aside>
+
   <div class="ops-page-heading hidden" id="ops-page-heading">
     <div>
       <div class="ops-eyebrow">Task'in Operations</div>

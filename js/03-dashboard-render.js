@@ -378,6 +378,11 @@ function editEntry(id) {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
 }
 
+function setAdminSidebarActive(view) {
+  const activeView = view === 'workflow-kpi' ? 'stat' : view === 'admin-training' ? 'training' : view;
+  document.querySelectorAll('[data-admin-nav]').forEach(link => link.classList.toggle('active', link.dataset.adminNav === activeView));
+}
+
 // Point 5 : switchTab renforcé — guards stricts pour agent et non-admin
 async function switchTab(view, btn) {
   const adminSubViews = {
@@ -389,6 +394,7 @@ async function switchTab(view, btn) {
   };
   if (adminSubViews[view]) {
     if (!currentUser || currentUser.role !== 'admin') return;
+    setAdminSidebarActive(view);
     currentView = view;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     if (btn) btn.classList.add('active');
@@ -406,6 +412,7 @@ async function switchTab(view, btn) {
   if (currentUser.role === 'formateur' && (view === 'supervision' || view === 'admin')) return;
 
   currentView = view;
+  if (currentUser.role === 'admin') setAdminSidebarActive(view);
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if (btn) btn.classList.add('active');
 

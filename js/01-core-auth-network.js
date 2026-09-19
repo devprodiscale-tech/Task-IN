@@ -232,12 +232,15 @@ function applyRoleUI() {
   const opsHeading = document.getElementById('ops-page-heading');
   if (opsHeading) {
     opsHeading.classList.toggle('hidden', !isOpsRole);
-    document.getElementById('ops-page-title').textContent = role === 'admin' ? 'Admin control center' : 'Supervision opérationnelle';
-    document.getElementById('ops-page-subtitle').textContent = role === 'admin' ? 'Pilote les performances, les paramètres et l’activité globale de l’équipe.' : 'Suis les performances, les cas complexes et les alertes de l’équipe.';
+    document.getElementById('ops-page-title').textContent = role === 'admin' ? 'Vue d’ensemble' : 'Supervision opérationnelle';
+    document.getElementById('ops-page-subtitle').textContent = role === 'admin' ? 'Dashboard Admin · Hub central de l’activité et de la performance.' : 'Suis les performances, les cas complexes et les alertes de l’équipe.';
     document.getElementById('ops-context-label').textContent = role === 'admin' ? 'Contrôle global' : 'Équipe en direct';
   }
   app.classList.remove('role-agent','role-supervisor','role-formateur','role-admin');
   app.classList.add('role-' + role);
+  const adminSidebar = document.getElementById('admin-sidebar');
+  if (adminSidebar) adminSidebar.classList.toggle('hidden', role !== 'admin');
+  document.body.classList.toggle('admin-shell-active', role === 'admin');
 
   if (role === 'agent') badge.textContent = 'Agent';
   if (role === 'supervisor') badge.textContent = 'Superviseur · Vue élargie';
@@ -329,6 +332,14 @@ function applyRoleUI() {
     document.querySelector('.toolbar').classList.add('hidden');
     document.querySelector('.entries-table-wrap').classList.add('hidden');
     document.getElementById('date-filter-bar').classList.add('hidden');
+  } else if (role === 'admin') {
+    currentView = 'admin';
+    const adminTab = document.getElementById('tab-admin');
+    if (adminTab) adminTab.classList.add('active');
+    setAdminSidebarActive('admin');
+    document.querySelector('.toolbar').classList.add('hidden');
+    document.querySelector('.entries-table-wrap').classList.add('hidden');
+    document.getElementById('date-filter-bar').classList.add('hidden');
   } else {
     currentView = 'home';
     const homeTab = document.getElementById('tab-home');
@@ -401,7 +412,7 @@ async function refreshApp() {
 async function renderCurrentView() {
   if (!currentUser) return;
   if (currentView === 'home' || currentView === 'team') renderRoleHome();
-  else if (currentView === 'admin') renderAdminPanel();
+  else if (currentView === 'admin') renderAdminOverview(await loadActiveTimers());
   else if (currentView === 'supervision') {
     await loadModule('09-documentation.js');
     await loadModule('10-supervision.js');
