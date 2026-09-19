@@ -405,7 +405,8 @@ async function refreshApp() {
     loadEntries(false),
   ]);
   populateFilters();
-  renderCurrentView();
+  if (currentUser?.role === 'admin') await preloadAdminInterfaces();
+  await renderCurrentView();
   if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor')) {
     startLiveRefresh();
   }

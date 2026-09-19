@@ -399,6 +399,24 @@ function setAdminSidebarActive(view) {
   document.querySelectorAll('[data-admin-nav]').forEach(link => link.classList.toggle('active', link.dataset.adminNav === activeView));
 }
 
+async function preloadAdminInterfaces() {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  await Promise.all(['05-training.js','09-documentation.js','10-supervision.js'].map(name => loadModule(name)));
+  const activeTimers = await loadActiveTimers();
+  const renders = [
+    Promise.resolve(renderAdminOverview(activeTimers)),
+    Promise.resolve(adminWorkflowRender()),
+    Promise.resolve(adminStatRender()),
+    Promise.resolve(adminQualityRender()),
+    Promise.resolve(adminTrainingRender()),
+    Promise.resolve(adminSettingsRender()),
+  ];
+  await Promise.allSettled(renders);
+  ['admin-overview-panel','admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel','admin-settings-panel'].forEach(id => {
+    document.getElementById(id)?.setAttribute('data-admin-ready', '1');
+  });
+}
+
 // Point 5 : switchTab renforcé — guards stricts pour agent et non-admin
 async function switchTab(view, btn) {
   const adminSubViews = {
@@ -420,7 +438,11 @@ async function switchTab(view, btn) {
     document.getElementById('date-filter-bar')?.classList.add('hidden');
     ['admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel','admin-settings-panel'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
     document.getElementById(adminSubViews[view].panel)?.classList.remove('hidden');
-    await adminSubViews[view].render();
+    const panel = document.getElementById(adminSubViews[view].panel);
+    if (panel?.dataset.adminReady !== '1') {
+      await adminSubViews[view].render();
+      panel?.setAttribute('data-admin-ready', '1');
+    }
     return;
   }
   if (currentUser.role === 'agent' && (view === 'admin' || view === 'supervision')) return;
@@ -456,7 +478,11 @@ async function switchTab(view, btn) {
   document.getElementById('date-filter-bar').classList.toggle('hidden', isDocView || isSupervisionView || isTrainingView);
 
   if (isAdminView) {
-    renderAdminOverview(await loadActiveTimers());
+    const panel = document.getElementById('admin-overview-panel');
+    if (panel?.dataset.adminReady !== '1') {
+      renderAdminOverview(await loadActiveTimers());
+      panel?.setAttribute('data-admin-ready', '1');
+    }
     return;
   }
   if (isHomeView || isTeamView) {
