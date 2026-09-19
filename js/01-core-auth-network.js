@@ -255,7 +255,7 @@ function applyRoleUI() {
   badge.classList.toggle('hidden', role === 'agent');
 
   // Onglets
-  document.getElementById('tab-team').classList.remove('hidden');
+  document.getElementById('tab-team').classList.toggle('hidden', role !== 'admin' && role !== 'supervisor');
   document.getElementById('tab-admin').classList.toggle('hidden', role !== 'admin');
   document.querySelectorAll('.admin-only-tab').forEach(el => el.classList.toggle('hidden', role !== 'admin'));
   document.getElementById('tab-home').classList.toggle('hidden', role !== 'admin' && role !== 'agent');
@@ -286,17 +286,15 @@ function applyRoleUI() {
   const goalsSup = document.getElementById('goals-sup-card');
   if (goalsSup) goalsSup.classList.toggle('hidden', role === 'agent');
   const adminOpsHome = document.getElementById('ops-viz-admin-home');
-  if (adminOpsHome) adminOpsHome.classList.toggle('hidden', role !== 'admin');
+  if (adminOpsHome) adminOpsHome.classList.add('hidden');
   const supervisorOpsOverview = document.getElementById('ops-viz-supervision-overview');
-  if (supervisorOpsOverview) supervisorOpsOverview.classList.toggle('hidden', role !== 'supervisor');
+  if (supervisorOpsOverview) supervisorOpsOverview.classList.toggle('hidden', role !== 'admin' && role !== 'supervisor');
 
   // Dashboard live permanent (Admin seulement — le superviseur a désormais Supervision > Vue d'ensemble)
-  document.getElementById('permanent-live-panel').classList.toggle('hidden', role !== 'admin');
+  document.getElementById('permanent-live-panel').classList.add('hidden');
 
-  // Point 5 : admin-panel strictement masqué si non-admin
-  if (role !== 'admin') {
-    document.getElementById('admin-panel').classList.add('hidden');
-  }
+  // L’ancien arbre Administration est désactivé : les panneaux admin-* sont la source unique.
+  document.getElementById('admin-panel')?.classList.add('hidden');
   document.getElementById('leaderboard-panel').classList.add('hidden');
   document.getElementById('channel-matrix-panel').classList.add('hidden');
   document.getElementById('team-live-panel').classList.add('hidden');

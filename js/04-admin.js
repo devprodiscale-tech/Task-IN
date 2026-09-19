@@ -177,15 +177,10 @@ function opsVizTemplate(prefix, list) {
 function renderOpsVisuals() {
   if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'supervisor')) return;
   const list = opsPeriodEntries();
-  const admin = document.getElementById('ops-viz-admin');
-  const adminHome = document.getElementById('ops-viz-admin-home');
-  const supervisor = document.getElementById('ops-viz-supervisor');
+  // Le rendu opérationnel appartient à Supervision. Les anciennes cibles admin/IDs
+  // morts ne sont plus alimentés afin d'éviter les doublons.
   const supervisorOverview = document.getElementById('ops-viz-supervision-overview');
-  const markup = opsVizTemplate('ops', list);
-  if (admin) admin.innerHTML = markup;
-  if (adminHome) adminHome.innerHTML = markup;
-  if (supervisor) supervisor.innerHTML = markup;
-  if (supervisorOverview) supervisorOverview.innerHTML = markup;
+  if (supervisorOverview) supervisorOverview.innerHTML = opsVizTemplate('ops', list);
 }
 
 function exportCSV() {

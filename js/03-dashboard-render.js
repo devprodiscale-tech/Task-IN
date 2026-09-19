@@ -455,7 +455,7 @@ async function switchTab(view, btn, options = {}) {
   const adminSubViews = {
     'workflow-kpi': { panel: 'admin-workflow-panel', render: () => adminWorkflowRender() },
     'stat': { panel: 'admin-stat-panel', render: () => adminStatRender() },
-    'quality': { panel: 'admin-quality-panel', render: () => adminQualityRender() },
+    'quality': { panel: 'admin-quality-panel', render: async () => { await loadModule('10-supervision.js'); if (typeof svInit === 'function') await svInit(); return adminQualityRender(); } },
     'admin-training': { panel: 'admin-training-panel', render: () => adminTrainingRender() },
     'admin-settings': { panel: 'admin-settings-panel', render: () => adminSettingsRender() },
   };
@@ -468,6 +468,8 @@ async function switchTab(view, btn, options = {}) {
     if (btn) btn.classList.add('active');
     hideAdminSubPanels();
     ['admin-panel','team-live-panel','leaderboard-panel','documentation-panel','supervision-panel','training-panel','channel-matrix-panel'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+    // Le nouvel arbre admin-* est la seule architecture active.
+    document.getElementById('admin-panel')?.classList.add('hidden');
     document.querySelector('.toolbar')?.classList.add('hidden');
     document.querySelector('.entries-table-wrap')?.classList.add('hidden');
     document.getElementById('date-filter-bar')?.classList.add('hidden');
@@ -481,7 +483,7 @@ async function switchTab(view, btn, options = {}) {
     if (sequence !== navigationSequence || currentView !== view) return;
     return;
   }
-  if (currentUser.role === 'agent' && (view === 'admin' || view === 'supervision')) return;
+  if (currentUser.role === 'agent' && (view === 'admin' || view === 'supervision' || view === 'team' || view === 'leaderboard')) return;
   if (currentUser.role !== 'admin' && view === 'admin') return;
   if (currentUser.role === 'formateur' && (view === 'supervision' || view === 'admin')) return;
 
@@ -498,18 +500,21 @@ async function switchTab(view, btn, options = {}) {
   const isDocView = view === 'documentation';
   const isSupervisionView = view === 'supervision';
   const isTrainingView = view === 'training';
-  const isChannelView = isTeamView || isAdminView;
+  // La matrice analytique appartient à Statistiques, pas à Équipe ni au Hub.
+  const isChannelView = false;
   const showTable = !isAdminView && !isHomeView && !isLeaderboard && !isDocView && !isSupervisionView && !isTrainingView;
 
   document.querySelector('.toolbar').classList.toggle('hidden', !showTable);
   document.querySelector('.entries-table-wrap').classList.toggle('hidden', !showTable);
-  document.getElementById('admin-panel').classList.toggle('hidden', !isAdminView);
+  document.getElementById('admin-panel')?.classList.add('hidden');
   document.getElementById('team-live-panel').classList.toggle('hidden', !isHomeView && !isTeamView);
-  document.getElementById('leaderboard-panel').classList.toggle('hidden', !isLeaderboard);
+  document.getElementById('leaderboard-panel').classList.toggle('hidden', !isLeaderboard && !isTeamView);
   document.getElementById('documentation-panel').classList.toggle('hidden', !isDocView);
   document.getElementById('supervision-panel').classList.toggle('hidden', !isSupervisionView);
   document.getElementById('training-panel').classList.toggle('hidden', !isTrainingView);
   document.getElementById('channel-matrix-panel').classList.toggle('hidden', !isChannelView);
+  document.getElementById('mosaic-section')?.classList.toggle('hidden', isTeamView);
+  document.querySelectorAll('#team-live-panel .team-live-edit-only').forEach(el => el.classList.toggle('hidden', isTeamView || currentUser.role === 'agent'));
   hideAdminSubPanels();
   if (isAdminView) document.getElementById('admin-overview-panel')?.classList.remove('hidden');
   const adminOverviewPanel = document.getElementById('admin-overview-panel');
@@ -528,7 +533,7 @@ async function switchTab(view, btn, options = {}) {
   if (isHomeView || isTeamView) {
     await renderRoleHome();
     if (sequence !== navigationSequence || currentView !== view) return;
-    if (isTeamView) renderChannelMatrix();
+    if (isTeamView && (currentUser.role === 'admin' || currentUser.role === 'supervisor')) renderLeaderboard();
     return;
   }
   if (isLeaderboard) { renderLeaderboard(); return; }
