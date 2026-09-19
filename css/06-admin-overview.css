@@ -116,3 +116,9 @@ body.admin-shell-active .admin-overview-shell button,body.admin-shell-active .ad
 /* Le topbar est sticky (62px) : la sidebar commence dessous pour garder le contrôle visible. */
 #admin-sidebar.admin-sidebar{top:62px;bottom:0;z-index:40}
 body.admin-shell-active .topbar .btn,body.admin-shell-active .topbar button:not(.theme-toggle-btn){border-radius:4px!important}
+
+.admin-sidebar-mark{display:block;width:29px;height:29px;object-fit:cover;border-radius:6px}
+body.admin-shell-active .content{width:calc(100% - 220px);min-width:0;overflow-x:hidden}
+body.admin-sidebar-collapsed .content{width:calc(100% - 74px);min-width:0}
+body.admin-sidebar-collapsed #admin-overview-panel,body.admin-sidebar-collapsed #admin-workflow-panel,body.admin-sidebar-collapsed #admin-stat-panel,body.admin-sidebar-collapsed #admin-quality-panel,body.admin-sidebar-collapsed #admin-training-panel,body.admin-sidebar-collapsed #admin-settings-panel{max-width:100%;min-width:0}
+@media(max-width:850px){.admin-sidebar-brand-label{display:none!important}.admin-sidebar-mark{width:30px;height:30px}body.admin-shell-active .content{width:calc(100% - 74px)}}
