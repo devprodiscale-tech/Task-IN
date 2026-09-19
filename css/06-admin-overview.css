@@ -60,121 +60,68 @@
 .admin-overview-sla-track i{background:linear-gradient(90deg,var(--ocean),var(--green))}
 [data-theme="dark"] .admin-overview-shell,[data-theme="dark"] .admin-workflow-shell,[data-theme="dark"] .admin-stat-shell,[data-theme="dark"] .admin-quality-shell,[data-theme="dark"] .admin-training-shell,[data-theme="dark"] .admin-settings-shell{box-shadow:0 16px 34px rgba(2,6,23,.28)}
 
-/* Hub Central Admin — layout structurel en grille */
-body.admin-shell-active #app {
-  --admin-sidebar-width: 220px;
-  display: grid;
-  grid-template-columns: var(--admin-sidebar-width) minmax(0, 1fr);
-  grid-auto-rows: auto;
-  align-items: start;
-  width: 100%;
-  min-width: 0;
-}
-body.admin-shell-active #app > .topbar {
-  grid-column: 1 / -1;
-  grid-row: 1;
-  width: 100%;
-  min-width: 0;
-  padding-left: 24px;
-}
-body.admin-shell-active #app > #admin-sidebar.admin-sidebar {
-  position: sticky;
-  grid-column: 1;
-  grid-row: 2 / span 30;
-  top: 56px;
-  width: auto;
-  height: calc(100vh - 56px);
-  min-width: 0;
-  align-self: start;
-  z-index: 40;
-}
-body.admin-shell-active #app > :not(.topbar):not(#admin-sidebar) {
-  grid-column: 2;
-  width: auto;
-  max-width: none;
-  min-width: 0;
-  margin-left: 0;
-  margin-right: 0;
-}
-body.admin-shell-active .topbar-logo,
-body.admin-shell-active .topbar-sep,
-body.admin-shell-active .topbar-title { display: none; }
-body.admin-shell-active .ops-page-heading {
-  width: auto;
-  max-width: none;
-  margin: 22px 24px 0;
-  box-sizing: border-box;
-}
-body.admin-shell-active .content {
-  width: auto;
-  max-width: none;
-  margin: 0;
-  padding: 20px 24px;
-  min-width: 0;
-  box-sizing: border-box;
-}
-body.admin-shell-active .content > * { max-width: 100%; min-width: 0; }
-body.admin-shell-active #permanent-live-panel,
-body.admin-shell-active #admin-banner,
-body.admin-shell-active #date-filter-bar { display: none !important; }
-body.admin-shell-active #admin-overview-panel { margin-top: 24px; }
-body.admin-shell-active #admin-panel { display: none !important; }
+/* Hub Central Admin — navigation latérale persistante */
+#admin-sidebar.admin-sidebar{position:fixed;z-index:20;inset:0 auto 0 0;width:220px;display:flex;flex-direction:column;padding:24px 14px 16px;background:#0F172A;color:#CBD5E1;box-shadow:8px 0 26px rgba(15,23,42,.12)}
+.admin-sidebar-brand{display:flex;align-items:center;gap:10px;padding:0 10px;color:#F8FAFC;font-size:20px;font-weight:700;letter-spacing:-.03em}
+.admin-sidebar-mark{display:grid;place-items:center;width:27px;height:27px;border:2px solid #60A5FA;border-radius:8px;background:#F8FAFC;color:#2563EB;font-size:17px;line-height:1}
+.admin-sidebar-caption{margin:42px 10px 12px;color:#64748B;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.admin-sidebar-nav{display:grid;gap:5px}
+.admin-sidebar-link{display:flex;align-items:center;gap:11px;width:100%;padding:10px;border:1px solid transparent;border-radius:8px;background:transparent;color:#CBD5E1;cursor:pointer;font:500 12px var(--font);text-align:left;transition:background .16s ease,color .16s ease,border-color .16s ease}
+.admin-sidebar-link:hover{background:#172554;color:#F8FAFC}
+.admin-sidebar-link.active{border-color:#2563EB;background:#2563EB;color:#fff;box-shadow:0 6px 16px rgba(37,99,235,.25);font-weight:700}
+.admin-sidebar-icon{display:grid;place-items:center;width:20px;height:20px;color:#93C5FD;font-size:15px;font-weight:700}
+.admin-sidebar-link.active .admin-sidebar-icon{color:#fff}
+.admin-sidebar-footer{display:flex;align-items:center;gap:7px;margin-top:auto;padding:11px 10px;border-top:1px solid #263653;color:#94A3B8;font-size:10px}
+.admin-sidebar-status-dot{width:7px;height:7px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+body.admin-shell-active .topbar{padding-left:236px}
+body.admin-shell-active .topbar-logo,body.admin-shell-active .topbar-sep,body.admin-shell-active .topbar-title{display:none}
+body.admin-shell-active .ops-page-heading{margin-left:244px;margin-right:24px;max-width:none}
+body.admin-shell-active .content{max-width:none;margin-left:220px;margin-right:0;padding:0 24px}
+body.admin-shell-active .tabs{display:none}
+body.admin-shell-active #permanent-live-panel,body.admin-shell-active #admin-banner,body.admin-shell-active #date-filter-bar{display:none!important}
+body.admin-shell-active #admin-overview-panel{margin-top:24px}
+body.admin-shell-active #admin-panel{display:none!important}
+@media(max-width:850px){#admin-sidebar.admin-sidebar{width:74px;padding:18px 9px}.admin-sidebar-brand{justify-content:center;padding:0}.admin-sidebar-brand>span:last-child,.admin-sidebar-caption,.admin-sidebar-link>span:last-child,.admin-sidebar-footer>span:last-child{display:none}.admin-sidebar-link{justify-content:center;padding:11px 8px}.admin-sidebar-icon{width:22px;height:22px}.admin-sidebar-footer{justify-content:center;padding:10px 0}body.admin-shell-active .topbar{padding-left:88px}body.admin-shell-active .ops-page-heading{margin-left:98px;margin-right:16px}body.admin-shell-active .content{margin-left:74px;padding:0 16px}}
+@media(max-width:560px){body.admin-shell-active .topbar{padding-left:78px}.admin-sidebar-brand{margin-bottom:12px}body.admin-shell-active .ops-page-heading{margin-left:90px}.admin-overview-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
-/* Collapse : seule la colonne de la sidebar change, le contenu reste dans la grille. */
-body.admin-shell-active.admin-sidebar-collapsed #app {
-  --admin-sidebar-width: 74px;
-}
-body.admin-shell-active.admin-sidebar-collapsed #admin-sidebar.admin-sidebar {
-  width: auto;
-  padding-left: 9px;
-  padding-right: 9px;
-}
-body.admin-shell-active.admin-sidebar-collapsed .admin-sidebar-brand {
-  justify-content: center;
-  padding: 0;
-}
-body.admin-shell-active.admin-sidebar-collapsed .admin-sidebar-brand-label,
-body.admin-shell-active.admin-sidebar-collapsed .admin-sidebar-caption,
-body.admin-shell-active.admin-sidebar-collapsed .admin-sidebar-link > span:last-child,
-body.admin-shell-active.admin-sidebar-collapsed .admin-sidebar-footer > span:last-child {
-  display: none;
-}
-body.admin-shell-active.admin-sidebar-collapsed .admin-sidebar-link {
-  justify-content: center;
-  padding-left: 8px;
-  padding-right: 8px;
-}
-body.admin-shell-active.admin-sidebar-collapsed .admin-sidebar-footer {
-  justify-content: center;
-  padding-left: 0;
-  padding-right: 0;
-}
+/* Collapse du menu Admin — conserve la navigation par icônes */
+.admin-sidebar-toggle{display:grid;place-items:center;width:25px;height:25px;margin-left:auto;padding:0;border:1px solid #3B4C6B;border-radius:6px;background:#17243D;color:#CBD5E1;cursor:pointer;font:700 17px/1 var(--font)}
+.admin-sidebar-toggle:hover{border-color:#60A5FA;color:#fff}
+body.admin-sidebar-collapsed #admin-sidebar.admin-sidebar{width:74px;padding-left:9px;padding-right:9px}
+body.admin-sidebar-collapsed .admin-sidebar-brand{justify-content:center;padding:0}
+body.admin-sidebar-collapsed .admin-sidebar-brand-label,body.admin-sidebar-collapsed .admin-sidebar-caption,body.admin-sidebar-collapsed .admin-sidebar-link>span:last-child,body.admin-sidebar-collapsed .admin-sidebar-footer>span:last-child{display:none}
+body.admin-sidebar-collapsed .admin-sidebar-toggle{margin-left:0}
+body.admin-sidebar-collapsed .admin-sidebar-link{justify-content:center;padding-left:8px;padding-right:8px}
+body.admin-sidebar-collapsed .admin-sidebar-footer{justify-content:center;padding-left:0;padding-right:0}
+body.admin-sidebar-collapsed .topbar{padding-left:88px}
+body.admin-sidebar-collapsed .ops-page-heading{margin-left:98px}
+body.admin-sidebar-collapsed .content{margin-left:74px;padding-left:16px}
+body.admin-shell-active button:not(.theme-toggle-btn),body.admin-shell-active select,body.admin-shell-active input{border-radius:6px!important}
+body.admin-shell-active .admin-overview-period,body.admin-shell-active .admin-overview-theme-btn,body.admin-shell-active .admin-workflow-periods button,body.admin-shell-active .admin-stat-periods button{border-radius:6px!important}
+@media(max-width:850px){body.admin-shell-active .admin-sidebar-toggle{display:none}}
 
-@media (max-width: 850px) {
-  body.admin-shell-active #app {
-    --admin-sidebar-width: 74px;
-  }
-  body.admin-shell-active #admin-sidebar.admin-sidebar {
-    padding: 18px 9px;
-  }
-  body.admin-shell-active .admin-sidebar-brand,
-  body.admin-shell-active .admin-sidebar-brand-label,
-  body.admin-shell-active .admin-sidebar-caption,
-  body.admin-shell-active .admin-sidebar-link > span:last-child,
-  body.admin-shell-active .admin-sidebar-footer > span:last-child {
-    justify-content: center;
-  }
-  body.admin-shell-active .admin-sidebar-brand-label,
-  body.admin-shell-active .admin-sidebar-caption,
-  body.admin-shell-active .admin-sidebar-link > span:last-child,
-  body.admin-shell-active .admin-sidebar-footer > span:last-child {
-    display: none;
-  }
-  body.admin-shell-active .admin-sidebar-link { justify-content: center; padding: 11px 8px; }
-  body.admin-shell-active .admin-sidebar-toggle { display: none !important; }
-  body.admin-shell-active .ops-page-heading { margin: 16px; }
-  body.admin-shell-active .content { padding: 16px; }
-}
+/* Ajustement visuel final : contrôle explicite et boutons moins arrondis */
+.admin-sidebar-brand{position:relative;padding-right:78px}
+.admin-sidebar-toggle{position:absolute;top:0;right:0;display:inline-flex;align-items:center;justify-content:center;gap:5px;width:auto;min-width:28px;height:28px;padding:0 8px;border-radius:4px!important;white-space:nowrap}
+.admin-sidebar-toggle-icon{font-size:17px;line-height:1}
+.admin-sidebar-toggle-label{font-size:10px;font-weight:700;letter-spacing:.01em}
+body.admin-sidebar-collapsed .admin-sidebar-brand{padding-right:0}
+body.admin-sidebar-collapsed .admin-sidebar-toggle{right:0;width:28px;padding:0}
+body.admin-sidebar-collapsed .admin-sidebar-toggle-label{display:none}
+body.admin-shell-active button:not(.theme-toggle-btn),body.admin-shell-active .btn,body.admin-shell-active select,body.admin-shell-active input{border-radius:4px!important}
+body.admin-shell-active .admin-sidebar-link{border-radius:4px!important}
+body.admin-shell-active .admin-overview-shell button,body.admin-shell-active .admin-workflow-shell button,body.admin-shell-active .admin-stat-shell button,body.admin-shell-active .admin-quality-shell button,body.admin-shell-active .admin-training-shell button,body.admin-shell-active .admin-settings-shell button{border-radius:4px!important}
+@media(max-width:850px){.admin-sidebar-brand{padding-right:0}.admin-sidebar-toggle{display:none!important}}
+
+/* Le topbar est sticky (62px) : la sidebar commence dessous pour garder le contrôle visible. */
+#admin-sidebar.admin-sidebar{top:62px;bottom:0;z-index:40}
+body.admin-shell-active .topbar .btn,body.admin-shell-active .topbar button:not(.theme-toggle-btn){border-radius:4px!important}
+
+.admin-sidebar-mark{display:block;width:29px;height:29px;object-fit:cover;border-radius:6px}
+body.admin-shell-active .content{width:calc(100% - 220px);min-width:0;overflow-x:hidden}
+body.admin-sidebar-collapsed .content{width:calc(100% - 74px);min-width:0}
+body.admin-sidebar-collapsed #admin-overview-panel,body.admin-sidebar-collapsed #admin-workflow-panel,body.admin-sidebar-collapsed #admin-stat-panel,body.admin-sidebar-collapsed #admin-quality-panel,body.admin-sidebar-collapsed #admin-training-panel,body.admin-sidebar-collapsed #admin-settings-panel{max-width:100%;min-width:0}
+@media(max-width:850px){.admin-sidebar-brand-label{display:none!important}.admin-sidebar-mark{width:30px;height:30px}body.admin-shell-active .content{width:calc(100% - 74px)}}
 
 /* Sidebar thématique : blanche par défaut, surface sombre en dark mode. */
 #admin-sidebar.admin-sidebar{background:var(--surface);color:var(--text);border-right:1px solid var(--border);box-shadow:8px 0 26px rgba(15,23,42,.08)}
@@ -189,3 +136,14 @@ body.admin-shell-active.admin-sidebar-collapsed .admin-sidebar-footer {
 .admin-sidebar-toggle{background:var(--surface2);border-color:var(--border2);color:var(--text2)}
 .admin-sidebar-toggle:hover{border-color:var(--ocean);color:var(--ocean);background:var(--ocean-dim)}
 [data-theme="dark"] #admin-sidebar.admin-sidebar{box-shadow:8px 0 26px rgba(2,6,23,.28)}
+
+/* Grille anti-recouvrement : tous les écrans utilisent la même largeur de sidebar. */
+body.admin-shell-active{--admin-sidebar-width:220px}
+body.admin-shell-active.admin-sidebar-collapsed{--admin-sidebar-width:74px}
+body.admin-shell-active #admin-sidebar.admin-sidebar{width:var(--admin-sidebar-width)}
+body.admin-shell-active .topbar{padding-left:calc(var(--admin-sidebar-width) + 16px)}
+body.admin-shell-active .ops-page-heading{width:calc(100% - var(--admin-sidebar-width) - 24px);margin-left:calc(var(--admin-sidebar-width) + 24px);margin-right:0;box-sizing:border-box}
+body.admin-shell-active .content{width:calc(100% - var(--admin-sidebar-width));margin-left:var(--admin-sidebar-width);margin-right:0;padding-left:24px;padding-right:24px;min-width:0;box-sizing:border-box}
+body.admin-shell-active .content>*{max-width:100%;min-width:0}
+body.admin-shell-active .admin-overview-section,body.admin-shell-active #admin-panel,body.admin-shell-active #team-live-panel,body.admin-shell-active #channel-matrix-panel,body.admin-shell-active #supervision-panel,body.admin-shell-active #training-panel{width:100%;max-width:100%;min-width:0}
+@media(max-width:850px){body.admin-shell-active .topbar{padding-left:90px}body.admin-shell-active .ops-page-heading{width:calc(100% - 106px);margin-left:90px}body.admin-shell-active .content{width:calc(100% - 74px);margin-left:74px;padding-left:16px;padding-right:16px}}
