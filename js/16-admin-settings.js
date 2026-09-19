@@ -1,3 +1,6 @@
+let adminSettingsSection='overview';
+let adminSettingsDraftProcedures=[];
+let adminSettingsDraftTypes=[];
 function adminSettingsEsc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 function adminSettingsAgents(){return typeof TEAM!=='undefined'?(TEAM||[]):[];}
 function adminSettingsGoals(){return typeof agentGoals!=='undefined'?agentGoals:{};}
