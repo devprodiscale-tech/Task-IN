@@ -1,48 +1,47 @@
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --ocean:#2B4C7E;
-  --ocean-dim:#E6EDF6;
-  --ocean-deep:#1E3760;
-  --clay:#E98A7D;
-  --clay-dim:#FBE9E6;
-  --bloom:#F3B0C3;
-  --bloom-dim:#FBEAF0;
-  --amber:#DCAE1D;
-  --amber-dim:#FCF1D6;
-  --bg:#F0F4F8;
+  --ocean:#2563EB;
+  --ocean-dim:#DBEAFE;
+  --ocean-deep:#1D4ED8;
+  --clay:#EF4444;
+  --clay-dim:#FEE2E2;
+  --bloom:#8B5CF6;
+  --bloom-dim:#EDE9FE;
+  --amber:#F59E0B;
+  --amber-dim:#FEF3C7;
+  --bg:#F8FAFC;
   --surface:#FFFFFF;
-  --surface2:#F7FAFC;
+  --surface2:#F1F5F9;
   --border:#E2E8F0;
-  --border2:#D3DDE8;
-  --text:#1E2A3A;
-  --text2:#6B7C93;
-  --text3:#A0AAB8;
-  --red:#C9604F;
-  --red-dim:#FBE9E6;
-  --green:#3B8C6E;
-  --green-dim:#E1F3EC;
+  --border2:#CBD5E1;
+  --text:#0F172A;
+  --text2:#64748B;
+  --text3:#94A3B8;
+  --red:#EF4444;
+  --red-dim:#FEE2E2;
+  --green:#22C55E;
+  --green-dim:#DCFCE7;
   --radius:12px;
-  --display:'Fraunces',serif;
-  --font:'Public Sans',system-ui,sans-serif;
+  --display:'Inter',system-ui,sans-serif;
+  --font:'Inter','Public Sans',system-ui,sans-serif;
   --mono:'Spline Sans Mono',monospace;
 }
 [data-theme="dark"]{
-  --ocean-dim:#1A2740;
-  --clay-dim:#3A2420;
-  --bloom-dim:#3A2530;
-  --amber-dim:#3A2E0E;
-  --bg:#11161F;
-  --surface:#171D29;
-  --surface2:#1E2531;
-  --border:#2A3344;
-  --border2:#384258;
-  --text:#EBEEF3;
-  --text2:#9AA6B8;
-  --text3:#69748A;
-  --red-dim:#3A2220;
-  --green-dim:#152A22;
+  --ocean-dim:#172554;
+  --clay-dim:#450A0A;
+  --bloom-dim:#2E1065;
+  --amber-dim:#451A03;
+  --bg:#0F172A;
+  --surface:#111C32;
+  --surface2:#17243D;
+  --border:#263653;
+  --border2:#3B4C6B;
+  --text:#F8FAFC;
+  --text2:#CBD5E1;
+  --text3:#94A3B8;
+  --red-dim:#450A0A;
+  --green-dim:#052E16;
 }
 .theme-toggle-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
 .theme-toggle-btn:hover{border-color:var(--ocean);color:var(--ocean)}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;transition:background .2s,color .2s}
-

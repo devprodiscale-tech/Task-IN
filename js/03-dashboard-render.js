@@ -385,6 +385,7 @@ async function switchTab(view, btn) {
     'stat': { panel: 'admin-stat-panel', render: () => adminStatRender() },
     'quality': { panel: 'admin-quality-panel', render: () => adminQualityRender() },
     'admin-training': { panel: 'admin-training-panel', render: () => adminTrainingRender() },
+    'admin-settings': { panel: 'admin-settings-panel', render: () => adminSettingsRender() },
   };
   if (adminSubViews[view]) {
     if (!currentUser || currentUser.role !== 'admin') return;
@@ -395,7 +396,7 @@ async function switchTab(view, btn) {
     document.querySelector('.toolbar')?.classList.add('hidden');
     document.querySelector('.entries-table-wrap')?.classList.add('hidden');
     document.getElementById('date-filter-bar')?.classList.add('hidden');
-    ['admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+    ['admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel','admin-settings-panel'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
     document.getElementById(adminSubViews[view].panel)?.classList.remove('hidden');
     await adminSubViews[view].render();
     return;

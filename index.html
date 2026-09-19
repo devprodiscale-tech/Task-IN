@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=Sigmar+One&family=Spline+Sans+Mono:wght@500;600&display=swap" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=Sigmar+One&family=Spline+Sans+Mono:wght@500;600&display=swap"></noscript>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=Sigmar+One&family=Spline+Sans+Mono:wght@500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=Sigmar+One&family=Spline+Sans+Mono:wght@500;600&display=swap"></noscript>
 <link rel="stylesheet" href="css/00-base.css?v=20260827">
 <link rel="stylesheet" href="css/01-ops-dashboard.css?v=20260827">
 <link rel="stylesheet" href="css/02-core-ui.css?v=20260827">
@@ -253,6 +253,7 @@
   </div>
   <div id="ops-viz-admin-home" class="ops-viz-section hidden"></div>
   <div id="admin-overview-panel" class="admin-overview-section hidden"></div>
+  <div id="admin-settings-panel" class="admin-overview-section hidden"></div>
 
   <div class="tabs">
     <button class="tab agent-only active" onclick="switchTab('today',this)">Aujourd'hui</button>
@@ -268,6 +269,7 @@
     <button class="tab hidden admin-only-tab" id="tab-stat" onclick="switchTab('stat',this)">Stat</button>
     <button class="tab hidden admin-only-tab" id="tab-quality" onclick="switchTab('quality',this)">Quality</button>
     <button class="tab hidden admin-only-tab" id="tab-admin-training" onclick="switchTab('admin-training',this)">Formation</button>
+    <button class="tab hidden admin-only-tab" id="tab-admin-settings" onclick="switchTab('admin-settings',this)">Settings</button>
   </div>
 
   <div class="content">
@@ -1245,6 +1247,7 @@
 <script src="js/13-admin-stat.js?v=20260918" defer></script>
 <script src="js/14-admin-quality.js?v=20260918" defer></script>
 <script src="js/15-admin-training.js?v=20260918" defer></script>
+<script src="js/16-admin-settings.js?v=20260919" defer></script>
 <script src="js/06-ui-modals.js?v=20260827" defer></script>
 <script src="js/07-analytics.js?v=20260827" defer></script>
 <script src="js/08-analytics-advanced.js?v=20260827" defer></script>
