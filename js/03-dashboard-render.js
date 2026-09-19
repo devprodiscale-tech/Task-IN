@@ -380,6 +380,26 @@ function editEntry(id) {
 
 // Point 5 : switchTab renforcé — guards stricts pour agent et non-admin
 async function switchTab(view, btn) {
+  const adminSubViews = {
+    'workflow-kpi': { panel: 'admin-workflow-panel', render: () => adminWorkflowRender() },
+    'stat': { panel: 'admin-stat-panel', render: () => adminStatRender() },
+    'quality': { panel: 'admin-quality-panel', render: () => adminQualityRender() },
+    'admin-training': { panel: 'admin-training-panel', render: () => adminTrainingRender() },
+  };
+  if (adminSubViews[view]) {
+    if (!currentUser || currentUser.role !== 'admin') return;
+    currentView = view;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    ['admin-panel','team-live-panel','leaderboard-panel','documentation-panel','supervision-panel','training-panel','channel-matrix-panel'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+    document.querySelector('.toolbar')?.classList.add('hidden');
+    document.querySelector('.entries-table-wrap')?.classList.add('hidden');
+    document.getElementById('date-filter-bar')?.classList.add('hidden');
+    ['admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+    document.getElementById(adminSubViews[view].panel)?.classList.remove('hidden');
+    await adminSubViews[view].render();
+    return;
+  }
   if (currentUser.role === 'agent' && (view === 'admin' || view === 'supervision')) return;
   if (currentUser.role !== 'admin' && view === 'admin') return;
   if (currentUser.role === 'formateur' && (view === 'supervision' || view === 'admin')) return;

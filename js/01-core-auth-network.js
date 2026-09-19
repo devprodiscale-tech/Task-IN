@@ -248,6 +248,7 @@ function applyRoleUI() {
   // Onglets
   document.getElementById('tab-team').classList.remove('hidden');
   document.getElementById('tab-admin').classList.toggle('hidden', role !== 'admin');
+  document.querySelectorAll('.admin-only-tab').forEach(el => el.classList.toggle('hidden', role !== 'admin'));
   document.getElementById('tab-home').classList.toggle('hidden', role !== 'admin' && role !== 'agent');
   document.getElementById('tab-week-role').classList.toggle('hidden', role !== 'admin' && role !== 'agent');
   document.getElementById('tab-leaderboard').classList.toggle('hidden', role !== 'admin' && role !== 'supervisor');

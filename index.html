@@ -264,6 +264,10 @@
     <button class="tab hidden" id="tab-training" onclick="switchTab('training',this)">🎓 Formation</button>
     <button class="tab" id="tab-documentation" onclick="switchTab('documentation',this)">📄 Documentation</button>
     <button class="tab" id="tab-admin" onclick="switchTab('admin',this)">Administration</button>
+    <button class="tab hidden admin-only-tab" id="tab-workflow-kpi" onclick="switchTab(\'workflow-kpi\',this)">Workflow / KPI</button>
+    <button class="tab hidden admin-only-tab" id="tab-stat" onclick="switchTab(\'stat\',this)">Stat</button>
+    <button class="tab hidden admin-only-tab" id="tab-quality" onclick="switchTab(\'quality\',this)">Quality</button>
+    <button class="tab hidden admin-only-tab" id="tab-admin-training" onclick="switchTab(\'admin-training\',this)">Formation</button>
   </div>
 
   <div class="content">
@@ -453,6 +457,10 @@
             <h3>Comptes équipe</h3>
             <span class="count-badge" id="team-count">0 comptes</span>
           </div>
+    <div id="admin-workflow-panel" class="admin-overview-section hidden"></div>
+    <div id="admin-stat-panel" class="admin-overview-section hidden"></div>
+    <div id="admin-quality-panel" class="admin-overview-section hidden"></div>
+    <div id="admin-training-panel" class="admin-overview-section hidden"></div>
           <button class="btn btn-primary" style="width:calc(100% - 36px);margin:12px 18px 0" onclick="openCreateAccountModal()">+ Ajouter un compte</button>
           <details class="team-accordion" id="team-list-accordion" style="margin:8px 0 0;border-radius:0;border:none;border-top:1px solid var(--border)">
             <summary class="team-summary" style="background:var(--surface2);font-size:12px;padding:10px 18px">
@@ -1233,6 +1241,10 @@
 <script src="js/03-dashboard-render.js?v=20260827b" defer></script>
 <script src="js/04-admin.js?v=20260827" defer></script>
 <script src="js/11-admin-overview.js?v=20260917" defer></script>
+<script src="js/12-admin-workflow.js?v=20260918" defer></script>
+<script src="js/13-admin-stat.js?v=20260918" defer></script>
+<script src="js/14-admin-quality.js?v=20260918" defer></script>
+<script src="js/15-admin-training.js?v=20260918" defer></script>
 <script src="js/06-ui-modals.js?v=20260827" defer></script>
 <script src="js/07-analytics.js?v=20260827" defer></script>
 <script src="js/08-analytics-advanced.js?v=20260827" defer></script>
