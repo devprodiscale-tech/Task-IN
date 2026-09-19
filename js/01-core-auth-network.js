@@ -241,6 +241,7 @@ function applyRoleUI() {
   const adminSidebar = document.getElementById('admin-sidebar');
   if (adminSidebar) adminSidebar.classList.toggle('hidden', role !== 'admin');
   document.body.classList.toggle('admin-shell-active', role === 'admin');
+  document.querySelector('.tabs')?.classList.toggle('hidden', role === 'admin');
   if (role === 'admin' && typeof toggleAdminSidebar === 'function') {
     let collapsed = false;
     try { collapsed = localStorage.getItem('taskin_admin_sidebar_collapsed') === '1'; } catch (_) {}
@@ -419,6 +420,11 @@ async function renderCurrentView() {
   if (!currentUser) return;
   if (currentView === 'home' || currentView === 'team') renderRoleHome();
   else if (currentView === 'admin') renderAdminOverview(await loadActiveTimers());
+  else if (currentUser.role === 'admin' && currentView === 'workflow-kpi') await adminWorkflowRender();
+  else if (currentUser.role === 'admin' && currentView === 'stat') await adminStatRender();
+  else if (currentUser.role === 'admin' && currentView === 'quality') await adminQualityRender();
+  else if (currentUser.role === 'admin' && currentView === 'admin-training') await adminTrainingRender();
+  else if (currentUser.role === 'admin' && currentView === 'admin-settings') await adminSettingsRender();
   else if (currentView === 'supervision') {
     await loadModule('09-documentation.js');
     await loadModule('10-supervision.js');

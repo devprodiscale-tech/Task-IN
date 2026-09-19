@@ -399,26 +399,40 @@ function setAdminSidebarActive(view) {
   document.querySelectorAll('[data-admin-nav]').forEach(link => link.classList.toggle('active', link.dataset.adminNav === activeView));
 }
 
+let navigationSequence = 0;
+const adminSubPanelIds = ['admin-overview-panel','admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel','admin-settings-panel'];
+
+function hideAdminSubPanels() {
+  adminSubPanelIds.forEach(id => document.getElementById(id)?.classList.add('hidden'));
+}
+
 async function preloadAdminInterfaces() {
   if (!currentUser || currentUser.role !== 'admin') return;
   await Promise.all(['05-training.js','09-documentation.js','10-supervision.js'].map(name => loadModule(name)));
   const activeTimers = await loadActiveTimers();
   const renders = [
-    Promise.resolve(renderAdminOverview(activeTimers)),
-    Promise.resolve(adminWorkflowRender()),
-    Promise.resolve(adminStatRender()),
-    Promise.resolve(adminQualityRender()),
-    Promise.resolve(adminTrainingRender()),
-    Promise.resolve(adminSettingsRender()),
+    ['admin-overview-panel', () => renderAdminOverview(activeTimers)],
+    ['admin-workflow-panel', () => adminWorkflowRender()],
+    ['admin-stat-panel', () => adminStatRender()],
+    ['admin-quality-panel', () => adminQualityRender()],
+    ['admin-training-panel', () => adminTrainingRender()],
+    ['admin-settings-panel', () => adminSettingsRender()],
   ];
-  await Promise.allSettled(renders);
-  ['admin-overview-panel','admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel','admin-settings-panel'].forEach(id => {
-    document.getElementById(id)?.setAttribute('data-admin-ready', '1');
+  const results = await Promise.allSettled(renders.map(([, render]) => Promise.resolve().then(render)));
+  results.forEach((result, index) => {
+    const [id] = renders[index];
+    const panel = document.getElementById(id);
+    if (result.status === 'fulfilled') panel?.setAttribute('data-admin-ready', '1');
+    else {
+      panel?.removeAttribute('data-admin-ready');
+      console.error(`Rendu Admin impossible pour ${id}:`, result.reason);
+    }
   });
 }
 
 // Point 5 : switchTab renforcé — guards stricts pour agent et non-admin
 async function switchTab(view, btn) {
+  const sequence = ++navigationSequence;
   const adminSubViews = {
     'workflow-kpi': { panel: 'admin-workflow-panel', render: () => adminWorkflowRender() },
     'stat': { panel: 'admin-stat-panel', render: () => adminStatRender() },
@@ -432,6 +446,7 @@ async function switchTab(view, btn) {
     currentView = view;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     if (btn) btn.classList.add('active');
+    hideAdminSubPanels();
     ['admin-panel','team-live-panel','leaderboard-panel','documentation-panel','supervision-panel','training-panel','channel-matrix-panel'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
     document.querySelector('.toolbar')?.classList.add('hidden');
     document.querySelector('.entries-table-wrap')?.classList.add('hidden');
@@ -443,6 +458,7 @@ async function switchTab(view, btn) {
       await adminSubViews[view].render();
       panel?.setAttribute('data-admin-ready', '1');
     }
+    if (sequence !== navigationSequence || currentView !== view) return;
     return;
   }
   if (currentUser.role === 'agent' && (view === 'admin' || view === 'supervision')) return;
@@ -473,6 +489,8 @@ async function switchTab(view, btn) {
   document.getElementById('supervision-panel').classList.toggle('hidden', !isSupervisionView);
   document.getElementById('training-panel').classList.toggle('hidden', !isTrainingView);
   document.getElementById('channel-matrix-panel').classList.toggle('hidden', !isChannelView);
+  hideAdminSubPanels();
+  if (isAdminView) document.getElementById('admin-overview-panel')?.classList.remove('hidden');
   const adminOverviewPanel = document.getElementById('admin-overview-panel');
   if (adminOverviewPanel) adminOverviewPanel.classList.toggle('hidden', !isAdminView);
   document.getElementById('date-filter-bar').classList.toggle('hidden', isDocView || isSupervisionView || isTrainingView);
@@ -483,28 +501,33 @@ async function switchTab(view, btn) {
       renderAdminOverview(await loadActiveTimers());
       panel?.setAttribute('data-admin-ready', '1');
     }
+    if (sequence !== navigationSequence || currentView !== view) return;
     return;
   }
   if (isHomeView || isTeamView) {
     await renderRoleHome();
+    if (sequence !== navigationSequence || currentView !== view) return;
     if (isTeamView) renderChannelMatrix();
     return;
   }
   if (isLeaderboard) { renderLeaderboard(); return; }
   if (isDocView) {
     await loadModule('09-documentation.js');
+    if (sequence !== navigationSequence || currentView !== view) return;
     docRenderList();
     return;
   }
   if (isSupervisionView) {
     await loadModule('09-documentation.js');
     await loadModule('10-supervision.js');
+    if (sequence !== navigationSequence || currentView !== view) return;
     svInit();
     return;
   }
   if (isTrainingView) {
     await loadModule('05-training.js');
     await loadModule('09-documentation.js');
+    if (sequence !== navigationSequence || currentView !== view) return;
     renderTrainingHub();
     return;
   }
