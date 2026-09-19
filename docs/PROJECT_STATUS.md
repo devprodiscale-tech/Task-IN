@@ -50,6 +50,7 @@ accès aux données métier
 | Couche data provider | Présente / à consolider | P0 |
 | Timers | Migration partielle à vérifier | P0 |
 | Dashboard/KPI | Migration fonctionnelle à vérifier | P0 |
+| Settings Admin | Interface ZIP intégrée / endpoint Supabase à tester en staging | P0 |
 | Documentation | À resynchroniser | P1 |
 | Permissions centralisées | À finaliser | P0 |
 | Missed Calls | Fonction prévue / intégration à vérifier | P0 |
@@ -59,6 +60,10 @@ accès aux données métier
 ### Incrément en cours — Dashboard Admin
 
 Le travail repart sur une base minimale : la navigation actuelle est temporairement remplacée par un seul accès visible **Dashboard Admin**, affiché en première page pour le rôle Admin. Cet accès monte le dashboard de l’archive Admin (`TEAM`, `entries`, timers actifs et données disponibles), avec ses KPI, présence équipe, heat map, SLA/FRT, planning, activité récente et accès rapides. Les autres onglets ne sont pas exposés dans cette phase de refonte. Les états sans données restent explicites ; aucun endpoint d’écriture ni module Settings Firebase n’est activé par cet incrément.
+
+### Settings Admin — intégration de l’archive
+
+L’interface Settings du ZIP est intégrée dans la rubrique **Paramètres** avec ses sections Vue générale, Procédures, API IA, Objectifs, Comptes équipe, Types de traitement et Team’s shift. Le module `js/16-admin-settings.js` est chargé par l’application, les styles sont inclus dans `css/06-admin-overview.css` et l’endpoint `api/admin-settings.js` conserve l’adaptation Supabase du dépôt : la session frontend transmet un access token Supabase et les écritures sont vérifiées côté serveur avec le profil Admin. Les actions d’écriture restent à valider en environnement staging avant production.
 
 ---
 
