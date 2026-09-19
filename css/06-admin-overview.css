@@ -61,7 +61,9 @@
 [data-theme="dark"] .admin-overview-shell,[data-theme="dark"] .admin-workflow-shell,[data-theme="dark"] .admin-stat-shell,[data-theme="dark"] .admin-quality-shell,[data-theme="dark"] .admin-training-shell,[data-theme="dark"] .admin-settings-shell{box-shadow:0 16px 34px rgba(2,6,23,.28)}
 
 /* Hub Central Admin — navigation latérale persistante */
-#admin-sidebar.admin-sidebar{position:fixed;z-index:20;inset:0 auto 0 0;width:220px;display:flex;flex-direction:column;padding:24px 14px 16px;background:#0F172A;color:#CBD5E1;box-shadow:8px 0 26px rgba(15,23,42,.12)}
+body.admin-shell-active{--admin-sidebar-width:220px}
+body.admin-shell-active.admin-sidebar-collapsed{--admin-sidebar-width:74px}
+#admin-sidebar.admin-sidebar{position:fixed;z-index:20;inset:0 auto 0 0;width:var(--admin-sidebar-width,220px);display:flex;flex-direction:column;padding:24px 14px 16px;background:#0F172A;color:#CBD5E1;box-shadow:8px 0 26px rgba(15,23,42,.12)}
 .admin-sidebar-brand{display:flex;align-items:center;gap:10px;padding:0 10px;color:#F8FAFC;font-size:20px;font-weight:700;letter-spacing:-.03em}
 .admin-sidebar-mark{display:grid;place-items:center;width:27px;height:27px;border:2px solid #60A5FA;border-radius:8px;background:#F8FAFC;color:#2563EB;font-size:17px;line-height:1}
 .admin-sidebar-caption{margin:42px 10px 12px;color:#64748B;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
@@ -87,7 +89,7 @@ body.admin-shell-active #admin-panel{display:none!important}
 /* Collapse du menu Admin — conserve la navigation par icônes */
 .admin-sidebar-toggle{display:grid;place-items:center;width:25px;height:25px;margin-left:auto;padding:0;border:1px solid #3B4C6B;border-radius:6px;background:#17243D;color:#CBD5E1;cursor:pointer;font:700 17px/1 var(--font)}
 .admin-sidebar-toggle:hover{border-color:#60A5FA;color:#fff}
-body.admin-sidebar-collapsed #admin-sidebar.admin-sidebar{width:74px;padding-left:9px;padding-right:9px}
+body.admin-sidebar-collapsed #admin-sidebar.admin-sidebar{width:var(--admin-sidebar-width,74px);padding-left:9px;padding-right:9px}
 body.admin-sidebar-collapsed .admin-sidebar-brand{justify-content:center;padding:0}
 body.admin-sidebar-collapsed .admin-sidebar-brand-label,body.admin-sidebar-collapsed .admin-sidebar-caption,body.admin-sidebar-collapsed .admin-sidebar-link>span:last-child,body.admin-sidebar-collapsed .admin-sidebar-footer>span:last-child{display:none}
 body.admin-sidebar-collapsed .admin-sidebar-toggle{margin-left:0}
@@ -118,10 +120,10 @@ body.admin-shell-active .admin-overview-shell button,body.admin-shell-active .ad
 body.admin-shell-active .topbar .btn,body.admin-shell-active .topbar button:not(.theme-toggle-btn){border-radius:4px!important}
 
 .admin-sidebar-mark{display:block;width:29px;height:29px;object-fit:cover;border-radius:6px}
-body.admin-shell-active .content{width:calc(100% - 220px);min-width:0;overflow-x:hidden}
-body.admin-sidebar-collapsed .content{width:calc(100% - 74px);min-width:0}
+body.admin-shell-active .content{width:auto;min-width:0}
+body.admin-sidebar-collapsed .content{width:auto;min-width:0}
 body.admin-sidebar-collapsed #admin-overview-panel,body.admin-sidebar-collapsed #admin-workflow-panel,body.admin-sidebar-collapsed #admin-stat-panel,body.admin-sidebar-collapsed #admin-quality-panel,body.admin-sidebar-collapsed #admin-training-panel,body.admin-sidebar-collapsed #admin-settings-panel{max-width:100%;min-width:0}
-@media(max-width:850px){.admin-sidebar-brand-label{display:none!important}.admin-sidebar-mark{width:30px;height:30px}body.admin-shell-active .content{width:calc(100% - 74px)}}
+@media(max-width:850px){.admin-sidebar-brand-label{display:none!important}.admin-sidebar-mark{width:30px;height:30px}body.admin-shell-active .content{width:auto}}
 
 /* Sidebar thématique : blanche par défaut, surface sombre en dark mode. */
 #admin-sidebar.admin-sidebar{background:var(--surface);color:var(--text);border-right:1px solid var(--border);box-shadow:8px 0 26px rgba(15,23,42,.08)}
