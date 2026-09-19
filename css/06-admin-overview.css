@@ -122,8 +122,9 @@ body.admin-shell-active .topbar .btn,body.admin-shell-active .topbar button:not(
 .admin-sidebar-mark{display:block;width:29px;height:29px;object-fit:cover;border-radius:6px}
 body.admin-shell-active .content{width:auto;min-width:0}
 body.admin-sidebar-collapsed .content{width:auto;min-width:0}
+body.admin-shell-active #app > .admin-overview-section{width:calc(100% - var(--admin-sidebar-width,220px));margin-left:var(--admin-sidebar-width,220px);box-sizing:border-box;min-width:0}
 body.admin-sidebar-collapsed #admin-overview-panel,body.admin-sidebar-collapsed #admin-workflow-panel,body.admin-sidebar-collapsed #admin-stat-panel,body.admin-sidebar-collapsed #admin-quality-panel,body.admin-sidebar-collapsed #admin-training-panel,body.admin-sidebar-collapsed #admin-settings-panel{max-width:100%;min-width:0}
-@media(max-width:850px){.admin-sidebar-brand-label{display:none!important}.admin-sidebar-mark{width:30px;height:30px}body.admin-shell-active .content{width:auto}}
+@media(max-width:850px){body.admin-shell-active{--admin-sidebar-width:74px}.admin-sidebar-brand-label{display:none!important}.admin-sidebar-mark{width:30px;height:30px}body.admin-shell-active .content{width:auto}}
 
 /* Sidebar thématique : blanche par défaut, surface sombre en dark mode. */
 #admin-sidebar.admin-sidebar{background:var(--surface);color:var(--text);border-right:1px solid var(--border);box-shadow:8px 0 26px rgba(15,23,42,.08)}
