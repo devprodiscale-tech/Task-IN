@@ -318,11 +318,11 @@ function applyRoleUI() {
   // Point 1 : currentView initialisé correctement selon le rôle
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   if (role === 'agent') {
-    currentView = 'today';
+    currentView = getPersistedTaskinView('agent') || 'today';
     const agentTab = document.querySelector('.tab.agent-only');
     if (agentTab) agentTab.classList.add('active');
   } else if (role === 'supervisor') {
-    currentView = 'supervision';
+    currentView = getPersistedTaskinView('supervisor') || 'supervision';
     const svTab = document.getElementById('tab-supervision');
     if (svTab) svTab.classList.add('active');
     document.querySelector('.toolbar').classList.add('hidden');
@@ -331,17 +331,17 @@ function applyRoleUI() {
 
     startLiveRefresh();
   } else if (role === 'formateur') {
-    currentView = 'training';
+    currentView = getPersistedTaskinView('formateur') || 'training';
     const trainingTab = document.getElementById('tab-training');
     if (trainingTab) trainingTab.classList.add('active');
     document.querySelector('.toolbar').classList.add('hidden');
     document.querySelector('.entries-table-wrap').classList.add('hidden');
     document.getElementById('date-filter-bar').classList.add('hidden');
   } else if (role === 'admin') {
-    currentView = 'admin';
+    currentView = getPersistedTaskinView('admin') || 'admin';
     const adminTab = document.getElementById('tab-admin');
     if (adminTab) adminTab.classList.add('active');
-    setAdminSidebarActive('admin');
+    setAdminSidebarActive(currentView);
     document.querySelector('.toolbar').classList.add('hidden');
     document.querySelector('.entries-table-wrap').classList.add('hidden');
     document.getElementById('date-filter-bar').classList.add('hidden');
@@ -360,6 +360,7 @@ function applyRoleUI() {
   if (role === 'formateur') {
     document.getElementById('training-panel').classList.remove('hidden');
   }
+  if (typeof rememberTaskinView === 'function') rememberTaskinView(currentView, true);
 }
 
 function logout() {
@@ -405,8 +406,8 @@ async function refreshApp() {
     loadEntries(false),
   ]);
   populateFilters();
-  if (currentUser?.role === 'admin') await preloadAdminInterfaces();
   await renderCurrentView();
+  if (currentUser?.role === 'admin') preloadAdminInterfaces().catch(error => console.warn('Préchargement Admin partiel:', error));
   if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor')) {
     startLiveRefresh();
   }
@@ -418,12 +419,7 @@ async function refreshApp() {
 async function renderCurrentView() {
   if (!currentUser) return;
   if (currentView === 'home' || currentView === 'team') renderRoleHome();
-  else if (currentView === 'admin') renderAdminOverview(await loadActiveTimers());
-  else if (currentUser.role === 'admin' && currentView === 'workflow-kpi') await adminWorkflowRender();
-  else if (currentUser.role === 'admin' && currentView === 'stat') await adminStatRender();
-  else if (currentUser.role === 'admin' && currentView === 'quality') await adminQualityRender();
-  else if (currentUser.role === 'admin' && currentView === 'admin-training') await adminTrainingRender();
-  else if (currentUser.role === 'admin' && currentView === 'admin-settings') await adminSettingsRender();
+  else if (currentView === 'admin' || (currentUser.role === 'admin' && ['workflow-kpi','stat','quality','admin-training','admin-settings'].includes(currentView))) await switchTab(currentView, document.querySelector(`[data-admin-nav="${currentView}"], #tab-${currentView}`), { history: false });
   else if (currentView === 'supervision') {
     await loadModule('09-documentation.js');
     await loadModule('10-supervision.js');

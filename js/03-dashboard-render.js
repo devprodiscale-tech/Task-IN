@@ -399,6 +399,26 @@ function setAdminSidebarActive(view) {
   document.querySelectorAll('[data-admin-nav]').forEach(link => link.classList.toggle('active', link.dataset.adminNav === activeView));
 }
 
+function taskinViewKey(role = currentUser?.role) { return `taskin_view_${role || 'guest'}`; }
+function getPersistedTaskinView(role = currentUser?.role) {
+  try {
+    const value = sessionStorage.getItem(taskinViewKey(role));
+    const allowed = role === 'admin'
+      ? ['admin','workflow-kpi','stat','quality','admin-training','admin-settings','team']
+      : ['home','team','today','documentation','supervision','training','leaderboard'];
+    return allowed.includes(value) ? value : null;
+  } catch (_) { return null; }
+}
+function rememberTaskinView(view, replace = false) {
+  try { sessionStorage.setItem(taskinViewKey(), view); } catch (_) {}
+  const state = { taskin: true, view };
+  if (replace) history.replaceState(state, '', window.location.href);
+  else if (history.state?.taskin !== true || history.state.view !== view) history.pushState(state, '', window.location.href);
+}
+window.addEventListener('popstate', event => {
+  const view = event.state?.taskin ? event.state.view : getPersistedTaskinView();
+  if (view && currentUser) switchTab(view, document.querySelector(`[data-admin-nav="${view}"], #tab-${view}`), { history: false });
+});
 let navigationSequence = 0;
 const adminSubPanelIds = ['admin-overview-panel','admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel','admin-settings-panel'];
 
@@ -409,15 +429,14 @@ function hideAdminSubPanels() {
 async function preloadAdminInterfaces() {
   if (!currentUser || currentUser.role !== 'admin') return;
   await Promise.all(['05-training.js','09-documentation.js','10-supervision.js'].map(name => loadModule(name)));
-  const activeTimers = await loadActiveTimers();
-  const renders = [
-    ['admin-overview-panel', () => renderAdminOverview(activeTimers)],
-    ['admin-workflow-panel', () => adminWorkflowRender()],
-    ['admin-stat-panel', () => adminStatRender()],
-    ['admin-quality-panel', () => adminQualityRender()],
-    ['admin-training-panel', () => adminTrainingRender()],
-    ['admin-settings-panel', () => adminSettingsRender()],
-  ];
+  const renders = [];
+  const panelReady = id => document.getElementById(id)?.dataset.adminReady === '1';
+  if (!panelReady('admin-overview-panel')) renders.push(['admin-overview-panel', async () => renderAdminOverview(await loadActiveTimers())]);
+  if (!panelReady('admin-workflow-panel')) renders.push(['admin-workflow-panel', () => adminWorkflowRender()]);
+  if (!panelReady('admin-stat-panel')) renders.push(['admin-stat-panel', () => adminStatRender()]);
+  if (!panelReady('admin-quality-panel')) renders.push(['admin-quality-panel', () => adminQualityRender()]);
+  if (!panelReady('admin-training-panel')) renders.push(['admin-training-panel', () => adminTrainingRender()]);
+  if (!panelReady('admin-settings-panel')) renders.push(['admin-settings-panel', () => adminSettingsRender()]);
   const results = await Promise.allSettled(renders.map(([, render]) => Promise.resolve().then(render)));
   results.forEach((result, index) => {
     const [id] = renders[index];
@@ -431,7 +450,7 @@ async function preloadAdminInterfaces() {
 }
 
 // Point 5 : switchTab renforcé — guards stricts pour agent et non-admin
-async function switchTab(view, btn) {
+async function switchTab(view, btn, options = {}) {
   const sequence = ++navigationSequence;
   const adminSubViews = {
     'workflow-kpi': { panel: 'admin-workflow-panel', render: () => adminWorkflowRender() },
@@ -444,6 +463,7 @@ async function switchTab(view, btn) {
     if (!currentUser || currentUser.role !== 'admin') return;
     setAdminSidebarActive(view);
     currentView = view;
+    if (options.history !== false) rememberTaskinView(view);
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     if (btn) btn.classList.add('active');
     hideAdminSubPanels();
@@ -466,6 +486,7 @@ async function switchTab(view, btn) {
   if (currentUser.role === 'formateur' && (view === 'supervision' || view === 'admin')) return;
 
   currentView = view;
+  if (options.history !== false) rememberTaskinView(view);
   if (currentUser.role === 'admin') setAdminSidebarActive(view);
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if (btn) btn.classList.add('active');
