@@ -136,14 +136,3 @@ body.admin-sidebar-collapsed #admin-overview-panel,body.admin-sidebar-collapsed 
 .admin-sidebar-toggle{background:var(--surface2);border-color:var(--border2);color:var(--text2)}
 .admin-sidebar-toggle:hover{border-color:var(--ocean);color:var(--ocean);background:var(--ocean-dim)}
 [data-theme="dark"] #admin-sidebar.admin-sidebar{box-shadow:8px 0 26px rgba(2,6,23,.28)}
-
-/* Grille anti-recouvrement : tous les écrans utilisent la même largeur de sidebar. */
-body.admin-shell-active{--admin-sidebar-width:220px}
-body.admin-shell-active.admin-sidebar-collapsed{--admin-sidebar-width:74px}
-body.admin-shell-active #admin-sidebar.admin-sidebar{width:var(--admin-sidebar-width)}
-body.admin-shell-active .topbar{padding-left:calc(var(--admin-sidebar-width) + 16px)}
-body.admin-shell-active .ops-page-heading{width:calc(100% - var(--admin-sidebar-width) - 24px);margin-left:calc(var(--admin-sidebar-width) + 24px);margin-right:0;box-sizing:border-box}
-body.admin-shell-active .content{width:calc(100% - var(--admin-sidebar-width));margin-left:var(--admin-sidebar-width);margin-right:0;padding-left:24px;padding-right:24px;min-width:0;box-sizing:border-box}
-body.admin-shell-active .content>*{max-width:100%;min-width:0}
-body.admin-shell-active .admin-overview-section,body.admin-shell-active #admin-panel,body.admin-shell-active #team-live-panel,body.admin-shell-active #channel-matrix-panel,body.admin-shell-active #supervision-panel,body.admin-shell-active #training-panel{width:100%;max-width:100%;min-width:0}
-@media(max-width:850px){body.admin-shell-active .topbar{padding-left:90px}body.admin-shell-active .ops-page-heading{width:calc(100% - 106px);margin-left:90px}body.admin-shell-active .content{width:calc(100% - 74px);margin-left:74px;padding-left:16px;padding-right:16px}}
