@@ -140,3 +140,27 @@ body.admin-sidebar-collapsed #admin-overview-panel,body.admin-sidebar-collapsed 
 .admin-sidebar-toggle{background:var(--surface2);border-color:var(--border2);color:var(--text2)}
 .admin-sidebar-toggle:hover{border-color:var(--ocean);color:var(--ocean);background:var(--ocean-dim)}
 [data-theme="dark"] #admin-sidebar.admin-sidebar{box-shadow:8px 0 26px rgba(2,6,23,.28)}
+
+
+/* Paramètres — alignement strict sur le thème global Task’in */
+.admin-settings-shell{background:var(--surface);border-color:var(--border);color:var(--text);box-shadow:0 10px 24px rgba(15,23,42,.06)}
+.admin-settings-head{background:var(--surface2);border-bottom-color:var(--border)}
+.admin-settings-head h2,.admin-settings-hero h3{color:var(--text)}
+.admin-settings-head p,.admin-settings-hero p,.admin-settings-copy{color:var(--text2)}
+.admin-settings-layout{background:var(--border)}
+.admin-settings-nav{background:var(--surface2)}
+.admin-settings-nav-item{background:transparent;color:var(--text2)}
+.admin-settings-nav-item:hover{background:var(--ocean-dim);border-color:var(--border2);color:var(--text)}
+.admin-settings-nav-item.active{background:var(--ocean-dim);border-color:var(--ocean);color:var(--ocean)}
+.admin-settings-nav-item small{color:var(--text3)}
+.admin-settings-content{background:var(--bg)}
+.admin-settings-hero{background:var(--surface2);border-color:var(--border)}
+.admin-settings-overview-grid button,.admin-settings-card{background:var(--surface);border-color:var(--border);color:var(--text)}
+.admin-settings-overview-grid button:hover{background:var(--ocean-dim);border-color:var(--ocean)}
+.admin-settings-field{color:var(--text2)}
+.admin-settings-field input,.admin-settings-field textarea,.admin-settings-field select,.admin-settings-type-add input{background:var(--surface2);border-color:var(--border2);color:var(--text)}
+.admin-settings-field input::placeholder,.admin-settings-field textarea::placeholder,.admin-settings-type-add input::placeholder{color:var(--text3)}
+.admin-settings-badge{background:var(--surface2);color:var(--text3)}
+.admin-settings-file-status,.admin-settings-account-row,.admin-settings-shift-row,.admin-settings-draft-row,.admin-settings-type-list>div{background:var(--surface2);color:var(--text2)}
+.admin-settings-footer{background:var(--surface2);border-top-color:var(--border);color:var(--text3)}
+[data-theme="dark"] .admin-settings-shell{box-shadow:0 16px 34px rgba(2,6,23,.28)}
