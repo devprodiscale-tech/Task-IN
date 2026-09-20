@@ -73,19 +73,20 @@ module.exports = async (req, res) => {
     if (action === 'updateGoals') {
       const target = { count: num(payload.count, 0, 100000), total: num(payload.total, 0, 1000000), dmt: num(payload.dmt, 0, 1440), frt: num(payload.frt, 0, 1440) };
       if (Object.values(target).some(value => value === null)) return fail(res, 400, 'Objectifs numériques invalides.');
-      const existing = await request(`/rest/v1/goals?select=id&scope=eq.team&order=created_at.desc&limit=1`);
-      if (existing?.[0]?.id) await request(`/rest/v1/goals?id=eq.${existing[0].id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ target, owner_id: admin.id, updated_at: now }) });
-      else await request('/rest/v1/goals', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ scope: 'team', target, owner_id: admin.id }) });
-      return json(res, { message: 'Objectifs enregistrés.' });
+      // Source de vérité consommée par loadGoals() et tous les calculs KPI/DMT/FRT.
+      await saveSetting('goals', target, admin.id);
+      return json(res, { message: 'Objectifs enregistrés.', value: target });
     }
     if (action === 'upsertTreatmentType') {
       const name = str(payload.name, 100);
       if (!name) return fail(res, 400, 'Nom de traitement requis.');
-      const storedTypes = await setting('treatment_types');
-      const types = Array.isArray(storedTypes) ? storedTypes : [];
-      const next = [...types.filter(item => item?.name !== name), { name, active: payload.active !== false, updatedAt: now }];
-      await saveSetting('treatment_types', next.slice(-200), admin.id);
-      return json(res, { message: 'Type de traitement enregistré.' });
+      const stored = await setting('treatments');
+      const current = stored && typeof stored === 'object' && Array.isArray(stored.list) ? stored.list : (Array.isArray(stored) ? stored : []);
+      const types = current.map(item => typeof item === 'string' ? item : str(item?.name, 100)).filter(Boolean);
+      const next = [...types.filter(item => item !== name), name].slice(-200);
+      // customTreatmentTypes est chargé depuis settings.treatments.list.
+      await saveSetting('treatments', { list: next }, admin.id);
+      return json(res, { message: 'Type de traitement enregistré.', value: next });
     }
     if (action === 'updateShift') {
       const uid = str(payload.uid, 80), shift = str(payload.shift, 120);
