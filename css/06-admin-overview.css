@@ -168,3 +168,14 @@ body.admin-sidebar-collapsed #admin-overview-panel,body.admin-sidebar-collapsed 
 .admin-settings-file-status,.admin-settings-account-row,.admin-settings-shift-row,.admin-settings-draft-row,.admin-settings-type-list>div{background:var(--surface2);color:var(--text2)}
 .admin-settings-footer{background:var(--surface2);border-top-color:var(--border);color:var(--text3)}
 [data-theme="dark"] .admin-settings-shell{box-shadow:0 16px 34px rgba(2,6,23,.28)}
+
+
+/* Correctif ciblé logo + Collapse : aucune superposition dans les deux états. */
+#admin-sidebar.admin-sidebar .admin-sidebar-brand{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;padding:0}
+#admin-sidebar.admin-sidebar .admin-sidebar-brand-label{min-width:0;white-space:nowrap}
+#admin-sidebar.admin-sidebar .admin-sidebar-toggle{position:static;grid-column:2;grid-row:1;margin:0;width:auto;min-width:28px;flex:none}
+body.admin-sidebar-collapsed #admin-sidebar.admin-sidebar .admin-sidebar-brand{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;width:100%;padding:0}
+body.admin-sidebar-collapsed #admin-sidebar.admin-sidebar .admin-sidebar-mark{flex:none}
+body.admin-sidebar-collapsed #admin-sidebar.admin-sidebar .admin-sidebar-toggle{position:static;width:28px;height:28px;margin:0;padding:0;flex:none}
+body.admin-sidebar-collapsed #admin-sidebar.admin-sidebar .admin-sidebar-toggle-label{display:none}
+@media(max-width:850px){body.admin-shell-active:not(.admin-sidebar-collapsed) #admin-sidebar.admin-sidebar .admin-sidebar-brand{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:0}body.admin-sidebar-collapsed #admin-sidebar.admin-sidebar .admin-sidebar-brand{display:flex;flex-direction:column;gap:8px;padding:0}}
