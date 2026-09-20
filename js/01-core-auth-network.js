@@ -72,6 +72,15 @@ async function doLogin() {
   err.textContent = '';
   if (!email || !password) { err.textContent = 'Entre ton email et ton mot de passe.'; return; }
   try {
+    if (typeof taskinLocalAuthenticate === 'function') {
+      const local = await taskinLocalAuthenticate(email, password);
+      if (local.handled) {
+        if (local.error) { err.textContent = local.error; return; }
+        mergeTaskinLocalAccounts();
+        enterApp(local.user);
+        return;
+      }
+    }
     const supabase = window.taskinDataProviders?.supabase;
     if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
     const session = await supabase.signIn(email, password);
@@ -403,6 +412,7 @@ async function refreshApp() {
     loadGoals(),
     loadEntries(false),
   ]);
+  if (typeof mergeTaskinLocalAccounts === 'function') mergeTaskinLocalAccounts();
   populateFilters();
   await renderCurrentView();
   if (currentUser?.role === 'admin') preloadAdminInterfaces().catch(error => console.warn('Préchargement Admin partiel:', error));
