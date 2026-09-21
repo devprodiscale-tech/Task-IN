@@ -45,3 +45,12 @@
 .theme-toggle-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
 .theme-toggle-btn:hover{border-color:var(--ocean);color:var(--ocean)}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;transition:background .2s,color .2s}
+
+/* Sélecteurs de fichiers : remplacer le rendu navigateur brut par un contrôle Task'in. */
+input[type="file"]:not(.hidden):not([hidden]){display:block;width:100%;min-height:40px;padding:5px 8px;border:1px solid var(--border2);border-radius:4px;background:var(--surface);color:var(--text2);font:500 12px var(--font);line-height:28px;cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease}
+input[type="file"]:not(.hidden):not([hidden]):hover{border-color:var(--ocean);background:var(--surface2)}
+input[type="file"]:not(.hidden):not([hidden]):focus-visible{outline:2px solid var(--ocean);outline-offset:2px;box-shadow:0 0 0 3px var(--ocean-dim)}
+input[type="file"]:not(.hidden):not([hidden])::file-selector-button{margin-right:10px;padding:7px 12px;border:1px solid var(--ocean);border-radius:4px;background:var(--ocean);color:#fff;font:600 12px var(--font);line-height:1;cursor:pointer;transition:background-color .16s ease,border-color .16s ease,transform .16s ease}
+input[type="file"]:not(.hidden):not([hidden])::file-selector-button:hover{border-color:var(--ocean-deep);background:var(--ocean-deep)}
+input[type="file"]:not(.hidden):not([hidden])::file-selector-button:active{transform:translateY(1px)}
+[data-theme="dark"] input[type="file"]:not(.hidden):not([hidden]){background:var(--surface2)}
