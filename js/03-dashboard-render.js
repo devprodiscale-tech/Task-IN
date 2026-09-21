@@ -394,6 +394,45 @@ function toggleAdminSidebar(force) {
   }
 }
 
+const workspaceSidebarItems = {
+  supervisor: [
+    ['supervision', 'Supervision', '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>'],
+    ['team', 'Équipe', '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>'],
+    ['leaderboard', 'Performance', '<path d="M3 3v18h18"/><path d="M7 16v-5M12 16V7M17 16v-8"/>'],
+  ],
+  formateur: [
+    ['training', 'Formation', '<path d="M22 10v6M2 10l10-5 10 5-10 5L2 10Z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/>'],
+    ['documentation', 'Documentation', '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22Z"/><path d="M4 5.5v16.5"/>'],
+  ],
+};
+function renderWorkspaceSidebar(role) {
+  const sidebar = document.getElementById('workspace-sidebar');
+  const nav = sidebar?.querySelector('.workspace-sidebar-nav');
+  if (!sidebar || !nav) return;
+  const labels = { supervisor: 'Espace Supervision', formateur: 'Espace Formation' };
+  const items = workspaceSidebarItems[role] || [];
+  sidebar.querySelector('.workspace-sidebar-caption').textContent = labels[role] || 'Espace métier';
+  nav.innerHTML = items.map(([view, label, icon]) => `<button type="button" class="admin-sidebar-link workspace-sidebar-link" data-workspace-nav="${view}" onclick="switchTab('${view}', this)"><span class="admin-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><span>${label}</span></button>`).join('');
+  setWorkspaceSidebarActive(currentView);
+}
+function setWorkspaceSidebarActive(view) {
+  document.querySelectorAll('[data-workspace-nav]').forEach(link => link.classList.toggle('active', link.dataset.workspaceNav === view));
+}
+function toggleWorkspaceSidebar(force) {
+  const collapsed = typeof force === 'boolean' ? force : !document.body.classList.contains('workspace-sidebar-collapsed');
+  document.body.classList.toggle('workspace-sidebar-collapsed', collapsed);
+  try { localStorage.setItem(`taskin_workspace_sidebar_${currentUser?.role || 'guest'}`, collapsed ? '1' : '0'); } catch (_) {}
+  const toggle = document.querySelector('.workspace-sidebar-toggle');
+  if (toggle) {
+    const icon = toggle.querySelector('.admin-sidebar-toggle-icon');
+    const label = toggle.querySelector('.admin-sidebar-toggle-label');
+    if (icon) icon.textContent = collapsed ? '›' : '‹';
+    if (label) label.textContent = collapsed ? 'Développer' : 'Réduire';
+    toggle.setAttribute('aria-label', collapsed ? 'Développer l’espace métier' : 'Réduire l’espace métier');
+    toggle.title = collapsed ? 'Développer l’espace métier' : 'Réduire l’espace métier';
+  }
+}
+
 function setAdminSidebarActive(view) {
   const activeView = view === 'admin-training' ? 'admin-training' : view;
   document.querySelectorAll('[data-admin-nav]').forEach(link => link.classList.toggle('active', link.dataset.adminNav === activeView));
@@ -490,6 +529,7 @@ async function switchTab(view, btn, options = {}) {
   currentView = view;
   if (options.history !== false) rememberTaskinView(view);
   if (currentUser.role === 'admin') setAdminSidebarActive(view);
+  if (currentUser.role === 'supervisor' || currentUser.role === 'formateur') setWorkspaceSidebarActive(view);
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if (btn) btn.classList.add('active');
 
