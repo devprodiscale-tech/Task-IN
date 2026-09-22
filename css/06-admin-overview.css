@@ -208,30 +208,11 @@ body.admin-sidebar-collapsed #admin-sidebar.admin-sidebar .admin-sidebar-brand{a
 /* Le logo étant désormais dans le topbar, celui-ci démarre à gauche sans réserve de sidebar. */
 body.admin-shell-active .topbar,body.admin-sidebar-collapsed .topbar{padding-left:24px}
 @media(max-width:560px){body.admin-shell-active .topbar,body.admin-sidebar-collapsed .topbar{padding-left:16px}}
-
-
-/* Shell métier : même grammaire visuelle que l’Admin, sans créer de comptes ni de données. */
-body.workspace-shell-active{--workspace-sidebar-width:220px}
-body.workspace-sidebar-collapsed{--workspace-sidebar-width:74px}
-#workspace-sidebar.workspace-sidebar{position:fixed;z-index:20;top:62px;right:auto;bottom:0;left:0;width:var(--workspace-sidebar-width,220px);display:flex;flex-direction:column;padding:24px 14px 16px;background:var(--surface);color:var(--text);border-right:1px solid var(--border);box-shadow:8px 0 26px rgba(15,23,42,.08);box-sizing:border-box}
-#workspace-sidebar.workspace-sidebar .admin-sidebar-brand{display:flex;align-items:center;justify-content:flex-end;min-height:28px;padding:0;color:var(--text)}
-#workspace-sidebar.workspace-sidebar .admin-sidebar-caption{margin:42px 10px 12px;color:var(--text3)}
-#workspace-sidebar.workspace-sidebar .admin-sidebar-link{color:var(--text2);border-radius:4px}
-#workspace-sidebar.workspace-sidebar .admin-sidebar-link:hover{background:var(--surface2);color:var(--text)}
-#workspace-sidebar.workspace-sidebar .admin-sidebar-link.active{border-color:var(--ocean);background:var(--ocean);color:#fff;box-shadow:0 6px 16px rgba(37,99,235,.22)}
-#workspace-sidebar.workspace-sidebar .admin-sidebar-link.active .admin-sidebar-icon{color:#fff}
-#workspace-sidebar.workspace-sidebar .admin-sidebar-footer{border-top-color:var(--border);color:var(--text2)}
-#workspace-sidebar.workspace-sidebar .admin-sidebar-toggle{background:var(--surface2);border-color:var(--border2);color:var(--text2)}
-#workspace-sidebar.workspace-sidebar .admin-sidebar-toggle:hover{border-color:var(--ocean);color:var(--ocean);background:var(--ocean-dim)}
-body.workspace-sidebar-collapsed #workspace-sidebar.workspace-sidebar{padding-left:9px;padding-right:9px}
-body.workspace-sidebar-collapsed #workspace-sidebar .admin-sidebar-brand{justify-content:center}
-body.workspace-sidebar-collapsed #workspace-sidebar .admin-sidebar-caption,body.workspace-sidebar-collapsed #workspace-sidebar .workspace-sidebar-link>span:last-child,body.workspace-sidebar-collapsed #workspace-sidebar .admin-sidebar-footer>span:last-child{display:none}
-body.workspace-sidebar-collapsed #workspace-sidebar .workspace-sidebar-link{justify-content:center;padding-left:8px;padding-right:8px}
-body.workspace-sidebar-collapsed #workspace-sidebar .admin-sidebar-footer{justify-content:center;padding-left:0;padding-right:0}
-body.workspace-shell-active .content{width:auto;min-width:0;margin-left:var(--workspace-sidebar-width,220px);padding:0 24px;transition:margin-left var(--taskin-motion-slow) var(--taskin-motion-ease),padding-left var(--taskin-motion-slow) var(--taskin-motion-ease),padding-right var(--taskin-motion-slow) var(--taskin-motion-ease)}
-body.workspace-shell-active .ops-page-heading{margin-left:calc(var(--workspace-sidebar-width,220px) + 24px);margin-right:24px;transition:margin-left var(--taskin-motion-slow) var(--taskin-motion-ease)}
-#workspace-sidebar.workspace-sidebar{transition:width var(--taskin-motion-slow) var(--taskin-motion-ease),padding var(--taskin-motion-slow) var(--taskin-motion-ease),box-shadow 260ms ease}
-@media(max-width:850px){#workspace-sidebar.workspace-sidebar{padding:18px 9px}body.workspace-shell-active .content{margin-left:var(--workspace-sidebar-width,220px);padding:0 16px}body.workspace-shell-active .ops-page-heading{margin-left:calc(var(--workspace-sidebar-width,220px) + 16px);margin-right:16px}}
-@media(max-width:560px){body.workspace-shell-active .content{padding:0 12px}body.workspace-shell-active .ops-page-heading{margin-left:calc(var(--workspace-sidebar-width,220px) + 12px);margin-right:12px}}
-[data-theme="dark"] #workspace-sidebar.workspace-sidebar{box-shadow:8px 0 26px rgba(2,6,23,.28)}
-@media(prefers-reduced-motion:reduce){#workspace-sidebar.workspace-sidebar,body.workspace-shell-active .content,body.workspace-shell-active .ops-page-heading{transition:none!important}}
+/* Navigation non-Admin : onglets horizontaux sous le heading, sans sidebar métier. */
+body.role-workspace-active .role-page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;max-width:1460px;margin:22px auto 0;padding:0 24px}
+.role-page-heading h1{font:700 25px var(--display);color:var(--text);letter-spacing:-.4px}.role-page-heading p{margin-top:5px;color:var(--text2);font-size:12px}
+.role-tabs{display:flex;align-items:flex-end;gap:5px;max-width:1460px;margin:18px auto 0;padding:0 24px;border-bottom:1px solid var(--border2);overflow-x:auto;scrollbar-width:none}.role-tabs::-webkit-scrollbar{display:none}
+.role-tab{display:inline-flex;align-items:center;flex:0 0 auto;padding:10px 15px;border:1px solid var(--border);border-bottom:0;border-radius:9px 9px 0 0;background:var(--surface2);color:var(--text2);font:600 12px var(--font);white-space:nowrap;cursor:pointer;transition:background-color .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease}.role-tab:hover{background:var(--ocean-dim);border-color:var(--ocean);color:var(--ocean)}.role-tab.active{background:var(--ocean);border-color:var(--ocean);color:#fff;box-shadow:0 -2px 0 var(--ocean-deep) inset}
+body.role-workspace-active .content{max-width:1460px;margin:0 auto;padding-top:18px}
+@media(max-width:760px){body.role-workspace-active .role-page-heading{align-items:flex-start;flex-direction:column;margin-top:18px;padding-inline:14px}.role-tabs{padding-inline:14px;margin-top:14px}body.role-workspace-active .content{padding-inline:14px}}
+@media(prefers-reduced-motion:reduce){.role-tab{transition:none!important}}

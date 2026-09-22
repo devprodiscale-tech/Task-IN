@@ -107,6 +107,15 @@
       <button class="btn btn-ghost" onclick="logout()">Déconnexion</button>
     </div>
   </div>
+  <section id="role-page-heading" class="role-page-heading hidden" aria-labelledby="role-page-title">
+    <div class="role-page-heading-copy">
+      <div class="ops-eyebrow" id="role-page-eyebrow">ESPACE MÉTIER</div>
+      <h1 id="role-page-title"></h1>
+      <p id="role-page-subtitle"></p>
+    </div>
+    <div class="ops-context-chip"><span class="ops-context-dot"></span><span id="role-context-label"></span></div>
+  </section>
+  <nav id="role-tabs" class="role-tabs hidden" aria-label="Navigation de l’espace métier"></nav>
 
   <aside id="admin-sidebar" class="admin-sidebar hidden" aria-label="Navigation Admin">
     <div class="admin-sidebar-brand"><button type="button" class="admin-sidebar-toggle" onclick="toggleAdminSidebar()" aria-label="Réduire le menu Admin" title="Réduire le menu"><span class="admin-sidebar-toggle-icon">‹</span><span class="admin-sidebar-toggle-label">Réduire</span></button></div>
@@ -122,15 +131,7 @@
     </nav>
     <div class="admin-sidebar-footer"><span class="admin-sidebar-status-dot"></span><span>Données synchronisées</span></div>
   </aside>
-
-  <aside id="workspace-sidebar" class="admin-sidebar workspace-sidebar hidden" aria-label="Navigation de l’espace métier">
-    <div class="admin-sidebar-brand"><button type="button" class="admin-sidebar-toggle workspace-sidebar-toggle" onclick="toggleWorkspaceSidebar()" aria-label="Réduire l’espace métier" title="Réduire l’espace métier"><span class="admin-sidebar-toggle-icon">‹</span><span class="admin-sidebar-toggle-label">Réduire</span></button></div>
-    <div class="admin-sidebar-caption workspace-sidebar-caption">Espace métier</div>
-    <nav class="admin-sidebar-nav workspace-sidebar-nav"></nav>
-    <div class="admin-sidebar-footer"><span class="admin-sidebar-status-dot"></span><span class="workspace-sidebar-footer-label">Espace actif</span></div>
-  </aside>
-
-  <div class="live-header-panel hidden" id="permanent-live-panel">
+<div class="live-header-panel hidden" id="permanent-live-panel">
      <div class="live-header-title"><div class="live-pulse-dot"></div> Équipe en direct</div>
      <div class="live-header-grid" id="live-agents-grid"></div>
   </div>
@@ -618,14 +619,6 @@
     </div>
 
     <div id="supervision-panel" class="hidden" style="padding:0">
-      <div class="sv-tabs">
-        <button class="sv-tab-btn active" id="sv-tab-overview" onclick="svSwitchSubTab('overview')">🧭 Vue d'ensemble</button>
-        <button class="sv-tab-btn" id="sv-tab-escalations" onclick="svSwitchSubTab('escalations')">🚩 Cas complexes</button>
-        <button class="sv-tab-btn" id="sv-tab-reviews" onclick="svSwitchSubTab('reviews')">🎧 Grille d'écoute</button>
-        <button class="sv-tab-btn" id="sv-tab-coaching" onclick="svSwitchSubTab('coaching')">🤝 Coaching 1:1</button>
-        <button class="sv-tab-btn" id="sv-tab-reporting" onclick="svSwitchSubTab('reporting')">📊 Reporting</button>
-      </div>
-
             <!-- VUE D'ENSEMBLE -->
       <div id="sv-view-overview">
         <div id="ops-viz-supervision-overview" class="ops-viz-section"></div>

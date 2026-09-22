@@ -248,20 +248,17 @@ function applyRoleUI() {
   app.classList.remove('role-agent','role-supervisor','role-formateur','role-admin');
   app.classList.add('role-' + role);
   const adminSidebar = document.getElementById('admin-sidebar');
-  if (adminSidebar) adminSidebar.classList.toggle('hidden', role !== 'admin');
-  const workspaceSidebar = document.getElementById('workspace-sidebar');
   const isWorkspaceRole = role === 'supervisor' || role === 'formateur';
-  if (workspaceSidebar) workspaceSidebar.classList.toggle('hidden', !isWorkspaceRole);
+  if (adminSidebar) adminSidebar.classList.toggle('hidden', role !== 'admin');
   document.body.classList.toggle('admin-shell-active', role === 'admin');
-  document.body.classList.toggle('workspace-shell-active', isWorkspaceRole);
-  document.body.classList.remove('workspace-sidebar-collapsed');
-  if (isWorkspaceRole && typeof renderWorkspaceSidebar === 'function') {
-    renderWorkspaceSidebar(role);
-    let collapsed = false;
-    try { collapsed = localStorage.getItem(`taskin_workspace_sidebar_${role}`) === '1'; } catch (_) {}
-    toggleWorkspaceSidebar(collapsed);
-  }
-  document.querySelector('.tabs')?.classList.toggle('hidden', role === 'admin' || isWorkspaceRole);
+  document.body.classList.toggle('role-workspace-active', isWorkspaceRole);
+  document.body.classList.remove('workspace-shell-active', 'workspace-sidebar-collapsed');
+  const roleHeading = document.getElementById('role-page-heading');
+  const roleTabs = document.getElementById('role-tabs');
+  if (roleHeading) roleHeading.classList.toggle('hidden', !isWorkspaceRole);
+  if (roleTabs) roleTabs.classList.toggle('hidden', !isWorkspaceRole);
+  if (isWorkspaceRole && typeof renderRoleTabs === 'function') renderRoleTabs(role);
+  document.querySelector('.tabs')?.classList.toggle('hidden', role === 'admin');
   if (role === 'admin' && typeof toggleAdminSidebar === 'function') {
     let collapsed = false;
     try { collapsed = localStorage.getItem('taskin_admin_sidebar_collapsed') === '1'; } catch (_) {}
@@ -379,7 +376,7 @@ function applyRoleUI() {
     document.getElementById('training-panel').classList.remove('hidden');
   }
   if ((role === 'supervisor' || role === 'formateur') && typeof setWorkspaceSidebarActive === 'function') {
-    setWorkspaceSidebarActive(currentView);
+    setRoleTabActive(currentView);
   }
   if (typeof rememberTaskinView === 'function') rememberTaskinView(currentView, true);
 }
