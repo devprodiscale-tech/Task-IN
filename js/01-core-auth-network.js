@@ -258,7 +258,7 @@ function applyRoleUI() {
   if (roleHeading) roleHeading.classList.toggle('hidden', !isWorkspaceRole);
   if (roleTabs) roleTabs.classList.toggle('hidden', !isWorkspaceRole);
   if (isWorkspaceRole && typeof renderRoleTabs === 'function') renderRoleTabs(role);
-  document.querySelector('.tabs')?.classList.toggle('hidden', role === 'admin');
+  document.querySelector('.tabs')?.classList.toggle('hidden', role === 'admin' || isWorkspaceRole);
   if (role === 'admin' && typeof toggleAdminSidebar === 'function') {
     let collapsed = false;
     try { collapsed = localStorage.getItem('taskin_admin_sidebar_collapsed') === '1'; } catch (_) {}

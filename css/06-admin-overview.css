@@ -211,7 +211,9 @@ body.admin-shell-active .topbar,body.admin-sidebar-collapsed .topbar{padding-lef
 /* Navigation non-Admin : onglets horizontaux sous le heading, sans sidebar métier. */
 body.role-workspace-active .role-page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;max-width:1460px;margin:22px auto 0;padding:0 24px}
 .role-page-heading h1{font:700 25px var(--display);color:var(--text);letter-spacing:-.4px}.role-page-heading p{margin-top:5px;color:var(--text2);font-size:12px}
-.role-tabs{display:flex;align-items:flex-end;gap:5px;max-width:1460px;margin:18px auto 0;padding:0 24px;border-bottom:1px solid var(--border2);overflow-x:auto;scrollbar-width:none}.role-tabs::-webkit-scrollbar{display:none}
+.role-tabs{display:flex;align-items:flex-end;gap:5px;max-width:1460px;margin:18px auto 0;padding:0 24px;border-bottom:1px solid var(--border2);overflow-x:auto;scrollbar-width:none;white-space:nowrap}.role-tabs::-webkit-scrollbar{display:none}
+body.role-workspace-active .role-tabs{margin-bottom:0}
+body.role-workspace-active .role-tabs .role-tab{border-radius:9px 9px 0 0}
 .role-tab{display:inline-flex;align-items:center;flex:0 0 auto;padding:10px 15px;border:1px solid var(--border);border-bottom:0;border-radius:9px 9px 0 0;background:var(--surface2);color:var(--text2);font:600 12px var(--font);white-space:nowrap;cursor:pointer;transition:background-color .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease}.role-tab:hover{background:var(--ocean-dim);border-color:var(--ocean);color:var(--ocean)}.role-tab.active{background:var(--ocean);border-color:var(--ocean);color:#fff;box-shadow:0 -2px 0 var(--ocean-deep) inset}
 body.role-workspace-active .content{max-width:1460px;margin:0 auto;padding-top:18px}
 @media(max-width:760px){body.role-workspace-active .role-page-heading{align-items:flex-start;flex-direction:column;margin-top:18px;padding-inline:14px}.role-tabs{padding-inline:14px;margin-top:14px}body.role-workspace-active .content{padding-inline:14px}}

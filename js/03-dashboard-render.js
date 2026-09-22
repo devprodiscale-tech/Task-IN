@@ -408,8 +408,15 @@ function renderRoleTabs(role) {
   if(context) context.textContent=supervisor?'Équipe en direct':'Learning & Knowledge';
   if(eyebrow) eyebrow.textContent=supervisor?'SUPERVISION':'FORMATION';
   if (supervisor) {
-    const items=[['overview','🧭 Vue d’ensemble'],['escalations','🚩 Cas complexes'],['reviews','🎧 Grille d’écoute'],['coaching','🤝 Coaching 1:1'],['reporting','📊 Reporting']];
-    rail.innerHTML=items.map(([view,label])=>`<button type="button" class="role-tab sv-tab-btn" id="sv-tab-${view}" data-role-tab="${view}" onclick="svSwitchSubTab('${view}')">${label}</button>`).join('');
+    const subViews=[['overview','🧭 Vue d’ensemble'],['escalations','🚩 Cas complexes'],['reviews','🎧 Grille d’écoute'],['coaching','🤝 Coaching 1:1'],['reporting','📊 Reporting']];
+    const workspaceViews=[['team','👥 Équipe'],['leaderboard','🏆 Classement'],['documentation','📄 Documentation']];
+    const items=[...subViews,...workspaceViews];
+    rail.innerHTML=items.map(([view,label])=>{
+      const isSubView=subViews.some(([id])=>id===view);
+      return isSubView
+        ? `<button type="button" class="role-tab sv-tab-btn" id="sv-tab-${view}" data-role-tab="${view}" onclick="svSwitchSubTab('${view}')">${label}</button>`
+        : `<button type="button" class="role-tab" data-role-tab="${view}" onclick="switchTab('${view}', this)">${label}</button>`;
+    }).join('');
   } else {
     rail.innerHTML=(roleTabItems[role]||[]).map(([view,label])=>`<button type="button" class="role-tab" data-role-tab="${view}" onclick="switchTab('${view}', this)">${label}</button>`).join('');
   }

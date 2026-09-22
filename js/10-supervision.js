@@ -173,9 +173,10 @@ function svUpdateAlertBadge() {
 function svSwitchSubTab(tab) {
   svSubTab = tab;
   ['overview', 'escalations', 'reviews', 'coaching', 'reporting'].forEach(t => {
-    document.getElementById('sv-tab-' + t).classList.toggle('active', t === tab);
-    document.getElementById('sv-view-' + t).classList.toggle('hidden', t !== tab);
+    document.getElementById('sv-tab-' + t)?.classList.toggle('active', t === tab);
+    document.getElementById('sv-view-' + t)?.classList.toggle('hidden', t !== tab);
   });
+  if (typeof setRoleTabActive === 'function') setRoleTabActive(tab);
   if (tab === 'overview') svRenderOverview();
   if (tab === 'escalations') svRenderEscalations();
   if (tab === 'reviews') svRenderReviews();
