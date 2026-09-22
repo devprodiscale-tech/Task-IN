@@ -621,7 +621,12 @@
     <div id="supervision-panel" class="hidden" style="padding:0">
             <!-- VUE D'ENSEMBLE -->
       <div id="sv-view-overview">
-        <div id="sv-workflow-panel" class="supervision-workflow-embed" aria-label="Workflow et KPI de supervision"></div>
+        <div id="sv-workflow-panel" class="supervision-workflow-embed" aria-label="Workflow et KPI de supervision">
+          <section class="admin-workflow-shell admin-workflow-loading" aria-labelledby="sv-workflow-loading-title">
+            <div class="admin-workflow-head"><div><span class="admin-overview-section-label">Supervision · pilotage opérationnel</span><h2 id="sv-workflow-loading-title">Workflow / KPI</h2><p>Chargement du cockpit opérationnel…</p></div><div class="admin-workflow-periods"><button class="active" type="button">Aujourd’hui</button><button type="button">7 jours</button><button type="button">Mois</button></div></div>
+            <div class="admin-workflow-kpis"><div><span>Traitements</span><strong>—</strong><small>en cours</small></div><div><span>Temps traité</span><strong>—</strong><small>cumul équipe</small></div><div><span>SLA globale</span><strong>—</strong><small>calcul en cours</small></div><div><span>Missed calls</span><strong>—</strong><small>chargement</small></div></div>
+          </section>
+        </div>
         <div id="ops-viz-supervision-overview" class="ops-viz-section"></div>
         <div id="sv-ov-alert" class="hidden" style="background:var(--red-dim);border:1px solid var(--red);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:14px">
           <span style="font-size:16px">⏰</span>
@@ -1189,13 +1194,13 @@
 
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260901" defer></script>
-<script src="js/00-core-init.js?v=20260827b" defer></script>
+<script src="js/00-core-init.js?v=20260923" defer></script>
 <script src="js/01-core-auth-network.js?v=20260827b" defer></script>
 <script src="js/02-time-data.js?v=20260827b" defer></script>
-<script src="js/03-dashboard-render.js?v=20260827b" defer></script>
+<script src="js/03-dashboard-render.js?v=20260923" defer></script>
 <script src="js/04-admin.js?v=20260827" defer></script>
 <script src="js/11-admin-overview.js?v=20260917" defer></script>
-<script src="js/12-admin-workflow.js?v=20260918" defer></script>
+<script src="js/12-admin-workflow.js?v=20260923" defer></script>
 <script src="js/13-admin-stat.js?v=20260918" defer></script>
 <script src="js/14-admin-quality.js?v=20260918" defer></script>
 <script src="js/15-admin-training.js?v=20260918" defer></script>

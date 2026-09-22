@@ -223,3 +223,12 @@ body.role-workspace-active .content{max-width:1460px;margin:0 auto;padding-top:1
 .supervision-workflow-embed{margin:0 0 18px;min-width:0}
 .supervision-workflow-embed .admin-workflow-shell{margin:0}
 .supervision-workflow-embed .admin-workflow-head{border-top-left-radius:var(--radius);border-top-right-radius:var(--radius)}
+
+/* Transitions de vues métier : courtes, lisibles et non bloquantes. */
+.taskin-view-enter{animation:taskin-view-enter 220ms cubic-bezier(.22,1,.36,1) both}
+@keyframes taskin-view-enter{from{opacity:0;transform:translate3d(0,6px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+.role-tab:active{transform:translateY(1px);transition-duration:80ms}
+@media(prefers-reduced-motion:reduce){.taskin-view-enter{animation:none!important}}
+
+.admin-workflow-loading{animation:taskin-view-enter 180ms cubic-bezier(.22,1,.36,1) both}
+.admin-workflow-loading .admin-workflow-kpis>div{min-height:76px}

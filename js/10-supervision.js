@@ -153,15 +153,23 @@ function svNormalizeEscalation(e, collection = 'escalations') {
   return { ...e, _collection: e._collection || collection, agentId: e.agentId || e.createdBy || '', channel: e.channel || 'ticket', priority: e.priority || 'medium', status: e.status || 'nouveau', deadlineAt: e.deadlineAt || null, linkedProcedureId: e.linkedProcedureId || null, updates: Array.isArray(e.updates) ? e.updates : [], createdAt };
 }
 async function svInit() {
-  const [sharedEsc, legacyEsc, rev, coach] = await Promise.all([
-    svFetchCollection('escalations'), svFetchCollection('complexCases'), svFetchCollection('qualityReviews'), svFetchCollection('coachingSheets'),
-  ]);
-  escalations = [...sharedEsc.map(e => svNormalizeEscalation(e, 'escalations')), ...legacyEsc.map(e => svNormalizeEscalation(e, 'complexCases'))];
-  qualityReviews = rev; coachingSheets = coach;
-  renderOpsVisuals();
+  // Affichage immédiat : le cockpit ne doit pas attendre les lectures Supabase.
   if (typeof adminWorkflowRender === 'function') adminWorkflowRender('sv-workflow-panel');
   svUpdateAlertBadge();
   svSwitchSubTab(svSubTab);
+  try {
+    const [sharedEsc, legacyEsc, rev, coach] = await Promise.all([
+      svFetchCollection('escalations'), svFetchCollection('complexCases'), svFetchCollection('qualityReviews'), svFetchCollection('coachingSheets'),
+    ]);
+    escalations = [...sharedEsc.map(e => svNormalizeEscalation(e, 'escalations')), ...legacyEsc.map(e => svNormalizeEscalation(e, 'complexCases'))];
+    qualityReviews = rev; coachingSheets = coach;
+    renderOpsVisuals();
+    if (typeof adminWorkflowRender === 'function') adminWorkflowRender('sv-workflow-panel');
+    svUpdateAlertBadge();
+    svSwitchSubTab(svSubTab);
+  } catch (error) {
+    console.error('Chargement Supervision impossible :', error);
+  }
 }
 function svUpdateAlertBadge() {
   const now = Date.now();
@@ -178,6 +186,11 @@ function svSwitchSubTab(tab) {
     document.getElementById('sv-view-' + t)?.classList.toggle('hidden', t !== tab);
   });
   if (typeof setRoleTabActive === 'function') setRoleTabActive(tab);
+  const activeView = document.getElementById('sv-view-' + tab);
+  if (activeView) {
+    activeView.classList.remove('taskin-view-enter');
+    requestAnimationFrame(() => activeView.classList.add('taskin-view-enter'));
+  }
   if (tab === 'overview') svRenderOverview();
   if (tab === 'escalations') svRenderEscalations();
   if (tab === 'reviews') svRenderReviews();

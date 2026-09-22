@@ -523,6 +523,11 @@ async function switchTab(view, btn, options = {}) {
   if (currentUser.role === 'supervisor' || currentUser.role === 'formateur') setRoleTabActive(view);
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if (btn) btn.classList.add('active');
+  document.querySelectorAll('.taskin-view-enter').forEach(el => el.classList.remove('taskin-view-enter'));
+  requestAnimationFrame(() => {
+    const routePanel = document.getElementById(view === 'documentation' ? 'documentation-panel' : view === 'training' ? 'training-panel' : view === 'leaderboard' ? 'leaderboard-panel' : view === 'team' ? 'team-live-panel' : null);
+    routePanel?.classList.add('taskin-view-enter');
+  });
 
   const isAdminView = view === 'admin';
   const isHomeView = view === 'home';
@@ -576,7 +581,6 @@ async function switchTab(view, btn, options = {}) {
   }
   if (isSupervisionView) {
     await loadModule('09-documentation.js');
-    await loadModule('12-admin-workflow.js');
     await loadModule('10-supervision.js');
     if (sequence !== navigationSequence || currentView !== view) return;
     svInit();

@@ -38,9 +38,9 @@ async function loadModule(name) {
 
 function preloadRoleModules(role = currentUser?.role) {
   const modules = role === 'admin'
-    ? ['05-training.js', '09-documentation.js', '10-supervision.js']
+    ? ['05-training.js', '09-documentation.js', '10-supervision.js', '12-admin-workflow.js']
     : role === 'supervisor'
-      ? ['09-documentation.js', '10-supervision.js']
+      ? ['09-documentation.js', '10-supervision.js', '12-admin-workflow.js']
       : role === 'formateur'
         ? ['05-training.js', '09-documentation.js']
         : ['09-documentation.js'];
