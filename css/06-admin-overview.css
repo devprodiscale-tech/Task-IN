@@ -232,3 +232,6 @@ body.role-workspace-active .content{max-width:1460px;margin:0 auto;padding-top:1
 
 .admin-workflow-loading{animation:taskin-view-enter 180ms cubic-bezier(.22,1,.36,1) both}
 .admin-workflow-loading .admin-workflow-kpis>div{min-height:76px}
+
+.role-tabs{position:relative;z-index:2;pointer-events:auto}
+.role-tab{position:relative;z-index:1;pointer-events:auto;user-select:none}

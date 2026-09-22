@@ -414,15 +414,32 @@ function renderRoleTabs(role) {
     rail.innerHTML=items.map(([view,label])=>{
       const isSubView=subViews.some(([id])=>id===view);
       return isSubView
-        ? `<button type="button" class="role-tab sv-tab-btn" id="sv-tab-${view}" data-role-tab="${view}" onclick="svSwitchSubTab('${view}')">${label}</button>`
-        : `<button type="button" class="role-tab" data-role-tab="${view}" onclick="switchTab('${view}', this)">${label}</button>`;
+        ? `<button type="button" class="role-tab sv-tab-btn" id="sv-tab-${view}" data-role-tab="${view}">${label}</button>`
+        : `<button type="button" class="role-tab" data-role-tab="${view}">${label}</button>`;
     }).join('');
   } else {
-    rail.innerHTML=(roleTabItems[role]||[]).map(([view,label])=>`<button type="button" class="role-tab" data-role-tab="${view}" onclick="switchTab('${view}', this)">${label}</button>`).join('');
+    rail.innerHTML=(roleTabItems[role]||[]).map(([view,label])=>`<button type="button" class="role-tab" data-role-tab="${view}">${label}</button>`).join('');
   }
+  rail.querySelectorAll('[data-role-tab]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      const view = button.dataset.roleTab;
+      if (supervisor && ['overview','escalations','reviews','coaching','reporting'].includes(view)) {
+        if (typeof svSwitchSubTab === 'function') svSwitchSubTab(view);
+      } else if (typeof switchTab === 'function') {
+        void switchTab(view, button);
+      }
+    });
+  });
   setRoleTabActive(currentView);
 }
-function setRoleTabActive(view){ document.querySelectorAll('[data-role-tab]').forEach(link=>link.classList.toggle('active',link.dataset.roleTab===view)); }
+function setRoleTabActive(view){
+  document.querySelectorAll('[data-role-tab]').forEach(link => {
+    const active = link.dataset.roleTab === view;
+    link.classList.toggle('active', active);
+    link.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+}
 
 function setAdminSidebarActive(view) {
   const activeView = view === 'admin-training' ? 'admin-training' : view;
