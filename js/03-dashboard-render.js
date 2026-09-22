@@ -576,6 +576,7 @@ async function switchTab(view, btn, options = {}) {
   }
   if (isSupervisionView) {
     await loadModule('09-documentation.js');
+    await loadModule('12-admin-workflow.js');
     await loadModule('10-supervision.js');
     if (sequence !== navigationSequence || currentView !== view) return;
     svInit();

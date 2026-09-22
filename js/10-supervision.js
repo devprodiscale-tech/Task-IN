@@ -159,6 +159,7 @@ async function svInit() {
   escalations = [...sharedEsc.map(e => svNormalizeEscalation(e, 'escalations')), ...legacyEsc.map(e => svNormalizeEscalation(e, 'complexCases'))];
   qualityReviews = rev; coachingSheets = coach;
   renderOpsVisuals();
+  if (typeof adminWorkflowRender === 'function') adminWorkflowRender('sv-workflow-panel');
   svUpdateAlertBadge();
   svSwitchSubTab(svSubTab);
 }
