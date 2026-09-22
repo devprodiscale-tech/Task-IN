@@ -425,7 +425,14 @@ function renderRoleTabs(role) {
       event.preventDefault();
       const view = button.dataset.roleTab;
       if (supervisor && ['overview','escalations','reviews','coaching','reporting'].includes(view)) {
-        if (typeof svSwitchSubTab === 'function') svSwitchSubTab(view);
+        // Le rail peut être visible avant le chargement différé de Supervision.
+        // Le premier clic charge le module puis rejoue l’action au lieu d’être perdu.
+        void (async () => {
+          if (typeof svSwitchSubTab !== 'function' && typeof loadModule === 'function') {
+            await loadModule('10-supervision.js');
+          }
+          if (typeof svSwitchSubTab === 'function') svSwitchSubTab(view);
+        })();
       } else if (typeof switchTab === 'function') {
         void switchTab(view, button);
       }
