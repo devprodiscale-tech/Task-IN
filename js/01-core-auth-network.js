@@ -353,7 +353,9 @@ function applyRoleUI() {
     document.querySelector('.entries-table-wrap').classList.add('hidden');
     document.getElementById('date-filter-bar').classList.add('hidden');
   } else if (role === 'admin') {
-    currentView = getPersistedTaskinView('admin') || 'admin';
+    const persistedAdminView = getPersistedTaskinView('admin');
+    // Le cockpit Workflow/KPI est désormais la première vue de Supervision.
+    currentView = !persistedAdminView || persistedAdminView === 'admin' ? 'workflow-kpi' : persistedAdminView;
     const adminTab = document.getElementById('tab-admin');
     if (adminTab) adminTab.classList.add('active');
     setAdminSidebarActive(currentView);
