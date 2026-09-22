@@ -153,6 +153,7 @@ function svNormalizeEscalation(e, collection = 'escalations') {
   return { ...e, _collection: e._collection || collection, agentId: e.agentId || e.createdBy || '', channel: e.channel || 'ticket', priority: e.priority || 'medium', status: e.status || 'nouveau', deadlineAt: e.deadlineAt || null, linkedProcedureId: e.linkedProcedureId || null, updates: Array.isArray(e.updates) ? e.updates : [], createdAt };
 }
 async function svInit() {
+  const initialView = currentView;
   // Affichage immédiat : le cockpit ne doit pas attendre les lectures Supabase.
   if (typeof adminWorkflowRender === 'function') adminWorkflowRender('sv-workflow-panel');
   svUpdateAlertBadge();
@@ -161,6 +162,7 @@ async function svInit() {
     const [sharedEsc, legacyEsc, rev, coach] = await Promise.all([
       svFetchCollection('escalations'), svFetchCollection('complexCases'), svFetchCollection('qualityReviews'), svFetchCollection('coachingSheets'),
     ]);
+    if (currentView !== 'supervision' || initialView !== 'supervision') return;
     escalations = [...sharedEsc.map(e => svNormalizeEscalation(e, 'escalations')), ...legacyEsc.map(e => svNormalizeEscalation(e, 'complexCases'))];
     qualityReviews = rev; coachingSheets = coach;
     renderOpsVisuals();
@@ -180,6 +182,16 @@ function svUpdateAlertBadge() {
   badge.classList.toggle('hidden', overdue === 0);
 }
 function svSwitchSubTab(tab) {
+  // Un clic dans le rail Supervision reprend immédiatement la main sur les vues globales.
+  // Cela évite que le panneau Équipe ou ses filtres restent affichés sous une sous-vue.
+  if (typeof navigationSequence === 'number') navigationSequence += 1;
+  currentView = 'supervision';
+  if (typeof rememberTaskinView === 'function') rememberTaskinView('supervision');
+  ['team-live-panel','leaderboard-panel','documentation-panel','training-panel','channel-matrix-panel','admin-panel'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+  document.querySelector('.toolbar')?.classList.add('hidden');
+  document.querySelector('.entries-table-wrap')?.classList.add('hidden');
+  document.getElementById('date-filter-bar')?.classList.add('hidden');
+  document.getElementById('supervision-panel')?.classList.remove('hidden');
   svSubTab = tab;
   ['overview', 'escalations', 'reviews', 'coaching', 'reporting'].forEach(t => {
     document.getElementById('sv-tab-' + t)?.classList.toggle('active', t === tab);

@@ -591,7 +591,7 @@ async function switchTab(view, btn, options = {}) {
     return;
   }
   if (isHomeView || isTeamView) {
-    await renderRoleHome();
+    await renderRoleHome(sequence);
     if (sequence !== navigationSequence || currentView !== view) return;
     if (isTeamView && (currentUser.role === 'admin' || currentUser.role === 'supervisor')) renderLeaderboard();
     return;
@@ -607,7 +607,7 @@ async function switchTab(view, btn, options = {}) {
     await loadModule('09-documentation.js');
     await loadModule('10-supervision.js');
     if (sequence !== navigationSequence || currentView !== view) return;
-    svInit();
+    await svInit();
     return;
   }
   if (isTrainingView) {
@@ -621,8 +621,9 @@ async function switchTab(view, btn, options = {}) {
 }
 
 // ===== ROLE HOME =====
-async function renderRoleHome() {
+async function renderRoleHome(routeSequence) {
   const activeTimers = await loadActiveTimers();
+  if (routeSequence !== undefined && (routeSequence !== navigationSequence || (currentView !== 'home' && currentView !== 'team'))) return;
   document.querySelectorAll('.admin-home-legacy').forEach(element => {
     element.classList.toggle('hidden', currentUser.role === 'admin');
   });
