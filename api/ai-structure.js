@@ -4,13 +4,46 @@
 // La clé API reste côté serveur. Gemini lit nativement les PDF et images (OCR/vision inclus),
 // donc les scans/photos sont supportés sans extraction de texte préalable.
 //
-// Variable d'environnement serveur requise sur Vercel : GEMINI_API_KEY.
+// Variables d'environnement serveur requises sur Vercel : GEMINI_API_KEY, SUPABASE_URL,
+// SUPABASE_SERVICE_ROLE_KEY, TASKIN_ALLOWED_ORIGIN.
 
 const GEMINI_MODEL = 'gemini-3.6-flash';
 const ALLOWED_FORMATS = ['narrative', 'action_table', 'supplier_guide', 'role_guide', 'hybrid'];
 const ALLOWED_BLOCK_TYPES = ['text', 'list', 'callout', 'contact', 'table'];
 const ALLOWED_CALLOUT_STYLES = ['info', 'warning', 'important'];
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const ALLOWED_ORIGIN = String(process.env.TASKIN_ALLOWED_ORIGIN || '').replace(/\/+$/, '');
+
+// Rate limiting basique, en mémoire par instance serverless (best-effort, pas distribué entre instances).
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const rateLimitBuckets = new Map();
+
+function isRateLimited(userId) {
+  const now = Date.now();
+  const bucket = rateLimitBuckets.get(userId) || [];
+  const recent = bucket.filter((ts) => now - ts < RATE_LIMIT_WINDOW_MS);
+  recent.push(now);
+  rateLimitBuckets.set(userId, recent);
+  return recent.length > RATE_LIMIT_MAX_REQUESTS;
+}
+
+async function requesterUser(accessToken) {
+  if (!accessToken || !SUPABASE_URL || !SERVICE_ROLE_KEY) return null;
+  try {
+    const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${accessToken}` },
+    });
+    const user = await userResponse.json().catch(() => null);
+    if (!userResponse.ok || !user?.id) return null;
+    return user;
+  } catch (_) {
+    return null;
+  }
+}
 
 const SYSTEM_PROMPT = `Tu es un assistant qui transforme des documents internes (procédures d'agence de voyage) en fiches structurées pour l'outil interne "Task'in" d'OnSpot Travel Solutions.
 
@@ -43,12 +76,26 @@ Règles :
 - Le JSON doit être strictement valide (pas de virgule finale, guillemets doubles partout).`;
 
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const requestOrigin = String(req.headers.origin || '').replace(/\/+$/, '');
+  if (ALLOWED_ORIGIN && requestOrigin === ALLOWED_ORIGIN) {
+    res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
+  } else if (!ALLOWED_ORIGIN) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
+
+  const accessToken = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  const requester = await requesterUser(accessToken);
+  if (!requester) {
+    return res.status(401).json({ error: 'Authentification requise pour utiliser cet endpoint.' });
+  }
+  if (isRateLimited(requester.id)) {
+    return res.status(429).json({ error: 'Trop de requêtes envoyées. Réessaie dans une minute.' });
+  }
 
   try {
     const { text, fileBase64, mediaType, filename } = req.body || {};
@@ -115,7 +162,6 @@ module.exports = async (req, res) => {
     }
 
     let raw = textPart.text.trim();
-    // Sécurité : au cas où le modèle encapsule quand même dans des balises markdown
     raw = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
 
     let parsed;
