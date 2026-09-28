@@ -127,6 +127,7 @@
       <button type="button" class="admin-sidebar-link" data-admin-nav="stat" onclick="switchTab('stat', document.getElementById('tab-stat'))"><span class="admin-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V7M17 16v-8"/></svg></span><span>Statistiques</span></button>
       <button type="button" class="admin-sidebar-link" data-admin-nav="quality" onclick="switchTab('quality', document.getElementById('tab-quality'))"><span class="admin-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v5c0 5.2-3.4 8.6-8 10-4.6-1.4-8-4.8-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span>Qualité</span></button>
       <button type="button" class="admin-sidebar-link" data-admin-nav="team" onclick="switchTab('team', document.getElementById('tab-team'))"><span class="admin-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>Équipe</span></button>
+      <button type="button" class="admin-sidebar-link" data-admin-nav="agent-sessions" onclick="document.getElementById('admin-agent-sessions-panel')?.removeAttribute('data-admin-ready');switchTab('agent-sessions', null)"><span class="admin-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg></span><span>Connexions</span></button>
       <button type="button" class="admin-sidebar-link" data-admin-nav="admin-settings" onclick="switchTab('admin-settings', document.getElementById('tab-admin-settings'))"><span class="admin-sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-1.79 1.79-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V20h-2.54v-.21a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06-1.79-1.79.06-.06A1.65 1.65 0 0 0 8.6 15a1.65 1.65 0 0 0-1.51-1H7v-2.54h.09a1.65 1.65 0 0 0 1.51-1A1.65 1.65 0 0 0 8.27 8.6l-.06-.06L10 6.75l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V5h2.54v.21a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06 1.79 1.79-.06.06A1.65 1.65 0 0 0 19.4 10a1.65 1.65 0 0 0 1.51 1H21v2.54h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span><span>Paramètres</span></button>
     </nav>
     <div class="admin-sidebar-footer"><span class="admin-sidebar-status-dot"></span><span>Données synchronisées</span></div>
@@ -213,6 +214,7 @@
 
   <div id="admin-overview-panel" class="admin-overview-section hidden"></div>
   <div id="admin-settings-panel" class="admin-overview-section hidden"></div>
+  <div id="admin-agent-sessions-panel" class="admin-overview-section hidden"></div>
 
   <div class="tabs">
     <button class="tab agent-only active" onclick="switchTab('today',this)">Aujourd'hui</button>
@@ -1209,6 +1211,7 @@
 <script src="js/06-ui-modals.js?v=20260827" defer></script>
 <script src="js/07-analytics.js?v=20260827" defer></script>
 <script src="js/08-analytics-advanced.js?v=20260827" defer></script>
+<script src="js/18-agent-sessions.js?v=20260928" defer></script>
 <script src="js/99-init.js?v=20260827" defer></script>
 </body>
 </html>

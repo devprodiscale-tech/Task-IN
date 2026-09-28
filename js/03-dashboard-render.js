@@ -458,7 +458,7 @@ function getPersistedTaskinView(role = currentUser?.role) {
   try {
     const value = sessionStorage.getItem(taskinViewKey(role));
     const allowed = role === 'admin'
-      ? ['admin','workflow-kpi','stat','quality','admin-training','admin-settings','team']
+      ? ['admin','workflow-kpi','stat','quality','admin-training','admin-settings','agent-sessions','team']
       : ['home','team','today','documentation','supervision','training','leaderboard'];
     return allowed.includes(value) ? value : null;
   } catch (_) { return null; }
@@ -474,7 +474,7 @@ window.addEventListener('popstate', event => {
   if (view && currentUser) switchTab(view, document.querySelector(`[data-admin-nav="${view}"], #tab-${view}`), { history: false });
 });
 let navigationSequence = 0;
-const adminSubPanelIds = ['admin-overview-panel','admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel','admin-settings-panel'];
+const adminSubPanelIds = ['admin-overview-panel','admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel','admin-settings-panel','admin-agent-sessions-panel'];
 
 function hideAdminSubPanels() {
   adminSubPanelIds.forEach(id => document.getElementById(id)?.classList.add('hidden'));
@@ -512,6 +512,7 @@ async function switchTab(view, btn, options = {}) {
     'quality': { panel: 'admin-quality-panel', render: async () => { await loadModule('10-supervision.js'); if (typeof svInit === 'function') await svInit(); return adminQualityRender(); } },
     'admin-training': { panel: 'admin-training-panel', render: () => adminTrainingRender() },
     'admin-settings': { panel: 'admin-settings-panel', render: () => adminSettingsRender() },
+    'agent-sessions': { panel: 'admin-agent-sessions-panel', render: () => agentSessionsAdminRender() },
   };
   if (adminSubViews[view]) {
     if (!currentUser || currentUser.role !== 'admin') return;

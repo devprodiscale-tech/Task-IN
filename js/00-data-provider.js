@@ -200,8 +200,10 @@
         body: JSON.stringify(profile)
       }, { id: `eq.${encodeURIComponent(id)}` });
     },
-    async listTable(table, limit = 500) {
-      return request(table, {}, { select: '*', limit: String(limit) });
+    async listTable(table, limit = 500, order = '') {
+      const params = { select: '*', limit: String(limit) };
+      if (order) params.order = order;
+      return request(table, {}, params);
     },
     async insertRow(table, row) {
       return request(table, { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(row) });
