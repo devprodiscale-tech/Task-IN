@@ -408,7 +408,7 @@ function renderRoleTabs(role) {
   if(context) context.textContent=supervisor?'Équipe en direct':'Learning & Knowledge';
   if(eyebrow) eyebrow.textContent=supervisor?'SUPERVISION':'FORMATION';
   if (supervisor) {
-    const subViews=[['overview','🧭 Vue d’ensemble'],['escalations','🚩 Cas complexes'],['reviews','🎧 Grille d’écoute'],['coaching','🤝 Coaching 1:1'],['reporting','📊 Reporting']];
+    const subViews=[['overview','🧭 Vue d’ensemble'],['escalations','🚩 Cas complexes'],['reviews','🎧 Grille d’écoute'],['coaching','🤝 Coaching 1:1'],['reporting','📊 Reporting'],['sessions','🔐 Connexions']];
     const workspaceViews=[['team','👥 Équipe'],['leaderboard','🏆 Classement'],['documentation','📄 Documentation']];
     const items=[...subViews,...workspaceViews];
     rail.innerHTML=items.map(([view,label])=>{
@@ -424,7 +424,7 @@ function renderRoleTabs(role) {
     button.addEventListener('click', event => {
       event.preventDefault();
       const view = button.dataset.roleTab;
-      if (supervisor && ['overview','escalations','reviews','coaching','reporting'].includes(view)) {
+      if (supervisor && ['overview','escalations','reviews','coaching','reporting','sessions'].includes(view)) {
         // Le rail peut être visible avant le chargement différé de Supervision.
         // Le premier clic charge le module puis rejoue l’action au lieu d’être perdu.
         void (async () => {

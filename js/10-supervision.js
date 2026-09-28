@@ -193,7 +193,7 @@ function svSwitchSubTab(tab) {
   document.getElementById('date-filter-bar')?.classList.add('hidden');
   document.getElementById('supervision-panel')?.classList.remove('hidden');
   svSubTab = tab;
-  ['overview', 'escalations', 'reviews', 'coaching', 'reporting'].forEach(t => {
+  ['overview', 'escalations', 'reviews', 'coaching', 'reporting', 'sessions'].forEach(t => {
     document.getElementById('sv-tab-' + t)?.classList.toggle('active', t === tab);
     document.getElementById('sv-view-' + t)?.classList.toggle('hidden', t !== tab);
   });
@@ -208,6 +208,7 @@ function svSwitchSubTab(tab) {
   if (tab === 'reviews') svRenderReviews();
   if (tab === 'coaching') svRenderCoaching();
   if (tab === 'reporting') svRenderReporting();
+  if (tab === 'sessions' && typeof agentSessionsSupervisorRender === 'function') agentSessionsSupervisorRender();
 }
 
 // ---- CAS COMPLEXES ----
