@@ -161,6 +161,7 @@
       color: profile.color || '#2B4C7E',
       initials: profile.initials || '??',
       role: profile.role || 'agent',
+      pole: profile.pole || null,
       photo: profile.photo || ''
     };
   }

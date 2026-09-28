@@ -107,6 +107,8 @@ function openAccountEditModal(uid) {
   document.getElementById('account-modal-title').textContent = `Modifier — ${u.name}`;
   document.getElementById('account-name-input').value = u.name;
   document.getElementById('account-role-input').value = u.role;
+  document.getElementById('account-pole-input').value = u.pole || '';
+  togglePoleRow('account-role-input', 'account-pole-row');
   document.getElementById('account-password-input').value = '';
   document.getElementById('account-password-status').textContent = '';
   const prev = document.getElementById('account-photo-preview');
@@ -147,6 +149,7 @@ async function saveAccountEdit() {
   if (!requireRoles('admin')) return;
   const name = document.getElementById('account-name-input').value.trim();
   const role = document.getElementById('account-role-input').value;
+  const pole = role === 'agent' ? (document.getElementById('account-pole-input').value || null) : null;
   const newPassword = document.getElementById('account-password-input').value.trim();
   const errEl = document.getElementById('account-error');
   const pwdStatus = document.getElementById('account-password-status');
@@ -154,7 +157,7 @@ async function saveAccountEdit() {
   const u = TEAM.find(t => t.id === editingAccountId);
   if (!u) return;
   errEl.textContent = '';
-  const updatedUser = {...u, name, role, initials: name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)};
+  const updatedUser = {...u, name, role, pole, initials: name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)};
   if (editingAccountPhotoData !== null) updatedUser.photo = editingAccountPhotoData;
   const saved = await saveAccount(updatedUser);
   if (!saved) {
@@ -162,7 +165,7 @@ async function saveAccountEdit() {
     return;
   }
   Object.assign(u, updatedUser);
-  if (u.id === currentUser.id) { currentUser = {...currentUser, name: u.name, role: u.role, initials: u.initials, photo: u.photo}; renderTopbarIdentity(); }
+  if (u.id === currentUser.id) { currentUser = {...currentUser, name: u.name, role: u.role, pole: u.pole, initials: u.initials, photo: u.photo}; renderTopbarIdentity(); }
 
   if (newPassword) {
     pwdStatus.textContent = 'Mise à jour du mot de passe…';
@@ -222,6 +225,8 @@ function openCreateAccountModal() {
   document.getElementById('new-account-name').value = '';
   document.getElementById('new-account-email').value = '';
   document.getElementById('new-account-role').value = 'agent';
+  document.getElementById('new-account-pole').value = '';
+  togglePoleRow('new-account-role', 'new-account-pole-row');
   document.getElementById('create-account-error').textContent = '';
 }
 
@@ -232,6 +237,7 @@ async function submitCreateAccount() {
   const name = document.getElementById('new-account-name').value.trim();
   const email = document.getElementById('new-account-email').value.trim();
   const role = document.getElementById('new-account-role').value;
+  const pole = role === 'agent' ? document.getElementById('new-account-pole').value : '';
   const errEl = document.getElementById('create-account-error');
   if (!name || !email) { errEl.textContent = 'Nom et email requis.'; return; }
   const btn = document.getElementById('create-account-submit');
@@ -243,10 +249,10 @@ async function submitCreateAccount() {
     const session = supabase.getSession();
     const colors = ['#2B4C7E','#E98A7D','#3B8C6E','#DCAE1D','#7B68EE','#FF7F50'];
     const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    const res = await fetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify({ action: 'create', email, password: tempPassword, name, role, color: colors[TEAM.length % colors.length], initials }) });
+    const res = await fetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify({ action: 'create', email, password: tempPassword, name, role, pole, color: colors[TEAM.length % colors.length], initials }) });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { errEl.textContent = data.error || 'Erreur création.'; btn.disabled = false; btn.textContent = 'Créer le compte'; return; }
-    const newUser = { id: data.user.id, name, email, color: colors[TEAM.length % colors.length], initials, role, photo: '' };
+    const newUser = { id: data.user.id, name, email, color: colors[TEAM.length % colors.length], initials, role, pole: pole || null, photo: '' };
     TEAM.push(newUser); createdEmail = email; createdPassword = tempPassword;
     document.getElementById('result-email').textContent = email; document.getElementById('result-password').textContent = tempPassword;
     document.getElementById('create-account-form').classList.add('hidden'); document.getElementById('create-account-result').classList.remove('hidden'); document.getElementById('create-account-footer').classList.add('hidden');

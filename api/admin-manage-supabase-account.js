@@ -5,6 +5,7 @@
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const ALLOWED_ORIGIN = String(process.env.TASKIN_ALLOWED_ORIGIN || '').replace(/\/+$/, '');
+const POLES = ['fo', 'bo', 'reconf'];
 
 function adminHeaders(extra = {}) {
   return { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', ...extra };
@@ -39,7 +40,7 @@ module.exports = async (req, res) => {
     const requester = await requesterProfile(accessToken);
     if (!requester) return res.status(403).json({ error: 'Seuls les administrateurs Supabase peuvent effectuer cette action.' });
 
-    const { action, uid, email, password, name, role, color, initials } = req.body || {};
+    const { action, uid, email, password, name, role, color, initials, pole } = req.body || {};
     if (action === 'setPassword') {
       if (!uid || !password || String(password).length < 6) return res.status(400).json({ error: 'uid et mot de passe de 6 caractères minimum requis.' });
       await supabase(`/auth/v1/admin/users/${encodeURIComponent(uid)}`, { method: 'PUT', body: JSON.stringify({ password }) });
@@ -55,6 +56,9 @@ module.exports = async (req, res) => {
 
     if (action === 'create') {
       if (!email || !password || !name || !role) return res.status(400).json({ error: 'Nom, e-mail, rôle et mot de passe requis.' });
+      if (pole && !POLES.includes(pole)) return res.status(400).json({ error: 'Pôle invalide (fo, bo ou reconf).' });
+      // Le pôle n'a de sens que pour un agent ; sinon on l'ignore.
+      const cleanPole = role === 'agent' && pole ? pole : null;
       const created = await supabase('/auth/v1/admin/users', {
         method: 'POST',
         body: JSON.stringify({
@@ -72,13 +76,13 @@ module.exports = async (req, res) => {
         await supabase(`/rest/v1/profiles?id=eq.${encodeURIComponent(id)}`, {
           method: 'PATCH',
           headers: { Prefer: 'return=minimal' },
-          body: JSON.stringify({ name: String(name).trim(), email: String(email).trim(), role, color: color || '#2B4C7E', initials: initials || String(name).trim().slice(0, 2).toUpperCase(), photo: '' })
+          body: JSON.stringify({ name: String(name).trim(), email: String(email).trim(), role, color: color || '#2B4C7E', initials: initials || String(name).trim().slice(0, 2).toUpperCase(), photo: '', pole: cleanPole })
         });
       } catch (profileError) {
         await supabase(`/auth/v1/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
         throw profileError;
       }
-      return res.status(201).json({ ok: true, user: { id, email: String(email).trim(), name, role } });
+      return res.status(201).json({ ok: true, user: { id, email: String(email).trim(), name, role, pole: cleanPole } });
     }
 
     return res.status(400).json({ error: 'Action inconnue.' });

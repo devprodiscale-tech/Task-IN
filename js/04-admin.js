@@ -10,16 +10,26 @@ function renderTeamList() {
   document.getElementById('team-list').innerHTML = TEAM.map(u => `
     <div class="team-row" onclick="openAccountEditModal('${u.id}')" style="cursor:pointer">
       <div class="mini-avatar" style="background:${u.color}20;color:${u.color}${u.photo?`;background-image:url(${u.photo});background-size:cover`:''}">${u.photo?'':u.initials}</div>
-      <div class="team-row-info"><div class="team-row-name">${u.name}</div><div class="team-row-role">${roleLabel(u.role)}</div></div>
+      <div class="team-row-info"><div class="team-row-name">${u.name}</div><div class="team-row-role">${roleLabel(u.role, u.pole)}</div></div>
       <span style="font-size:11px;color:var(--ocean);font-weight:600;margin-left:auto;">Modifier →</span>
     </div>`).join('');
 }
 
-function roleLabel(role) {
+// Pôles d'agents : la clé est ce qui est stocké en base (profiles.pole), la valeur est ce qu'on affiche.
+const POLE_LABELS = { fo: 'FO', bo: 'BO', reconf: 'Reconf' };
+function poleLabel(pole) { return POLE_LABELS[pole] || ''; }
+
+// Affiche ou masque la ligne « Pôle » d'un formulaire selon le rôle choisi (seul l'agent a un pôle).
+function togglePoleRow(roleSelectId, poleRowId) {
+  const role = document.getElementById(roleSelectId)?.value;
+  document.getElementById(poleRowId)?.classList.toggle('hidden', role !== 'agent');
+}
+
+function roleLabel(role, pole) {
   if (role === 'admin') return 'Admin';
   if (role === 'supervisor') return 'Superviseur';
   if (role === 'formateur') return 'Formateur';
-  return 'Agent';
+  return pole ? `Agent ${poleLabel(pole)}` : 'Agent';
 }
 
 function renderTreatmentList() {
@@ -233,7 +243,7 @@ async function loadAccounts() {
     TEAM = (await supabase.listProfiles(200) || []).map(profile => ({
       id: profile.id, name: profile.name || 'Sans nom', email: profile.email || '',
       color: profile.color || '#2B4C7E', initials: profile.initials || '??',
-      role: profile.role || 'agent', photo: profile.photo || ''
+      role: profile.role || 'agent', pole: profile.pole || null, photo: profile.photo || ''
     }));
     teamById = new Map(TEAM.map(member => [member.id, member]));
   } catch (e) { console.error('loadAccounts Supabase:', e); }
@@ -244,7 +254,7 @@ async function saveAccount(user) {
   const supabase = window.taskinDataProviders?.supabase;
   if (!supabase?.enabled()) return false;
   try {
-    await supabase.updateProfile(user.id, { name: user.name, email: user.email || '', color: user.color, initials: user.initials, role: user.role, photo: user.photo || '' });
+    await supabase.updateProfile(user.id, { name: user.name, email: user.email || '', color: user.color, initials: user.initials, role: user.role, pole: user.role === 'agent' ? (user.pole || null) : null, photo: user.photo || '' });
     return true;
   } catch(e) {
     console.error('saveAccount Supabase:', e);
