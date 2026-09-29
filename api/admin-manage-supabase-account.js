@@ -56,6 +56,7 @@ module.exports = async (req, res) => {
 
     if (action === 'create') {
       if (!email || !password || !name || !role) return res.status(400).json({ error: 'Nom, e-mail, rôle et mot de passe requis.' });
+      if (String(password).length < 6) return res.status(400).json({ error: 'Mot de passe de 6 caractères minimum requis.' });
       if (pole && !POLES.includes(pole)) return res.status(400).json({ error: 'Pôle invalide (fo, bo ou reconf).' });
       // Le pôle n'a de sens que pour un agent ; sinon on l'ignore.
       const cleanPole = role === 'agent' && pole ? pole : null;

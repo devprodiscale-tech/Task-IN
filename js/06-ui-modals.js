@@ -118,9 +118,19 @@ function openAccountEditModal(uid) {
   document.getElementById('account-modal-overlay').classList.remove('hidden');
 }
 
+// Mot de passe aléatoire lisible (sans 0/O, 1/l/I) pour les comptes créés ou réinitialisés par l'admin.
+function randomAccountPassword(length = 12) {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const values = crypto.getRandomValues(new Uint32Array(length));
+  return Array.from(values, v => chars[v % chars.length]).join('');
+}
+
 function generateAccountPassword() {
-  const pwd = 'Taskin' + Math.floor(1000 + Math.random() * 9000);
-  document.getElementById('account-password-input').value = pwd;
+  document.getElementById('account-password-input').value = randomAccountPassword();
+}
+
+function generateNewAccountPassword() {
+  document.getElementById('new-account-password').value = randomAccountPassword();
 }
 
 function closeAccountEditModal() { document.getElementById('account-modal-overlay').classList.add('hidden'); }
@@ -227,7 +237,10 @@ function openCreateAccountModal() {
   document.getElementById('new-account-role').value = 'agent';
   document.getElementById('new-account-pole').value = '';
   togglePoleRow('new-account-role', 'new-account-pole-row');
+  generateNewAccountPassword();
   document.getElementById('create-account-error').textContent = '';
+  const btn = document.getElementById('create-account-submit');
+  btn.disabled = false; btn.textContent = 'Créer le compte';
 }
 
 function closeCreateAccountModal() { document.getElementById('create-account-overlay').classList.add('hidden'); }
@@ -239,10 +252,11 @@ async function submitCreateAccount() {
   const role = document.getElementById('new-account-role').value;
   const pole = role === 'agent' ? document.getElementById('new-account-pole').value : '';
   const errEl = document.getElementById('create-account-error');
+  const tempPassword = document.getElementById('new-account-password').value.trim();
   if (!name || !email) { errEl.textContent = 'Nom et email requis.'; return; }
+  if (tempPassword.length < 6) { errEl.textContent = 'Le mot de passe doit contenir au moins 6 caractères.'; return; }
   const btn = document.getElementById('create-account-submit');
   btn.disabled = true; btn.textContent = 'Création...';
-  const tempPassword = 'Taskin' + Math.floor(1000+Math.random()*9000);
   try {
     const supabase = window.taskinDataProviders?.supabase;
     if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
