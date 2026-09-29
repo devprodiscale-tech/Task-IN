@@ -211,8 +211,12 @@ function toggleTheme() {
 }
 
 function updateThemeToggleIcon(theme) {
+  // L'icône (lune / soleil) suit data-theme en CSS ; on ne met à jour que le libellé.
   const btn = document.getElementById('theme-toggle');
-  if (btn) btn.textContent = theme === 'dark' ? '☀' : '☾';
+  if (!btn) return;
+  const label = theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre';
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
 }
 
 async function tryRestoreSession() {
@@ -443,10 +447,54 @@ async function refreshApp() {
   else setTimeout(warmup, 250);
 }
 
+// Bouton « Actualiser » : recharge réellement les données et la vue affichée,
+// avec un état visible (rotation → coche verte, ou alerte en cas d'échec).
+let manualRefreshRunning = false;
+let manualRefreshResetTimer = null;
+function setRefreshButtonState(state) {
+  const btn = document.getElementById('topbar-refresh');
+  if (!btn) return;
+  const labels = { idle: 'Actualiser', loading: 'Actualisation…', success: 'À jour', error: 'Échec' };
+  btn.dataset.state = state;
+  btn.disabled = state === 'loading';
+  btn.setAttribute('aria-busy', String(state === 'loading'));
+  const label = btn.querySelector('.topbar-refresh-label');
+  if (label) label.textContent = labels[state] || labels.idle;
+  btn.title = state === 'error' ? 'Actualisation impossible — réessayer' : 'Recharger les données';
+}
+async function runManualRefresh() {
+  if (manualRefreshRunning || !currentUser) return;
+  manualRefreshRunning = true;
+  clearTimeout(manualRefreshResetTimer);
+  setRefreshButtonState('loading');
+  const minimumSpin = new Promise(resolve => setTimeout(resolve, 650));
+  let ok = true;
+  try {
+    const supabase = window.taskinDataProviders?.supabase;
+    if (supabase?.enabled() && supabase.getSession()?.access_token) {
+      // Vérifie la session (et la renouvelle si besoin) avant de tout recharger.
+      const profile = await supabase.getCurrentProfile();
+      if (!profile) throw new Error('Session expirée.');
+    }
+    window.taskinLastLoadError = null;
+    // Les vues Admin sont mises en cache après leur premier rendu : on les invalide.
+    if (typeof adminSubPanelIds !== 'undefined') adminSubPanelIds.forEach(id => document.getElementById(id)?.removeAttribute('data-admin-ready'));
+    await refreshApp();
+    if (window.taskinLastLoadError) throw window.taskinLastLoadError;
+  } catch (error) {
+    ok = false;
+    console.error('Actualisation impossible:', error);
+  }
+  await minimumSpin;
+  setRefreshButtonState(ok ? 'success' : 'error');
+  manualRefreshRunning = false;
+  manualRefreshResetTimer = setTimeout(() => setRefreshButtonState('idle'), ok ? 1800 : 3500);
+}
+
 async function renderCurrentView() {
   if (!currentUser) return;
   if (currentView === 'home' || currentView === 'team') renderRoleHome();
-  else if (currentView === 'admin' || (currentUser.role === 'admin' && ['workflow-kpi','stat','quality','admin-training','admin-settings'].includes(currentView))) await switchTab(currentView, document.querySelector(`[data-admin-nav="${currentView}"], #tab-${currentView}`), { history: false });
+  else if (currentView === 'admin' || (currentUser.role === 'admin' && ['workflow-kpi','stat','quality','admin-training','admin-settings','agent-sessions'].includes(currentView))) await switchTab(currentView, document.querySelector(`[data-admin-nav="${currentView}"], #tab-${currentView}`), { history: false });
   else if (currentView === 'supervision') {
     await loadModule('09-documentation.js');
     await loadModule('10-supervision.js');

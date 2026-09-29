@@ -149,7 +149,7 @@ async function loadGoals() {
     const value = setting?.value || {};
     agentGoals = { count: Number(value.count ?? 20), total: Number(value.total ?? 360), dmt: Number(value.dmt ?? 8), frt: Number(value.frt ?? 3) };
     renderGoalInputs();
-  } catch (e) { console.error('loadGoals Supabase:', e); }
+  } catch (e) { window.taskinLastLoadError = e; console.error('loadGoals Supabase:', e); }
 }
 
 function renderGoalInputs() {

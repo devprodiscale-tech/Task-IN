@@ -72,7 +72,7 @@ async function loadTreatments() {
     const setting = await supabase.getSetting('treatments');
     const values = setting?.value?.list;
     if (Array.isArray(values) && values.length) customTreatmentTypes = values.map(String);
-  } catch (e) { console.error('loadTreatments Supabase:', e); }
+  } catch (e) { window.taskinLastLoadError = e; console.error('loadTreatments Supabase:', e); }
 }
 
 function renderAdminStats() {
@@ -217,7 +217,7 @@ async function loadDMT() {
     const setting = await supabase.getSetting('dmt');
     const value = setting?.value || {};
     sourceDMT = { ringover: Number(value.ringover ?? SOURCE_DMT_DEFAULT.ringover), crisp: Number(value.crisp ?? SOURCE_DMT_DEFAULT.crisp), manual: Number(value.manual ?? SOURCE_DMT_DEFAULT.manual) };
-  } catch (e) { console.error('loadDMT Supabase:', e); }
+  } catch (e) { window.taskinLastLoadError = e; console.error('loadDMT Supabase:', e); }
   renderDMTInputs();
 }
 
@@ -246,7 +246,7 @@ async function loadAccounts() {
       role: profile.role || 'agent', pole: profile.pole || null, photo: profile.photo || ''
     }));
     teamById = new Map(TEAM.map(member => [member.id, member]));
-  } catch (e) { console.error('loadAccounts Supabase:', e); }
+  } catch (e) { window.taskinLastLoadError = e; console.error('loadAccounts Supabase:', e); }
 }
 
 async function saveAccount(user) {

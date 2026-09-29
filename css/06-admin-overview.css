@@ -298,3 +298,40 @@ body.admin-shell-active .ops-page-heading{margin-left:calc(var(--admin-content-o
 /* Restauration sans animation au chargement, et respect de « réduire les animations » */
 body.admin-sidebar-instant #admin-sidebar.admin-sidebar,body.admin-sidebar-instant #admin-sidebar.admin-sidebar *,body.admin-sidebar-instant .content,body.admin-sidebar-instant #app > .admin-overview-section,body.admin-sidebar-instant .ops-page-heading{transition:none!important}
 @media(prefers-reduced-motion:reduce){body.admin-shell-active #admin-sidebar.admin-sidebar,body.admin-shell-active #admin-sidebar.admin-sidebar *,body.admin-shell-active .content,body.admin-shell-active #app > .admin-overview-section,body.admin-shell-active .ops-page-heading,.admin-sidebar-tooltip{transition:none!important}}
+
+/* ===== Boutons du topbar : Actualiser (états), thème, profil, déconnexion ===== */
+.topbar .topbar-action{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;white-space:nowrap;transition:background-color .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease,transform .16s ease}
+.topbar .topbar-action svg{flex:none;width:16px;height:16px}
+.topbar .topbar-action:active:not(:disabled){transform:translateY(1px)}
+.topbar .topbar-action:focus-visible,.topbar .user-pill:focus-visible,.topbar .theme-toggle-btn:focus-visible{outline:2px solid var(--ocean);outline-offset:2px}
+/* Actualiser */
+.topbar .topbar-refresh{min-width:162px;justify-content:center}
+.topbar-refresh-icon{position:relative;display:inline-block;flex:none;width:16px;height:16px}
+.topbar-refresh-icon svg{position:absolute;inset:0;width:16px;height:16px;opacity:0;transform:scale(.6);transition:opacity .18s ease,transform .22s cubic-bezier(.34,1.56,.64,1)}
+.topbar-refresh[data-state="idle"] .topbar-icon-spin,.topbar-refresh[data-state="loading"] .topbar-icon-spin{opacity:1;transform:none}
+.topbar-refresh[data-state="idle"]:hover .topbar-icon-spin{transform:rotate(-40deg)}
+.topbar-refresh[data-state="loading"] .topbar-icon-spin{animation:topbar-spin .8s linear infinite}
+.topbar-refresh[data-state="success"] .topbar-icon-ok,.topbar-refresh[data-state="error"] .topbar-icon-error{opacity:1;transform:none}
+.topbar .topbar-refresh:disabled{opacity:1;cursor:progress}
+body .topbar .topbar-refresh[data-state="loading"],body .topbar .topbar-refresh[data-state="loading"]:hover{color:var(--ocean);border-color:var(--ocean);background:var(--ocean-dim)}
+body .topbar .topbar-refresh[data-state="success"],body .topbar .topbar-refresh[data-state="success"]:hover{color:var(--green);border-color:var(--green);background:var(--green-dim)}
+body .topbar .topbar-refresh[data-state="error"],body .topbar .topbar-refresh[data-state="error"]:hover{color:var(--red);border-color:var(--red);background:var(--red-dim)}
+[data-theme="dark"] body .topbar .topbar-refresh[data-state="success"],[data-theme="dark"] body .topbar .topbar-refresh[data-state="success"]:hover{color:#4ADE80}
+[data-theme="dark"] body .topbar .topbar-refresh[data-state="error"],[data-theme="dark"] body .topbar .topbar-refresh[data-state="error"]:hover{color:#F87171}
+@keyframes topbar-spin{to{transform:rotate(360deg)}}
+/* Thème : lune / soleil qui pivotent */
+.topbar .theme-toggle-btn{position:relative;width:34px;height:34px;padding:0;overflow:hidden;transition:border-color .16s ease,color .16s ease,background-color .16s ease}
+.topbar .theme-toggle-btn svg{position:absolute;top:50%;left:50%;width:16px;height:16px;margin:-8px 0 0 -8px;transition:opacity .2s ease,transform .32s cubic-bezier(.34,1.56,.64,1)}
+.topbar .theme-toggle-btn .theme-icon-sun{opacity:0;transform:rotate(-90deg) scale(.5)}
+[data-theme="dark"] .topbar .theme-toggle-btn .theme-icon-moon{opacity:0;transform:rotate(90deg) scale(.5)}
+[data-theme="dark"] .topbar .theme-toggle-btn .theme-icon-sun{opacity:1;transform:none}
+/* Profil */
+.topbar button.user-pill{height:34px;padding:0 12px 0 6px;font:500 12px var(--font);cursor:pointer;transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease}
+.topbar button.user-pill .mini-avatar{width:24px;height:24px;font-size:9.5px}
+.topbar button.user-pill:hover{border-color:var(--ocean)}
+body.admin-shell-active .topbar button.user-pill{border-radius:99px!important}
+/* Déconnexion : teinte rouge au survol */
+body .topbar .topbar-logout:hover{color:var(--red);border-color:var(--red);background:var(--red-dim)}
+[data-theme="dark"] body .topbar .topbar-logout:hover{color:#F87171}
+@media(max-width:760px){.topbar .topbar-logout span,.topbar .topbar-refresh-label{display:none}.topbar .topbar-refresh{min-width:0}.topbar .topbar-action{padding:0 10px}}
+@media(prefers-reduced-motion:reduce){.topbar-refresh[data-state="loading"] .topbar-icon-spin{animation-duration:2.4s}.topbar-refresh-icon svg,.topbar .theme-toggle-btn svg{transition:none}}

@@ -186,7 +186,7 @@ async function loadEntries(shouldRender = true) {
     })).filter(e => e.startTimeStr).sort((a,b)=> getEntryDate(b.startTimeStr)-getEntryDate(a.startTimeStr));
     if (typeof invalidateFilterCache === 'function') invalidateFilterCache();
     if (shouldRender) renderCurrentView();
-  } catch (e) { console.error('Lecture entrées Supabase impossible:', e); }
+  } catch (e) { window.taskinLastLoadError = e; console.error('Lecture entrées Supabase impossible:', e); }
 }
 
 async function saveTimeEntry(entry) {
