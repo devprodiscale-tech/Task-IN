@@ -258,3 +258,44 @@ body .admin-settings-shell button.admin-settings-back{display:inline-flex;align-
 body .admin-settings-shell button.admin-settings-back:hover{border-color:var(--ocean);color:var(--ocean)}
 @media(max-width:680px){.admin-settings-shell .admin-settings-content{padding:14px 16px 18px}.admin-settings-shell .admin-settings-overview-grid{grid-template-columns:1fr;gap:10px}body .admin-settings-shell .admin-settings-overview-grid button{min-height:0}}
 @media(prefers-reduced-motion:reduce){body .admin-settings-shell .admin-settings-overview-grid button,.admin-settings-tile-arrow{transition:none}body .admin-settings-shell .admin-settings-overview-grid button:hover{transform:none}}
+
+/* ===== Sidebar Admin v2 : repli fluide, géométrie fixe, icônes homogènes =====
+   Les icônes restent dans une colonne fixe (centre à 36px) : seule la largeur de la sidebar
+   et la marge du contenu s'animent, avec la même durée et la même courbe. Les libellés
+   s'effacent en fondu au lieu de disparaître d'un coup. */
+body.admin-shell-active{--admin-sidebar-width:232px;--admin-content-offset:var(--admin-sidebar-width);--admin-sb-ease:cubic-bezier(.4,0,.2,1);--admin-sb-dur:280ms}
+body.admin-shell-active.admin-sidebar-collapsed{--admin-sidebar-width:72px}
+body.admin-shell-active #admin-sidebar.admin-sidebar{top:var(--admin-topbar-h,62px);bottom:0;display:flex;flex-direction:column;width:var(--admin-sidebar-width);padding:14px 12px 12px;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;background:var(--surface);border-right:1px solid var(--border);box-shadow:none;transition:width var(--admin-sb-dur) var(--admin-sb-ease),box-shadow var(--admin-sb-dur) ease}
+body.admin-shell-active #admin-sidebar.admin-sidebar::-webkit-scrollbar{display:none}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-brand{display:block!important;min-height:0;margin:0;padding:0!important}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-caption{display:block!important;height:14px;margin:14px 12px 8px;overflow:hidden;color:var(--text3);font-size:10px;font-weight:700;letter-spacing:.12em;line-height:14px;white-space:nowrap;text-transform:uppercase;transition:opacity 180ms ease 60ms}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-nav{display:grid;gap:4px}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-link,body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-toggle{position:relative;display:flex!important;align-items:center;justify-content:flex-start;gap:12px;width:100%;min-width:0;height:42px;margin:0;padding:0 12px;border:0;border-radius:10px!important;background:transparent;box-shadow:none;color:var(--text2);font:500 12.5px var(--font);text-align:left;white-space:nowrap;overflow:hidden;cursor:pointer;transform:none;transition:background-color 160ms ease,color 160ms ease,box-shadow 160ms ease}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-toggle{height:38px;color:var(--text3);font-size:11.5px;font-weight:600}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-link:hover,body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-toggle:hover{background:var(--surface2);color:var(--text);transform:none}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-link.active{background:var(--ocean);color:#fff;font-weight:650;box-shadow:0 6px 16px rgba(37,99,235,.22)}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-link:focus-visible,body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-toggle:focus-visible{outline:2px solid var(--ocean);outline-offset:-2px}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-icon{display:grid;flex:0 0 24px;place-items:center;width:24px;height:24px;color:var(--text3);transition:color 160ms ease}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-icon svg{display:block;width:20px;height:20px}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-link:hover .admin-sidebar-icon,body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-toggle:hover .admin-sidebar-icon{color:var(--ocean)}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-link.active .admin-sidebar-icon{color:#fff}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-toggle-chevron{transform-box:fill-box;transform-origin:center;transition:transform var(--admin-sb-dur) var(--admin-sb-ease)}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-label{display:block!important;min-width:0;overflow:hidden;text-overflow:ellipsis;opacity:1;transform:none;transition:opacity 180ms ease 90ms,transform 240ms var(--admin-sb-ease) 60ms}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-footer{display:flex!important;align-items:center;justify-content:flex-start!important;gap:14px;height:40px;margin-top:auto;padding:12px 0 0 20px!important;border-top:1px solid var(--border);color:var(--text3);font-size:10.5px;white-space:nowrap;overflow:hidden}
+body.admin-shell-active #admin-sidebar.admin-sidebar .admin-sidebar-status-dot{flex:0 0 8px;width:8px;height:8px}
+/* Replié */
+body.admin-shell-active.admin-sidebar-collapsed #admin-sidebar.admin-sidebar .admin-sidebar-label{opacity:0;transform:translateX(-6px);pointer-events:none;transition:opacity 100ms ease,transform 160ms ease}
+body.admin-shell-active.admin-sidebar-collapsed #admin-sidebar.admin-sidebar .admin-sidebar-caption{opacity:0;transition:opacity 100ms ease}
+body.admin-shell-active.admin-sidebar-collapsed #admin-sidebar.admin-sidebar .admin-sidebar-toggle-chevron{transform:rotate(180deg)}
+/* Contenu : une seule propriété animée, synchronisée avec la sidebar */
+body.admin-shell-active .content{margin-left:var(--admin-content-offset);padding:0 24px;transition:margin-left var(--admin-sb-dur) var(--admin-sb-ease)}
+body.admin-shell-active #app > .admin-overview-section{width:auto;margin-left:var(--admin-content-offset);transition:margin-left var(--admin-sb-dur) var(--admin-sb-ease)}
+body.admin-shell-active .ops-page-heading{margin-left:calc(var(--admin-content-offset) + 24px);transition:margin-left var(--admin-sb-dur) var(--admin-sb-ease)}
+/* Petit écran : repliée par défaut, la version dépliée passe au-dessus du contenu */
+@media(max-width:850px){body.admin-shell-active{--admin-content-offset:72px}body.admin-shell-active:not(.admin-sidebar-collapsed) #admin-sidebar.admin-sidebar{box-shadow:14px 0 36px rgba(15,23,42,.18)}body.admin-shell-active .content{padding:0 16px}}
+/* Info-bulles en mode replié */
+.admin-sidebar-tooltip{position:fixed;z-index:60;padding:6px 10px;border-radius:6px;background:var(--text);color:var(--surface);box-shadow:0 8px 20px rgba(15,23,42,.18);font:600 11.5px var(--font);white-space:nowrap;pointer-events:none;opacity:0;transform:translate(-4px,-50%);transition:opacity 120ms ease,transform 160ms var(--taskin-motion-ease,ease)}
+.admin-sidebar-tooltip.visible{opacity:1;transform:translate(0,-50%)}
+/* Restauration sans animation au chargement, et respect de « réduire les animations » */
+body.admin-sidebar-instant #admin-sidebar.admin-sidebar,body.admin-sidebar-instant #admin-sidebar.admin-sidebar *,body.admin-sidebar-instant .content,body.admin-sidebar-instant #app > .admin-overview-section,body.admin-sidebar-instant .ops-page-heading{transition:none!important}
+@media(prefers-reduced-motion:reduce){body.admin-shell-active #admin-sidebar.admin-sidebar,body.admin-shell-active #admin-sidebar.admin-sidebar *,body.admin-shell-active .content,body.admin-shell-active #app > .admin-overview-section,body.admin-shell-active .ops-page-heading,.admin-sidebar-tooltip{transition:none!important}}

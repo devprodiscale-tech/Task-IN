@@ -378,20 +378,69 @@ function editEntry(id) {
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
 }
 
-function toggleAdminSidebar(force) {
-  const collapsed = typeof force === 'boolean' ? force : !document.body.classList.contains('admin-sidebar-collapsed');
-  document.body.classList.toggle('admin-sidebar-collapsed', collapsed);
-  try { localStorage.setItem('taskin_admin_sidebar_collapsed', collapsed ? '1' : '0'); } catch (_) {}
+const ADMIN_SIDEBAR_NARROW = '(max-width: 850px)';
+function adminSidebarIsNarrow() { return window.matchMedia?.(ADMIN_SIDEBAR_NARROW).matches === true; }
+
+// options.instant : applique l'état sans animation (restauration au chargement).
+// options.persist : false pour ne pas mémoriser (repli automatique sur petit écran).
+function toggleAdminSidebar(force, options = {}) {
+  const body = document.body;
+  const collapsed = typeof force === 'boolean' ? force : !body.classList.contains('admin-sidebar-collapsed');
+  if (options.instant) body.classList.add('admin-sidebar-instant');
+  body.classList.toggle('admin-sidebar-collapsed', collapsed);
+  if (options.instant) requestAnimationFrame(() => requestAnimationFrame(() => body.classList.remove('admin-sidebar-instant')));
+  if (options.persist !== false && !adminSidebarIsNarrow()) {
+    try { localStorage.setItem('taskin_admin_sidebar_collapsed', collapsed ? '1' : '0'); } catch (_) {}
+  }
   const toggle = document.querySelector('.admin-sidebar-toggle');
   if (toggle) {
-    const icon = toggle.querySelector('.admin-sidebar-toggle-icon');
-    const label = toggle.querySelector('.admin-sidebar-toggle-label');
-    if (icon) icon.textContent = collapsed ? '›' : '‹';
-    if (label) label.textContent = collapsed ? 'Développer' : 'Réduire';
-    if (!icon && !label) toggle.textContent = collapsed ? '›' : '‹';
+    toggle.setAttribute('aria-expanded', String(!collapsed));
     toggle.setAttribute('aria-label', collapsed ? 'Développer le menu Admin' : 'Réduire le menu Admin');
-    toggle.title = collapsed ? 'Développer le menu' : 'Réduire le menu';
+    toggle.dataset.tooltip = collapsed ? 'Développer le menu' : 'Réduire le menu';
   }
+  adminSidebarHideTooltip();
+  adminSidebarSetupTooltips();
+}
+
+// Info-bulles des icônes quand la sidebar est repliée (la sidebar coupe tout débordement).
+let adminSidebarTooltipEl = null;
+function adminSidebarHideTooltip() { adminSidebarTooltipEl?.classList.remove('visible'); }
+function adminSidebarShowTooltip(target) {
+  if (!document.body.classList.contains('admin-sidebar-collapsed')) return;
+  const text = target.dataset.tooltip || target.querySelector('.admin-sidebar-label')?.textContent?.trim();
+  if (!text) return;
+  if (!adminSidebarTooltipEl) {
+    adminSidebarTooltipEl = document.createElement('div');
+    adminSidebarTooltipEl.className = 'admin-sidebar-tooltip';
+    adminSidebarTooltipEl.setAttribute('role', 'tooltip');
+    document.body.appendChild(adminSidebarTooltipEl);
+  }
+  const rect = target.getBoundingClientRect();
+  adminSidebarTooltipEl.textContent = text;
+  adminSidebarTooltipEl.style.left = `${Math.round(rect.right + 10)}px`;
+  adminSidebarTooltipEl.style.top = `${Math.round(rect.top + rect.height / 2)}px`;
+  adminSidebarTooltipEl.classList.add('visible');
+}
+function adminSidebarSetupTooltips() {
+  const sidebar = document.getElementById('admin-sidebar');
+  if (!sidebar || sidebar.dataset.tooltipsReady) return;
+  sidebar.dataset.tooltipsReady = '1';
+  // La sidebar démarre sous le topbar, dont la hauteur varie (retour à la ligne sur mobile).
+  const topbar = document.querySelector('.topbar');
+  if (topbar && 'ResizeObserver' in window) {
+    new ResizeObserver(() => document.documentElement.style.setProperty('--admin-topbar-h', `${topbar.offsetHeight}px`)).observe(topbar);
+  }
+  const targetOf = event => event.target.closest?.('.admin-sidebar-link, .admin-sidebar-toggle');
+  sidebar.addEventListener('mouseover', event => { const t = targetOf(event); if (t) adminSidebarShowTooltip(t); });
+  sidebar.addEventListener('focusin', event => { const t = targetOf(event); if (t && t.matches(':focus-visible')) adminSidebarShowTooltip(t); });
+  sidebar.addEventListener('mouseleave', adminSidebarHideTooltip);
+  sidebar.addEventListener('focusout', adminSidebarHideTooltip);
+  sidebar.addEventListener('scroll', adminSidebarHideTooltip, { passive: true });
+  sidebar.addEventListener('click', event => {
+    adminSidebarHideTooltip();
+    // Sur petit écran, la sidebar dépliée recouvre le contenu : on la replie après navigation.
+    if (event.target.closest('.admin-sidebar-link') && adminSidebarIsNarrow() && !document.body.classList.contains('admin-sidebar-collapsed')) toggleAdminSidebar(true, { persist: false });
+  });
 }
 
 const roleTabItems = {

@@ -265,7 +265,8 @@ function applyRoleUI() {
   if (role === 'admin' && typeof toggleAdminSidebar === 'function') {
     let collapsed = false;
     try { collapsed = localStorage.getItem('taskin_admin_sidebar_collapsed') === '1'; } catch (_) {}
-    toggleAdminSidebar(collapsed);
+    if (window.matchMedia?.('(max-width: 850px)').matches) collapsed = true;
+    toggleAdminSidebar(collapsed, { instant: true, persist: false });
   }
 
   if (role === 'agent') badge.textContent = 'Agent';
