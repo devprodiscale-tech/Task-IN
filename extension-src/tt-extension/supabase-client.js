@@ -59,7 +59,7 @@
     const response = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
       method: 'POST',
       headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'magiclink', token_hash: String(tokenHash || '') })
+      body: JSON.stringify({ type: 'email', token_hash: String(tokenHash || '') })
     });
     return storeSession(await parseResponse(response, 'Ticket'));
   }
