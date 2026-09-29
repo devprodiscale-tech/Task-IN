@@ -27,20 +27,25 @@
   --mono:'Spline Sans Mono',monospace;
 }
 [data-theme="dark"]{
-  --ocean-dim:#172554;
-  --clay-dim:#450A0A;
-  --bloom-dim:#2E1065;
-  --amber-dim:#451A03;
-  --bg:#0F172A;
-  --surface:#111C32;
-  --surface2:#17243D;
-  --border:#263653;
-  --border2:#3B4C6B;
-  --text:#F8FAFC;
-  --text2:#CBD5E1;
-  --text3:#94A3B8;
-  --red-dim:#450A0A;
-  --green-dim:#052E16;
+  /* Palette marine Task'in : fond #0B233A (hsl 209 68% 14%), surfaces et bordures de la même teinte, de plus en plus claires. */
+  color-scheme:dark;
+  --ocean:#3B82F6;
+  --ocean-deep:#2563EB;
+  --ocean-dim:#173863;
+  --clay-dim:#501B1B;
+  --bloom-dim:#38235C;
+  --amber-dim:#4E3513;
+  --bg:#0B233A;
+  --surface:#132D47;
+  --surface2:#1B3852;
+  --border:#294660;
+  --border2:#3E5D7A;
+  --text:#F4F7FB;
+  --text2:#BDCDDB;
+  --text3:#8B9FB1;
+  --red-dim:#501B1B;
+  --green-dim:#123F29;
+  --shadow-dark:rgba(3,14,26,.45);
 }
 .theme-toggle-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
 .theme-toggle-btn:hover{border-color:var(--ocean);color:var(--ocean)}
@@ -54,3 +59,7 @@ input[type="file"]:not(.hidden):not([hidden])::file-selector-button{margin-right
 input[type="file"]:not(.hidden):not([hidden])::file-selector-button:hover{border-color:var(--ocean-deep);background:var(--ocean-deep)}
 input[type="file"]:not(.hidden):not([hidden])::file-selector-button:active{transform:translateY(1px)}
 [data-theme="dark"] input[type="file"]:not(.hidden):not([hidden]){background:var(--surface2)}
+
+/* Mode sombre marine : éléments dont la couleur était figée pour le thème clair. */
+[data-theme="dark"] .topbar{background:var(--surface);border-bottom-color:var(--border)}
+[data-theme="dark"] .role-badge{color:#FBBF24}
