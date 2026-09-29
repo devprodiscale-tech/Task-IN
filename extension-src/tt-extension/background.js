@@ -6,7 +6,7 @@ const CONTENT_VERSION = '1.10.0';
 
 // Domaines de la web app autorisés à transmettre la connexion à l'extension.
 // À garder aligné avec content_scripts[bridge.js].matches dans manifest.json.
-const TASKIN_APP_HOSTS = ['localhost', '127.0.0.1'];
+const TASKIN_APP_HOSTS = ['task-in-rho.vercel.app', 'localhost', '127.0.0.1'];
 
 function isTaskinAppSender(sender) {
   if (sender?.id !== chrome.runtime.id || !sender?.url) return false;

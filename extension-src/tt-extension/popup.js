@@ -1,5 +1,5 @@
 // URL de la web app Task'in (seul endroit où l'on se connecte).
-const TASKIN_APP_URL = 'http://localhost:3000/';
+const TASKIN_APP_URL = 'https://task-in-rho.vercel.app/';
 const SESSION_USER_KEY = 'taskin_supabase_user';
 
 let currentUser = null;
