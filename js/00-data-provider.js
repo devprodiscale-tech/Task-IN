@@ -162,7 +162,8 @@
       initials: profile.initials || '??',
       role: profile.role || 'agent',
       pole: profile.pole || null,
-      photo: profile.photo || ''
+      photo: profile.photo || '',
+      pole: profile.pole || ''
     };
   }
 
