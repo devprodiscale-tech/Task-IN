@@ -1,6 +1,17 @@
+importScripts('supabase-client.js');
+
 const FLOAT_ENABLED_KEY = 'onspotFloatEnabled';
 const FLOAT_OWNER_TAB_KEY = 'onspotFloatOwnerTabId';
-const CONTENT_VERSION = '1.9.3';
+const CONTENT_VERSION = '1.10.0';
+
+// Domaines de la web app autorisés à transmettre la connexion à l'extension.
+// À garder aligné avec content_scripts[bridge.js].matches dans manifest.json.
+const TASKIN_APP_HOSTS = ['localhost', '127.0.0.1'];
+
+function isTaskinAppSender(sender) {
+  if (sender?.id !== chrome.runtime.id || !sender?.url) return false;
+  try { return TASKIN_APP_HOSTS.includes(new URL(sender.url).hostname); } catch (_) { return false; }
+}
 
 function sendToTab(tabId, message) {
   if (!Number.isInteger(tabId)) return Promise.resolve(null);
@@ -88,6 +99,19 @@ async function setFloatEnabled(enabled, openPanel = false) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message) return undefined;
+
+  if (message.type === 'taskin:sessionTicket' || message.type === 'taskin:signOut') {
+    if (!isTaskinAppSender(sender)) { sendResponse({ ok: false, error: 'Origine non autorisée.' }); return undefined; }
+    const task = message.type === 'taskin:signOut'
+      ? supabaseClient.signOut()
+      : supabaseClient.signInWithTicket(message.tokenHash).then(session => {
+          if (message.userId && session?.user?.id !== message.userId) return supabaseClient.signOut().then(() => { throw new Error('Utilisateur inattendu.'); });
+        });
+    task
+      .then(() => sendResponse({ ok: true }))
+      .catch(error => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
 
   if (message.type === 'onspot:openPanel' || message.type === 'onspot:openLauncherWindow' || message.type === 'onspot:openTrackerWindow' || message.type === 'onspot:openStandalone' || message.type === 'onspot:focusPortable') {
     openPanelInActiveTab()

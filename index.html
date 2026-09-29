@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="css/03-features.css?v=20260827">
 <link rel="stylesheet" href="css/04-portal.css?v=20260827">
 <link rel="stylesheet" href="css/05-production-polish.css?v=20260827c">
-<link rel="stylesheet" href="css/06-admin-overview.css?v=20260917">
+<link rel="stylesheet" href="css/06-admin-overview.css?v=20260929">
 </head>
 <body>
 
@@ -80,7 +80,7 @@
       <div class="portal-module-grid"><div class="portal-module"><i>▱</i><b>Documentation</b><em>›</em></div><div class="portal-module"><i>◇</i><b>Formation</b><em>›</em></div><div class="portal-module"><i>◫</i><b>Supervision</b><em>›</em></div><div class="portal-module"><i>⚙</i><b>Administration</b><em>›</em></div></div>
     </div>
     <div class="portal-live-site" id="portal-live-site" aria-label="Site de présentation Task’in">
-      <div class="portal-live-toolbar"><span><i>T</i>Présentation Task’in</span><div class="portal-live-toolbar-actions"><a class="portal-download-btn" href="downloads/taskin-extension-v1.9.3.zip" download>↓ Télécharger l’extension</a><button type="button" onclick="showPortalPanel('split')">↔ Portail</button><button type="button" onclick="openPortalFullscreen()">⛶ Plein écran</button><button class="portal-live-primary" type="button" onclick="showPortalPanel('login')">→ Se connecter</button></div></div>
+      <div class="portal-live-toolbar"><span><i>T</i>Présentation Task’in</span><div class="portal-live-toolbar-actions"><a class="portal-download-btn" href="downloads/taskin-extension-v1.10.0.zip" download>↓ Télécharger l’extension</a><button type="button" onclick="showPortalPanel('split')">↔ Portail</button><button type="button" onclick="openPortalFullscreen()">⛶ Plein écran</button><button class="portal-live-primary" type="button" onclick="showPortalPanel('login')">→ Se connecter</button></div></div>
       <iframe id="portal-site-frame" title="Site de présentation Task’in" loading="lazy"></iframe>
     </div>
   </section>
@@ -100,7 +100,7 @@
     <span class="role-badge hidden" id="role-badge"></span>
     <div class="topbar-right">
       <span id="network-status" class="network-status hidden" role="status" aria-live="polite"></span>
-      <button class="btn btn-ghost presentation-topbar-btn" onclick="window.open('presentation.html?v=20260827b','_blank','noopener,noreferrer')">Présentation</button><a class="btn btn-primary extension-download-topbar" href="downloads/taskin-extension-v1.9.3.zip" download>↓ Télécharger l’extension</a>
+      <button class="btn btn-ghost presentation-topbar-btn" onclick="window.open('presentation.html?v=20260827b','_blank','noopener,noreferrer')">Présentation</button><a class="btn btn-primary extension-download-topbar" href="downloads/taskin-extension-v1.10.0.zip" download>↓ Télécharger l’extension</a>
       <button class="btn btn-ghost" onclick="refreshApp()">↻ Actualiser</button>
       <button class="theme-toggle-btn" id="theme-toggle" onclick="toggleTheme()" title="Changer de thème">☾</button>
       <div class="user-pill" onclick="openProfileModal()" style="cursor:pointer"><div class="mini-avatar" id="topbar-avatar"></div><span id="topbar-name"></span></div>
@@ -1226,7 +1226,7 @@
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260928" defer></script>
 <script src="js/00-core-init.js?v=20260923" defer></script>
-<script src="js/01-core-auth-network.js?v=20260827b" defer></script>
+<script src="js/01-core-auth-network.js?v=20260929" defer></script>
 <script src="js/02-time-data.js?v=20260827b" defer></script>
 <script src="js/03-dashboard-render.js?v=20260923e" defer></script>
 <script src="js/04-admin.js?v=20260928" defer></script>
@@ -1235,12 +1235,13 @@
 <script src="js/13-admin-stat.js?v=20260918" defer></script>
 <script src="js/14-admin-quality.js?v=20260918" defer></script>
 <script src="js/15-admin-training.js?v=20260918" defer></script>
-<script src="js/16-admin-settings.js?v=20260919" defer></script>
+<script src="js/16-admin-settings.js?v=20260929" defer></script>
 <script src="js/17-admin-local-features.js?v=20260920" defer></script>
-<script src="js/06-ui-modals.js?v=20260928" defer></script>
+<script src="js/06-ui-modals.js?v=20260929" defer></script>
 <script src="js/07-analytics.js?v=20260827" defer></script>
 <script src="js/08-analytics-advanced.js?v=20260827" defer></script>
 <script src="js/18-agent-sessions.js?v=20260928" defer></script>
+<script src="js/19-extension-bridge.js?v=20260929" defer></script>
 <script src="js/99-init.js?v=20260827" defer></script>
 </body>
 </html>

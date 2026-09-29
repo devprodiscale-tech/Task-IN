@@ -351,14 +351,8 @@ body { color: var(--text); }
 <div id="login-screen">
   <img src="icons/icon48.png" alt="Task'in" style="width:48px;height:48px;display:block;margin:0 auto 10px;border-radius:10px;">
   <div class="login-title">TASK'IN</div>
-  <div style="margin-bottom: 8px;">
-    <input class="form-input" type="email" id="login-email" placeholder="Email">
-  </div>
-  <div style="margin-bottom: 8px;">
-    <input class="form-input" type="password" id="login-password" placeholder="Mot de passe" data-keydown="doLogin">
-  </div>
-  <div id="login-error" style="color:var(--red); font-size:11px; margin-bottom:8px; text-align:center;"></div>
-  <button class="btn-primary" data-action="doLogin">Se connecter</button>
+  <p style="margin:0 0 14px;color:var(--text2,#5b6b7c);font-size:12px;line-height:1.5;text-align:center;">Connecte-toi sur la web app Task'in : l'extension se connecte automatiquement avec le même compte.</p>
+  <button class="btn-primary" data-action="openWebDashboard">Ouvrir Task'in</button>
 </div>
 
 <div id="app" class="hidden" style="display:flex; flex-direction:column; height:100%;">
@@ -368,7 +362,6 @@ body { color: var(--text); }
     <div class="topbar-user">
       <div class="tb-avatar" id="tb-avatar" style="background:var(--green)">??</div>
       <div class="tb-name" id="tb-name">Chargement...</div>
-      <button class="logout-btn" data-action="logout" title="Se déconnecter">×</button>
     </div>
   </div>
 

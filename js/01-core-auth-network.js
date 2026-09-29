@@ -88,6 +88,7 @@ async function doLogin() {
     if (!user) { err.textContent = "Ce compte n'a pas encore de profil Supabase."; supabase.signOut(); return; }
     enterApp(user);
     if (typeof agentSessionsLog === 'function') agentSessionsLog('login');
+    if (typeof taskinExtensionSync === 'function') taskinExtensionSync();
   } catch(e) { err.textContent = 'Erreur de connexion. Réessaie.'; console.error(e); }
 }
 
@@ -221,6 +222,7 @@ async function tryRestoreSession() {
       const user = await supabase.getCurrentProfile();
       if (!user) { supabase.signOut(); return false; }
       enterApp(user);
+      if (typeof taskinExtensionSync === 'function') taskinExtensionSync();
       return true;
     } catch (error) {
       console.error('Restauration session Supabase impossible:', error);
@@ -388,6 +390,7 @@ async function logout() {
   if (activeTimer) { alert('Arrête le timer en cours avant de te déconnecter.'); return; }
   stopLiveRefresh();
   if (typeof agentSessionsLog === 'function') await Promise.race([agentSessionsLog('logout'), new Promise(resolve => setTimeout(resolve, 3000))]);
+  if (typeof taskinExtensionSignOut === 'function') taskinExtensionSignOut();
   if (window.taskinDataProviders?.supabase?.enabled()) window.taskinDataProviders.supabase.signOut();
   currentUser = null; entries = [];
   document.getElementById('login-screen').style.display = 'flex';

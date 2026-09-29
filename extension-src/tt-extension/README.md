@@ -16,10 +16,17 @@ Le bouton peut ensuite être déplacé par glisser-déposer dans la page propri�
 
 Lorsque le widget est activé depuis le menu de l’extension, le service d’arrière-plan injecte immédiatement le script et les styles dans les onglets déjà ouverts lorsque Chrome l’autorise. Il n’est donc pas nécessaire de recharger la page. Les pages système comme `chrome://`, le Chrome Web Store et certains lecteurs PDF restent soumis aux restrictions de Chrome.
 
+## Connexion
+
+On se connecte uniquement sur la web app Task’in. Dès que la page de la web app est ouverte avec l’extension installée, l’extension reçoit un ticket à usage unique (`/api/extension-session`) et ouvre sa propre session Supabase avec le même compte. Si un autre compte se connecte sur la web app, l’extension bascule sur ce compte ; la déconnexion de la web app déconnecte aussi l’extension.
+
+Les domaines autorisés à transmettre la connexion sont déclarés à deux endroits à garder alignés : `content_scripts` de `bridge.js` dans `manifest.json` et `TASKIN_APP_HOSTS` dans `background.js`. L’URL ouverte par le bouton « Ouvrir Task’in » est `TASKIN_APP_URL` dans `popup.js`.
+
 ## Fichiers principaux
 
 - `manifest.json` — déclaration de l’extension, des permissions d’injection et des ressources du panneau.
 - `background.js` — injection immédiate, activation/désactivation du widget, transfert manuel vers l’onglet actif et ouverture du panneau.
+- `bridge.js` — pont avec la web app (réception de la connexion et de la déconnexion).
 - `content.js` / `content.css` — bouton rond permanent, déplacement, panneau intégré avec logo Task’in et fermeture au clic extérieur.
 - `menu.html` / `menu.js` — menu de l’icône Chrome, transfert vers la fenêtre active et activation du widget.
 - `popup.html` / `popup.js` — mini-client de suivi de tâche chargé dans le panneau.
@@ -29,7 +36,7 @@ Lorsque le widget est activé depuis le menu de l’extension, le service d’ar
 
 1. Ouvrir `chrome://extensions`.
 2. Supprimer complètement les anciennes versions de Task’in afin de retirer les éventuelles fenêtres natives et anciens widgets.
-3. Décompresser l’archive v1.9.3.
+3. Décompresser l’archive v1.10.0.
 4. Cliquer sur **Charger l’extension non empaquetée**.
 5. Sélectionner le dossier contenant `manifest.json`.
 6. Recharger les pages web si l’ancienne version y avait déjà injecté un widget.

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OnSpot Time Tracker",
-  "version": "1.9.3",
+  "version": "1.10.0",
   "description": "Time Tracker et gestion d'appels pour l'équipe OnSpot.",
   "icons": {
     "16": "icons/icon16.png",
@@ -34,16 +34,38 @@
   ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "css": ["content.css"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["popup.html", "popup.js", "icons/*"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "popup.html",
+        "popup.js",
+        "icons/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }

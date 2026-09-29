@@ -53,6 +53,17 @@
     return storeSession(await parseResponse(response, 'Auth'));
   }
 
+  // Échange un ticket à usage unique délivré par la web app (/api/extension-session)
+  // contre une session Supabase propre à l'extension.
+  async function signInWithTicket(tokenHash) {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'magiclink', token_hash: String(tokenHash || '') })
+    });
+    return storeSession(await parseResponse(response, 'Ticket'));
+  }
+
   async function refreshSession() {
     if (refreshPromise) return refreshPromise;
     refreshPromise = (async () => {
@@ -128,6 +139,7 @@
   global.supabaseClient = Object.freeze({
     url: SUPABASE_URL,
     signIn,
+    signInWithTicket,
     getSession,
     getUser,
     refreshSession,
@@ -135,4 +147,4 @@
     request,
     getProfile
   });
-})(window);
+})(typeof window !== 'undefined' ? window : self);

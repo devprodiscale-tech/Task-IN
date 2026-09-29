@@ -1,3 +1,7 @@
+// URL de la web app Task'in (seul endroit où l'on se connecte).
+const TASKIN_APP_URL = 'http://localhost:3000/';
+const SESSION_USER_KEY = 'taskin_supabase_user';
+
 let currentUser = null;
 let activeTimer = null; 
 let timerInterval = null;
@@ -24,6 +28,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Écoute des changements en temps réel (background -> popup)
 chrome.storage.onChanged.addListener((changes, namespace) => {
+  // Connexion, changement de compte ou déconnexion depuis la web app.
+  if (namespace === 'local' && changes[SESSION_USER_KEY] && (changes[SESSION_USER_KEY].newValue?.id || null) !== (currentUser?.id || null)) {
+    window.location.reload();
+    return;
+  }
   if (namespace === 'local' && currentUser) {
     const key = 'activeTimer_' + currentUser.id;
     if (changes[key]) {
@@ -57,10 +66,7 @@ document.addEventListener('click', (e) => {
   if (!el) return;
   const action = el.dataset.action;
 
-  if (action === 'doLogin') doLogin();
-  else if (action === 'logout') logout();
-  
-  else if (action === 'startTimerImmediate') startTimerImmediate();
+  if (action === 'startTimerImmediate') startTimerImmediate();
   else if (action === 'setSource') setSource(el.dataset.source);
   else if (action === 'setTreatment') setTreatment(el.dataset.treatment);
   else if (action === 'setTime') setTime();
@@ -76,7 +82,6 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.target.dataset.keydown === 'doLogin' && e.key === 'Enter') doLogin();
   if (e.target.dataset.keydown === 'finishWizard' && e.key === 'Enter') finishWizard();
 });
 
@@ -88,18 +93,6 @@ document.addEventListener('scroll', (e) => {
 // ==========================================
 // AUTHENTIFICATION ET INIT
 // ==========================================
-async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  const err = document.getElementById('login-error');
-  err.textContent = '';
-  if (!email || !password) { err.textContent = 'Remplissez les champs.'; return; }
-  try {
-    const session = await supabaseClient.signIn(email, password);
-    await enterApp(session.user.id);
-  } catch (e) { err.textContent = 'Erreur réseau.'; }
-}
-
 async function tryRestoreSession() {
   const user = await supabaseClient.getUser();
   if (!user?.id) return false;
@@ -136,14 +129,6 @@ function updateTopbarUI() {
   document.getElementById('tb-name').textContent = currentUser.name;
 }
 
-async function logout() {
-  if (activeTimer) { alert('Arrêtez le timer en cours avant de vous déconnecter.'); return; }
-  await supabaseClient.signOut();
-  currentUser = null;
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('app').classList.add('hidden');
-}
-
 // ==========================================
 // MINI DASHBOARD (STATS & HISTORIQUE)
 // ==========================================
@@ -161,7 +146,7 @@ function toggleHistory() {
 }
 
 function openWebDashboard() {
-  chrome.tabs.create({ url: "https://onspot-time-tracker.web.app/" });
+  chrome.tabs.create({ url: TASKIN_APP_URL });
 }
 
 function focusPortablePopup() {
