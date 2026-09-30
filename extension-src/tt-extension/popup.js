@@ -5,7 +5,43 @@ const SESSION_USER_KEY = 'taskin_supabase_user';
 let currentUser = null;
 let activeTimer = null; 
 let timerInterval = null;
-let customTreatmentTypes = [];
+// Même liste par défaut que la web app (js/00-core-init.js) : utilisée tant
+// qu'aucune liste personnalisée n'est enregistrée dans Supabase.
+const TREATMENT_TYPES_DEFAULT = [
+  '✅ Confirmation','🎫 Reservations','💡 Conseils/suggestions','🔄 Follow-up',
+  '🔍 Lost and found','🚗 Car rental','➕ Additionnels services','🚆 Train',
+  '🩺 Health','🎉 Activities','🚌 Transferts','🗺️ DMC','📋 Itinerary',
+  '🏨 Accommodation','🧳 Luggage','✈️ Flights','📞 Welcome call','👋 Goodbye call'
+];
+let customTreatmentTypes = [...TREATMENT_TYPES_DEFAULT];
+
+// Canaux : mêmes libellés, couleurs et icônes que la web app (js/20-agent-pole.js).
+const PHONE_SVG = '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/>';
+const SOURCES = {
+  inbound: { label: 'Appel entrant', color: '#E5484D', icon: '<path d="M16 2v6h6"/><path d="m22 2-6 6"/>' + PHONE_SVG },
+  outbound: { label: 'Appel sortant', color: '#D97706', icon: '<path d="M22 8V2h-6"/><path d="m16 8 6-6"/>' + PHONE_SVG },
+  chat: { label: 'Crisp Chat', color: '#0EA5E9', icon: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/>' },
+  email: { label: 'Crisp Email', color: '#6366F1', icon: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-10 6L2 7"/>' },
+  ticket: { label: 'Ticket / Manuel', color: '#16A34A', icon: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2M13 17v2M13 11v2"/>' },
+};
+const SOURCE_ALIASES = { ringover: 'inbound', crisp: 'chat' };
+const POLE_LABELS = { fo: 'FO', bo: 'BO', reconf: 'Reconf' };
+function sourceInfo(src) {
+  return SOURCES[SOURCE_ALIASES[src] || src] || { label: src || 'Non défini', color: '#64748B', icon: '<circle cx="12" cy="12" r="4"/>' };
+}
+function sourceIconSvg(src) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${sourceInfo(src).icon}</svg>`;
+}
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function setStepIndicator(step) {
+  document.getElementById('wizard-step-indicator').textContent = `${step}/4`;
+  document.querySelectorAll('#step-meter i').forEach((dot, i) => {
+    dot.classList.toggle('on', i < step);
+    dot.classList.toggle('current', i === step - 1);
+  });
+}
 
 let pickerHour = "00", pickerMin = "00"; 
 let isScrolling = false;
@@ -101,7 +137,7 @@ async function tryRestoreSession() {
 }
 
 async function enterApp(uid) {
-  currentUser = { id: uid, initials: '??', name: 'Chargement...', color: '#3B8C6E' };
+  currentUser = { id: uid, initials: '??', name: 'Chargement...', color: '#2563EB' };
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').classList.remove('hidden');
   await checkActiveTimer();
@@ -117,8 +153,9 @@ async function fetchAccountProfile(uid) {
     if (profile) {
       currentUser.name = profile.name || 'Utilisateur';
       currentUser.initials = profile.initials || '??';
-      currentUser.color = profile.color || '#3B8C6E';
+      currentUser.color = profile.color || '#2563EB';
       currentUser.role = profile.role || 'agent';
+      currentUser.pole = profile.pole || '';
     }
   } catch (e) {}
 }
@@ -127,6 +164,9 @@ function updateTopbarUI() {
   document.getElementById('tb-avatar').textContent = currentUser.initials;
   document.getElementById('tb-avatar').style.background = currentUser.color;
   document.getElementById('tb-name').textContent = currentUser.name;
+  const pole = currentUser.role === 'agent' && POLE_LABELS[currentUser.pole] ? currentUser.pole : '';
+  if (pole) document.body.dataset.pole = pole; else delete document.body.dataset.pole;
+  document.getElementById('tb-pole').textContent = pole ? POLE_LABELS[pole] : '';
 }
 
 // ==========================================
@@ -137,10 +177,10 @@ function toggleHistory() {
   const btn = document.getElementById('toggle-history-btn');
   const list = document.getElementById('history-list');
   if (historyVisible) {
-    btn.textContent = "Masquer le détail ▲";
+    btn.textContent = "Historique ▴";
     list.classList.remove('hidden');
   } else {
-    btn.textContent = "Afficher le détail ▼";
+    btn.textContent = "Historique ▾";
     list.classList.add('hidden');
   }
 }
@@ -213,16 +253,13 @@ async function loadHistoryAndStats() {
 
     // Rendu de la liste
     if (todayEntries.length === 0) {
-      list.innerHTML = '<div style="text-align:center; padding:10px; color:var(--text3); font-size:11px;">Aucune tâche aujourd\'hui.</div>';
+      list.innerHTML = '<div class="mini-empty-row">Aucune tâche aujourd\'hui.</div>';
       return;
     }
     
     list.innerHTML = todayEntries.map(e => {
-      let dotColor = '#E26D5A'; let dotBg = '#FDEEEB';
-      if(e.source === 'inbound' || e.source === 'outbound' || e.source === 'ringover') { dotColor = '#DCAE1D'; dotBg = '#FCF1D6'; }
-      else if(e.source === 'chat' || e.source === 'email' || e.source === 'crisp') { dotColor = '#3B99FC'; dotBg = '#E1F0FF'; }
-      
-      const title = e.desc || e.treatment || e.source;
+      const info = sourceInfo(e.source);
+      const title = escapeHtml(e.desc || e.treatment || info.label);
       const itemDurM = Math.ceil(e.durationSec / 60);
       const itemDurH = Math.floor(e.durationSec / 3600);
       const itemDurStr = itemDurH > 0 ? `${itemDurH}h${String(Math.floor((e.durationSec % 3600) / 60)).padStart(2,'0')}` : `${itemDurM}min`;
@@ -230,7 +267,7 @@ async function loadHistoryAndStats() {
       return `
       <div class="history-item">
           <div class="history-item-left">
-              <div class="h-icon-box" style="background:${dotBg}; color:${dotColor}">●</div>
+              <div class="h-icon-box" style="--c:${info.color}" title="${escapeHtml(info.label)}">${sourceIconSvg(e.source)}</div>
               <span class="history-item-title">${title}</span>
           </div>
           <span class="history-item-dur">${itemDurStr}</span>
@@ -238,7 +275,7 @@ async function loadHistoryAndStats() {
     }).join('');
     
   } catch (e) {
-    list.innerHTML = '<div style="text-align:center; padding:10px; color:var(--red); font-size:11px;">Erreur réseau ou chargement.</div>';
+    list.innerHTML = '<div class="mini-empty-row error">Erreur réseau ou chargement.</div>';
   }
 }
 
@@ -261,6 +298,7 @@ function getTreatmentColors(emoji) {
 }
 
 async function loadTreatments() {
+  renderTreatmentList();
   try {
     const rows = await supabaseClient.request('/rest/v1/settings?select=value&key=eq.treatments&limit=1');
     const values = rows[0]?.value?.list || [];
@@ -274,14 +312,13 @@ async function loadTreatments() {
 function renderTreatmentList() {
   const list = document.getElementById('treatment-list');
   list.innerHTML = customTreatmentTypes.map(t => {
-    const emojiMatch = t.match(/[\p{Emoji}\u200d]+/gu);
-    const emoji = emojiMatch ? emojiMatch[0] : '📝';
-    const text = t.replace(emoji, '').trim();
-    const colors = getTreatmentColors(emoji);
-    return `<button class="treatment-btn" data-action="setTreatment" data-treatment="${t.replace(/"/g,'&quot;')}"
-              style="--btn-bg: ${colors.bg}; --btn-border: ${colors.border};">
-              <span style="font-size:16px">${emoji}</span>
-              <span>${text || t}</span>
+    const match = String(t).match(/^(\p{Extended_Pictographic}[\u{FE0F}\u{200D}\p{Extended_Pictographic}]*)\s*(.*)$/u);
+    const emoji = match ? match[1] : '📝';
+    const text = match ? match[2] : String(t);
+    const colors = getTreatmentColors(emoji.replace(/\u{FE0F}/gu, '')) ;
+    return `<button type="button" class="treatment-btn" data-action="setTreatment" data-treatment="${escapeHtml(t)}" style="--btn-border:${colors.border}">
+              <span class="trt-emoji">${emoji}</span>
+              <span class="trt-label">${escapeHtml(text || t).replace(/\//g, "/<wbr>")}</span>
             </button>`;
   }).join('');
 }
@@ -307,7 +344,7 @@ async function startTimerImmediate() {
   updateClock();
   
   currentWizardStep = 1;
-  document.getElementById('wizard-step-indicator').textContent = "1/4";
+  setStepIndicator(1);
   hideAllWizardSteps();
   document.getElementById('step-source').classList.remove('hidden');
 }
@@ -324,19 +361,19 @@ async function goBackWizard() {
   } 
   else if (currentWizardStep === 2) {
     currentWizardStep = 1;
-    document.getElementById('wizard-step-indicator').textContent = "1/4";
+    setStepIndicator(1);
     hideAllWizardSteps();
     document.getElementById('step-source').classList.remove('hidden');
   } 
   else if (currentWizardStep === 3) {
     currentWizardStep = 2;
-    document.getElementById('wizard-step-indicator').textContent = "2/4";
+    setStepIndicator(2);
     hideAllWizardSteps();
     document.getElementById('step-treatment').classList.remove('hidden');
   } 
   else if (currentWizardStep === 4) {
     currentWizardStep = 3;
-    document.getElementById('wizard-step-indicator').textContent = "3/4";
+    setStepIndicator(3);
     hideAllWizardSteps();
     document.getElementById('step-time').classList.remove('hidden');
   }
@@ -346,7 +383,7 @@ async function setSource(src) {
   activeTimer.source = src;
   await chrome.storage.local.set({ ['activeTimer_'+currentUser.id]: activeTimer });
   currentWizardStep = 2;
-  document.getElementById('wizard-step-indicator').textContent = "2/4";
+  setStepIndicator(2);
   hideAllWizardSteps();
   document.getElementById('step-treatment').classList.remove('hidden');
 }
@@ -355,7 +392,7 @@ async function setTreatment(trt) {
   activeTimer.treatment = trt;
   await chrome.storage.local.set({ ['activeTimer_'+currentUser.id]: activeTimer });
   currentWizardStep = 3;
-  document.getElementById('wizard-step-indicator').textContent = "3/4";
+  setStepIndicator(3);
   hideAllWizardSteps();
   document.getElementById('step-time').classList.remove('hidden');
   
@@ -369,7 +406,7 @@ async function setTime() {
   activeTimer.inboundTime = `${pickerHour}:${pickerMin}`;
   await chrome.storage.local.set({ ['activeTimer_'+currentUser.id]: activeTimer });
   currentWizardStep = 4;
-  document.getElementById('wizard-step-indicator').textContent = "4/4";
+  setStepIndicator(4);
   hideAllWizardSteps();
   document.getElementById('step-ref').classList.remove('hidden');
   document.getElementById('wizard-ref').focus();
@@ -437,10 +474,18 @@ async function checkActiveTimer() {
     activeTimer = saved;
     if (!activeTimer.desc || activeTimer.desc === '') {
       document.getElementById('wizard-view').classList.remove('hidden');
-      currentWizardStep = 4;
-      document.getElementById('wizard-step-indicator').textContent = "Reprise";
+      // Reprend l'assistant à la première étape non renseignée.
+      const hasSource = activeTimer.source && activeTimer.source !== 'Non défini';
+      currentWizardStep = !hasSource ? 1 : !activeTimer.treatment ? 2 : !activeTimer.inboundTime ? 3 : 4;
+      setStepIndicator(currentWizardStep);
       hideAllWizardSteps();
-      document.getElementById('step-ref').classList.remove('hidden');
+      document.getElementById(['step-source', 'step-treatment', 'step-time', 'step-ref'][currentWizardStep - 1]).classList.remove('hidden');
+      if (currentWizardStep === 3) {
+        const d = new Date(activeTimer.startTime);
+        pickerHour = String(d.getHours()).padStart(2, '0');
+        pickerMin = String(d.getMinutes()).padStart(2, '0');
+        requestAnimationFrame(syncPickerScroll);
+      }
     } else {
       showDoneView();
     }
@@ -455,8 +500,11 @@ async function checkActiveTimer() {
 
 function showDoneView() {
   document.getElementById('done-view').classList.remove('hidden');
-  const sourceNames = { 'inbound': '📞↘ Appel entrant', 'outbound': '📞↗ Appel sortant', 'chat': '💬 Crisp Chat', 'email': '✉️ Crisp Email', 'ticket': '🎫 Traitement ticket' };
-  document.getElementById('run-source').textContent = sourceNames[activeTimer.source] || activeTimer.source;
+  const info = sourceInfo(activeTimer.source);
+  document.getElementById('run-source').textContent = info.label;
+  const icon = document.getElementById('run-icon');
+  icon.style.setProperty('--c', info.color);
+  icon.innerHTML = sourceIconSvg(activeTimer.source);
   document.getElementById('run-desc').textContent = activeTimer.desc;
 }
 

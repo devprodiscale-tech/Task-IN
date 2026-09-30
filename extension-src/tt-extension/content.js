@@ -1,5 +1,5 @@
 (function () {
-  const CONTENT_VERSION = '1.10.0';
+  const CONTENT_VERSION = '1.10.1';
   if (window.__onspotFloatInjected && window.__onspotFloatVersion === CONTENT_VERSION) return;
 
   document.getElementById('onspot-float-panel')?.remove();
@@ -24,7 +24,7 @@
   panel.id = 'onspot-float-panel';
   panel.innerHTML = `
     <div id="onspot-float-panel-header">
-      <span class="panel-brand"><span class="panel-brand-mark"><img src="${chrome.runtime.getURL('icons/icon48.png')}" alt="Task’in"></span><span>Task’in · Suivi de tâche</span></span>
+      <span class="panel-brand"><span class="panel-brand-mark"><img src="${chrome.runtime.getURL('icons/icon48.png')}" alt="Task’in"></span><span>Task’in <small>· Suivi de tâche</small></span></span>
       <button id="onspot-float-panel-close" type="button" aria-label="Fermer" title="Fermer">&times;</button>
     </div>
     <iframe id="onspot-float-panel-iframe" title="Suivi de tâche Task’in" src=""></iframe>
