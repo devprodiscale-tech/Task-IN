@@ -2,7 +2,8 @@
 // Opérations privilégiées Supabase : création, changement de mot de passe et suppression.
 // SUPABASE_SERVICE_ROLE_KEY ne doit être configurée que côté serveur.
 
-const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+// URL racine du projet : tolère une variable saisie avec /rest/v1 ou /auth/v1 à la fin.
+const SUPABASE_URL = String(process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '').replace(/\/(rest|auth)\/v1$/, '');
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const ALLOWED_ORIGIN = String(process.env.TASKIN_ALLOWED_ORIGIN || '').replace(/\/+$/, '');
 const POLES = ['fo', 'bo', 'reconf'];

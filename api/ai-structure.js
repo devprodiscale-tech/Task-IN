@@ -13,7 +13,8 @@ const ALLOWED_BLOCK_TYPES = ['text', 'list', 'callout', 'contact', 'table'];
 const ALLOWED_CALLOUT_STYLES = ['info', 'warning', 'important'];
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
-const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+// URL racine du projet : tolère une variable saisie avec /rest/v1 ou /auth/v1 à la fin.
+const SUPABASE_URL = String(process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '').replace(/\/(rest|auth)\/v1$/, '');
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const ALLOWED_ORIGIN = String(process.env.TASKIN_ALLOWED_ORIGIN || '').replace(/\/+$/, '');
 

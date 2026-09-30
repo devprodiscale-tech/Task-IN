@@ -1,6 +1,7 @@
 // Task'in — Admin Settings via Supabase REST.
 // La clé de service reste exclusivement côté serveur.
-const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+// URL racine du projet : tolère une variable saisie avec /rest/v1 ou /auth/v1 à la fin.
+const SUPABASE_URL = String(process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '').replace(/\/(rest|auth)\/v1$/, '');
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const ALLOWED_ORIGIN = String(process.env.TASKIN_ALLOWED_ORIGIN || process.env.APP_ORIGIN || '').replace(/\/+$/, '');
 const ROLES = ['admin', 'supervisor', 'formateur', 'agent'];
