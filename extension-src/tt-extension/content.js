@@ -1,5 +1,5 @@
 (function () {
-  const CONTENT_VERSION = '1.10.5';
+  const CONTENT_VERSION = '1.10.6';
   if (window.__onspotFloatInjected && window.__onspotFloatVersion === CONTENT_VERSION) return;
 
   document.getElementById('onspot-float-panel')?.remove();
