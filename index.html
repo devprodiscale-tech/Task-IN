@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="css/09-supervisor.css?v=20260930c">
 <link rel="stylesheet" href="css/10-interfaces.css?v=20260930purge2">
 <link rel="stylesheet" href="css/11-form-controls.css?v=20260930a">
-<link rel="stylesheet" href="css/12-daily-results.css?v=20260930a">
+<link rel="stylesheet" href="css/12-daily-results.css?v=20260930b">
 </head>
 <body>
 
@@ -301,6 +301,7 @@
     <button class="tab" id="tab-team" onclick="switchTab('team',this)">Équipe</button>
     <button class="tab hidden" id="tab-leaderboard" onclick="switchTab('leaderboard',this)">Classement</button>
     <button class="tab hidden" id="tab-supervision" onclick="switchTab('supervision',this)">🎯 Supervision<span id="sv-alert-count" class="hidden" style="background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;font-weight:700"></span></button>
+    <button class="tab hidden" id="tab-results" onclick="switchTab('results',this)">Mes résultats</button>
     <button class="tab hidden" id="tab-training" onclick="switchTab('training',this)">🎓 Formation</button>
     <button class="tab" id="tab-documentation" onclick="switchTab('documentation',this)">📄 Documentation</button>
     <button class="tab" id="tab-admin" onclick="switchTab('admin',this)">Administration</button>
@@ -1307,10 +1308,10 @@
 
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260930blocb" defer></script>
-<script src="js/00-core-init.js?v=20260930res" defer></script>
-<script src="js/01-core-auth-network.js?v=20260930ui" defer></script>
+<script src="js/00-core-init.js?v=20260930goal" defer></script>
+<script src="js/01-core-auth-network.js?v=20260930res" defer></script>
 <script src="js/02-time-data.js?v=20260930sup" defer></script>
-<script src="js/03-dashboard-render.js?v=20260930res" defer></script>
+<script src="js/03-dashboard-render.js?v=20260930goal" defer></script>
 <script src="js/04-admin.js?v=20260930c2" defer></script>
 <script src="js/11-admin-overview.js?v=20260930ui" defer></script>
 <script src="js/12-admin-workflow.js?v=20260930sup" defer></script>

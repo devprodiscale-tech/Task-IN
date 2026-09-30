@@ -621,8 +621,8 @@ async function switchTab(view, btn, options = {}) {
     'admin-settings': { panel: 'admin-settings-panel', render: () => adminSettingsRender() },
     'agent-sessions': { panel: 'admin-agent-sessions-panel', render: () => agentSessionsAdminRender() },
   };
-  // « Résultats » existe aussi pour le superviseur (onglet métier, branche plus bas).
-  if (adminSubViews[view] && !(view === 'results' && currentUser?.role === 'supervisor')) {
+  // « Résultats » existe aussi pour le superviseur et l'agent (branche commune plus bas).
+  if (adminSubViews[view] && !(view === 'results' && currentUser?.role !== 'admin')) {
     if (!currentUser || currentUser.role !== 'admin') return;
     setAdminSidebarActive(view);
     currentView = view;
@@ -646,7 +646,7 @@ async function switchTab(view, btn, options = {}) {
   if (currentUser.role === 'agent' && (view === 'admin' || view === 'supervision' || view === 'team' || view === 'leaderboard')) return;
   if (currentUser.role !== 'admin' && view === 'admin') return;
   if (currentUser.role === 'formateur' && (view === 'supervision' || view === 'admin')) return;
-  if (view === 'results' && currentUser.role !== 'supervisor') return;
+  if (view === 'results' && currentUser.role !== 'supervisor' && currentUser.role !== 'agent') return;
 
   currentView = view;
   if (viewChanged) resetViewScroll();

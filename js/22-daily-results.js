@@ -21,7 +21,8 @@ const DR_FIELD_KEYS = DR_FIELDS.map(f => f.key);
 const DR_MAX_SHOTS = 10;
 const DR_BUCKET = 'daily-stats';
 
-let drState = { day: '', pole: 'all', rows: new Map(), loading: false, error: '' };
+// rows = saisies du jour affiché ; byDay = 15 derniers jours (référence J-1, tendance 7 jours).
+let drState = { day: '', pole: 'all', mode: 'entry', rows: new Map(), byDay: new Map(), goals: new Map(), policy: { progress: 5 }, loading: false, error: '' };
 let drEdit = null;
 let drImport = null;
 
@@ -81,6 +82,21 @@ async function drFetch(path, init = {}) {
 async function drLoadDay(day) {
   const response = await drFetch(`/rest/v1/agent_daily_stats?select=*&day=eq.${day}`, { headers: { Accept: 'application/json' } });
   return response.json();
+}
+async function drLoadRange(from, to) {
+  const response = await drFetch(`/rest/v1/agent_daily_stats?select=*&day=gte.${from}&day=lte.${to}&order=day.desc&limit=5000`, { headers: { Accept: 'application/json' } });
+  return response.json();
+}
+async function drLoadGoals(day) {
+  const response = await drFetch(`/rest/v1/agent_daily_goals?select=*&day=eq.${day}`, { headers: { Accept: 'application/json' } });
+  return response.json();
+}
+async function drLoadPolicy() {
+  try {
+    const setting = await window.taskinDataProviders?.active?.().getSetting('daily_goal_policy');
+    const progress = Number(setting?.value?.progress);
+    return { progress: Number.isFinite(progress) ? progress : 5 };
+  } catch (_) { return { progress: 5 }; }
 }
 async function drLoadDays(days) {
   if (!days.length) return [];
@@ -142,13 +158,23 @@ async function renderDailyResults() {
   const panel = drEl('daily-results-panel');
   if (!panel || !currentUser) return;
   if (!drState.day) drState.day = drLocalDay();
+  // L'agent ne saisit rien : il voit directement ses objectifs et ceux de l'équipe.
+  if (!drCanWrite()) drState.mode = 'goals';
+  const day = drState.day;
   drState.loading = true; drState.error = '';
   drPaint();
   try {
-    const rows = await drLoadDay(drState.day);
-    drState.rows = new Map(rows.map(r => [r.agent_id, r]));
+    const [rows, goals, policy] = await Promise.all([drLoadRange(drShiftDay(day, -14), day), drLoadGoals(day), drLoadPolicy()]);
+    if (day !== drState.day) return; // un autre jour a été choisi entre-temps
+    drState.byDay = new Map();
+    rows.forEach(r => { if (!drState.byDay.has(r.day)) drState.byDay.set(r.day, new Map()); drState.byDay.get(r.day).set(r.agent_id, r); });
+    if (!drState.byDay.has(day)) drState.byDay.set(day, new Map());
+    drState.rows = drState.byDay.get(day);
+    drState.goals = new Map(goals.map(g => [g.agent_id, g]));
+    drState.policy = policy;
   } catch (e) {
-    drState.rows = new Map();
+    if (day !== drState.day) return;
+    drState.rows = new Map(); drState.byDay = new Map([[day, drState.rows]]); drState.goals = new Map();
     drState.error = e.message;
   }
   drState.loading = false;
@@ -160,16 +186,34 @@ function drSwitchHtml() {
   return `<div class="dr-switch" role="tablist"><button type="button" onclick="switchTab('stat', document.querySelector('[data-admin-nav=&quot;stat&quot;]'))">Analyse</button><button type="button" class="active" aria-selected="true">Résultats OSC</button></div>`;
 }
 
+function drDaynavHtml() {
+  return `<div class="dr-daynav">
+        <button type="button" class="dr-icon-btn" onclick="drGoDay(-1)" aria-label="Jour précédent">‹</button>
+        <input type="date" class="form-input" id="dr-day" value="${drState.day}" max="${drLocalDay()}" onchange="drSetDay(this.value)">
+        <button type="button" class="dr-icon-btn" onclick="drGoDay(1)" aria-label="Jour suivant" ${drState.day >= drLocalDay() ? 'disabled' : ''}>›</button>
+        <strong>${escHtml(drDayLabel(drState.day))}</strong>
+      </div>`;
+}
+function drPolesHtml() {
+  const poles = [['all', 'Tous'], ['fo', 'FO'], ['bo', 'BO'], ['reconf', 'Reconf']];
+  return `<div class="dr-poles">${poles.map(([k, l]) => `<button type="button" class="${drState.pole === k ? 'active' : ''}" onclick="drSetPole('${k}')">${l}</button>`).join('')}</div>`;
+}
+function drModesHtml() {
+  if (!drCanWrite()) return '';
+  return `<div class="dr-modes" role="tablist"><button type="button" class="${drState.mode === 'entry' ? 'active' : ''}" onclick="drSetMode('entry')">Saisie OSC</button><button type="button" class="${drState.mode === 'goals' ? 'active' : ''}" onclick="drSetMode('goals')">Objectifs &amp; tendance</button></div>`;
+}
+function drSetMode(mode) { drState.mode = mode === 'goals' ? 'goals' : 'entry'; drPaint(); }
+
 function drPaint() {
   const panel = drEl('daily-results-panel');
   if (!panel) return;
+  if (drState.mode === 'goals') { drPaintGoals(); return; }
   const agents = drAgents();
   const write = drCanWrite();
   const rows = agents.map(a => ({ agent: a, row: drState.rows.get(a.id) || null }));
   const filled = rows.filter(r => r.row).length;
   const sum = key => rows.reduce((s, r) => s + (Number(r.row?.[key]) || 0), 0);
   const conv = sum('crisp_conversations'), msgs = sum('crisp_messages');
-  const poles = [['all', 'Tous'], ['fo', 'FO'], ['bo', 'BO'], ['reconf', 'Reconf']];
   const body = drState.loading
     ? '<div class="dr-empty">Chargement des résultats…</div>'
     : drState.error
@@ -188,13 +232,9 @@ function drPaint() {
       ${write ? '<div class="dr-head-actions"><button type="button" class="btn btn-ghost" onclick="drOpenImport()">Importer un CSV</button></div>' : ''}
     </div>
     <div class="dr-toolbar">
-      <div class="dr-daynav">
-        <button type="button" class="dr-icon-btn" onclick="drGoDay(-1)" aria-label="Jour précédent">‹</button>
-        <input type="date" class="form-input" id="dr-day" value="${drState.day}" max="${drLocalDay()}" onchange="drSetDay(this.value)">
-        <button type="button" class="dr-icon-btn" onclick="drGoDay(1)" aria-label="Jour suivant" ${drState.day >= drLocalDay() ? 'disabled' : ''}>›</button>
-        <strong>${escHtml(drDayLabel(drState.day))}</strong>
-      </div>
-      <div class="dr-poles">${poles.map(([k, l]) => `<button type="button" class="${drState.pole === k ? 'active' : ''}" onclick="drSetPole('${k}')">${l}</button>`).join('')}</div>
+      ${drDaynavHtml()}
+      ${drModesHtml()}
+      ${drPolesHtml()}
       <span class="dr-progress ${filled === rows.length && rows.length ? 'is-done' : ''}">${filled} agent${filled > 1 ? 's' : ''} saisi${filled > 1 ? 's' : ''} sur ${rows.length}</span>
     </div>
     ${body}
@@ -654,5 +694,265 @@ async function drRunImport() {
   } catch (e) {
     btn.disabled = false;
     status.textContent = `Import impossible : ${e.message}`;
+  }
+}
+
+// ======================= OBJECTIFS DU JOUR & TENDANCE =======================
+// La cliente ne donne pas d'objectif : l'objectif de J = dernier résultat OSC de l'agent (J-1,
+// ou le dernier jour saisi dans les 7 jours) + la progression réglée par l'admin. L'admin ou le
+// superviseur peut corriger un objectif et laisser un message « sur quoi travailler ».
+// On juge ensuite le réalisé face au flux réel : si toute l'équipe baisse, l'agent n'est pas
+// seul en cause ; s'il décroche nettement de la tendance d'équipe, il est signalé.
+const DR_GOAL_METRICS = [
+  { key: 'actions', label: 'Actions', get: r => r.actions },
+  { key: 'calls', label: 'Appels', get: r => (r.calls_in === null || r.calls_in === undefined) && (r.calls_out === null || r.calls_out === undefined) ? null : (Number(r.calls_in) || 0) + (Number(r.calls_out) || 0) },
+  { key: 'resolved', label: 'Résolus', get: r => r.resolved },
+  { key: 'crisp', label: 'Conv. Crisp', get: r => r.crisp_conversations },
+];
+const DR_TREND_GAP = 10; // points de % de retard sur la tendance d'équipe avant alerte
+const DR_STATUS = {
+  reached: ['Objectif atteint', 'is-good'],
+  'below-goal': ['Sous l’objectif', 'is-warn'],
+  'below-trend': ['Sous la tendance', 'is-alert'],
+  waiting: ['En attente de saisie', 'is-neutral'],
+  none: ['Pas de référence', 'is-neutral'],
+};
+let drGoalEdit = null;
+
+function drMetricValue(metric, row) {
+  if (!row) return null;
+  const value = metric.get(row);
+  return value === null || value === undefined ? null : Number(value);
+}
+function drHasData(row) { return !!row && DR_GOAL_METRICS.some(m => drMetricValue(m, row) !== null); }
+function drPct(value) { return `${value > 0 ? '+' : value < 0 ? '−' : ''}${Math.abs(Math.round(value))} %`; }
+function drShortDay(day) {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }).replace('.', '');
+}
+
+// Dernier jour (dans les 7 jours précédents) où l'agent a une saisie.
+function drRefDay(agentId) {
+  for (let i = 1; i <= 7; i++) {
+    const day = drShiftDay(drState.day, -i);
+    if (drHasData(drState.byDay.get(day)?.get(agentId))) return day;
+  }
+  return null;
+}
+
+// Évolution de l'équipe sur la mesure, à périmètre constant (agents saisis les deux jours).
+function drTeamTrend(metric) {
+  const today = drState.byDay.get(drState.day);
+  if (!today?.size) return null;
+  let refDay = null;
+  for (let i = 1; i <= 7 && !refDay; i++) {
+    const day = drShiftDay(drState.day, -i);
+    if ([...(drState.byDay.get(day)?.values() || [])].some(drHasData)) refDay = day;
+  }
+  if (!refDay) return null;
+  const ref = drState.byDay.get(refDay);
+  let now = 0, before = 0, agents = 0;
+  today.forEach((row, id) => {
+    const a = drMetricValue(metric, row), b = drMetricValue(metric, ref.get(id));
+    if (a !== null && b !== null) { now += a; before += b; agents++; }
+  });
+  return agents && before ? { refDay, pct: (now - before) / before * 100, agents } : null;
+}
+
+function drAgentGoals(agent) {
+  const refDay = drRefDay(agent.id);
+  const ref = refDay ? drState.byDay.get(refDay).get(agent.id) : null;
+  const today = drState.rows.get(agent.id) || null;
+  const override = drState.goals.get(agent.id) || null;
+  const progress = drState.policy.progress;
+  const metrics = DR_GOAL_METRICS.map(m => {
+    const refV = drMetricValue(m, ref), done = drMetricValue(m, today);
+    // Arrondi au supérieur sans piège des flottants (100 × 1,10 = 110,00000000000001 → 111).
+    const auto = refV > 0 ? Math.ceil(Math.round(refV * (100 + progress)) / 100) : null;
+    const raw = override?.goals?.[m.key];
+    const set = raw === null || raw === undefined || raw === '' || !Number.isFinite(Number(raw)) ? null : Number(raw);
+    const goal = set ?? auto;
+    return { ...m, refV, done, auto, set, goal, pct: goal && done !== null ? done / goal * 100 : null };
+  });
+  const main = metrics.find(m => m.goal) || null;
+  let status = 'none', agentVar = null, team = null;
+  if (main) {
+    team = drTeamTrend(main);
+    if (main.done === null) status = 'waiting';
+    else {
+      agentVar = main.refV ? (main.done - main.refV) / main.refV * 100 : null;
+      if (main.done >= main.goal) status = 'reached';
+      else if (team && agentVar !== null && agentVar < team.pct - DR_TREND_GAP) status = 'below-trend';
+      else status = 'below-goal';
+    }
+  }
+  const trendMetric = main || DR_GOAL_METRICS[0];
+  const trend = Array.from({ length: 7 }, (_, i) => drMetricValue(trendMetric, drState.byDay.get(drShiftDay(drState.day, i - 6))?.get(agent.id)));
+  return { agent, refDay, metrics, main, status, agentVar, team, trend, trendLabel: trendMetric.label, focus: override?.focus || '', override };
+}
+
+function drSpark(values) {
+  const points = values.map((v, i) => [i, v]).filter(p => p[1] !== null);
+  if (points.length < 2) return '<span class="dr-muted">—</span>';
+  const max = Math.max(1, ...points.map(p => p[1])), w = 76, h = 24;
+  const xy = ([i, v]) => [(4 + i / 6 * (w - 8)).toFixed(1), (h - 3 - v / max * (h - 6)).toFixed(1)];
+  const last = xy(points[points.length - 1]);
+  return `<svg class="dr-spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><polyline points="${points.map(p => xy(p).join(',')).join(' ')}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="currentColor"/></svg>`;
+}
+
+function drGoalCell(m, refDay) {
+  if (!m.goal) return `<td>${m.done === null ? '—' : m.done}</td>`;
+  const pct = m.pct === null ? 0 : Math.min(100, m.pct);
+  const cls = m.pct === null ? '' : m.pct >= 100 ? 'is-good' : m.pct >= 85 ? 'is-warn' : 'is-alert';
+  const title = m.set !== null ? `Objectif ajusté à ${m.set}${m.auto ? ` (calcul auto : ${m.auto})` : ''}` : `Réf. ${m.refV} le ${refDay ? drShortDay(refDay) : '—'} + ${drState.policy.progress} % = ${m.auto}`;
+  return `<td><div class="dr-goal ${cls}" title="${escHtml(title)}"><span><b>${m.done === null ? '—' : m.done}</b> / ${m.goal}${m.set !== null ? '<em>ajusté</em>' : ''}</span><i><u style="width:${pct}%"></u></i></div></td>`;
+}
+
+function drPaintGoals() {
+  const panel = drEl('daily-results-panel');
+  const write = drCanWrite();
+  const list = drAgents().map(drAgentGoals);
+  const below = list.filter(g => g.status === 'below-trend').length;
+  const reached = list.filter(g => g.status === 'reached').length;
+  const trends = DR_GOAL_METRICS.map(m => ({ m, t: drTeamTrend(m) })).filter(x => x.t);
+  const me = currentUser?.role === 'agent' ? drAgentGoals(currentUser) : null;
+  const policy = currentUser?.role === 'admin'
+    ? `<label class="dr-policy">Progression demandée <input class="form-input" type="number" id="dr-progress" min="-50" max="100" step="1" value="${drState.policy.progress}"> % <button type="button" class="dr-edit-btn" onclick="drSavePolicy()">Appliquer</button></label>`
+    : `<span class="dr-policy">Progression demandée : <b>${drPct(drState.policy.progress)}</b></span>`;
+  const body = drState.loading
+    ? '<div class="dr-empty">Chargement des objectifs…</div>'
+    : drState.error
+      ? `<div class="dr-empty dr-error">Impossible de charger les résultats : ${escHtml(drState.error)}</div>`
+      : !list.length ? '<div class="dr-empty">Aucun agent dans ce pôle.</div>'
+      : `<div class="dr-table-wrap"><table class="dr-table dr-goals-table">
+        <thead><tr><th>Agent</th><th>Référence</th>${DR_GOAL_METRICS.map(m => `<th>${m.label}<small>réalisé / objectif</small></th>`).join('')}<th>Évolution<small>agent · équipe</small></th><th>7 jours</th><th>Statut</th>${write ? '<th></th>' : ''}</tr></thead>
+        <tbody>${list.map(g => {
+          const [label, cls] = DR_STATUS[g.status];
+          const pole = typeof poleLabel === 'function' ? poleLabel(g.agent.pole) : '';
+          return `<tr class="${g.agent.id === currentUser?.id ? 'is-me' : ''}">
+            <td><div class="dr-agent"><span class="dr-avatar" style="--c:${safeColor(g.agent.color)}">${escHtml(g.agent.initials || '??')}</span><div><strong>${escHtml(g.agent.name)}</strong>${pole ? `<em class="dr-pole dr-pole-${escHtml(g.agent.pole)}">${pole}</em>` : ''}</div></div></td>
+            <td>${g.refDay ? escHtml(drShortDay(g.refDay)) : '<span class="dr-muted">aucune</span>'}</td>
+            ${g.metrics.map(m => drGoalCell(m, g.refDay)).join('')}
+            <td>${g.agentVar !== null ? `<b class="${g.agentVar >= 0 ? 'dr-up' : 'dr-down'}">${drPct(g.agentVar)}</b>` : '—'}${g.team ? ` · <span class="dr-muted">${drPct(g.team.pct)}</span>` : ''}</td>
+            <td class="dr-spark-cell" title="${escHtml(g.trendLabel)} sur 7 jours">${drSpark(g.trend)}</td>
+            <td><span class="dr-status ${cls}">${label}</span>${g.focus && (write || g.agent.id === currentUser?.id) ? `<small class="dr-focus-mini" title="${escHtml(g.focus)}">Consigne : ${escHtml(g.focus)}</small>` : ''}</td>
+            ${write ? `<td class="dr-row-action"><button type="button" class="dr-edit-btn" onclick="drOpenGoalEdit('${g.agent.id}')">Ajuster</button></td>` : ''}
+          </tr>`;
+        }).join('')}</tbody></table></div>`;
+  panel.innerHTML = `<section class="dr-shell">
+    <div class="dr-head">
+      <div>${drSwitchHtml()}<span class="admin-overview-section-label">${write ? 'Stat · objectifs dynamiques' : 'Mes résultats'}</span><h2>${write ? 'Objectifs & tendance' : 'Objectif du jour'}</h2>
+        <p>L’objectif du jour reprend le dernier résultat OSC de chaque agent, plus la progression demandée. Le réalisé est comparé au flux réel de l’équipe.</p></div>
+    </div>
+    ${me && !drState.loading ? drMyGoalHtml(me) : ''}
+    <div class="dr-toolbar">${drDaynavHtml()}${drModesHtml()}${drPolesHtml()}</div>
+    <div class="dr-goal-strip">${policy}
+      ${trends.length ? `<span>Flux équipe vs ${escHtml(drShortDay(trends[0].t.refDay))} : ${trends.map(({ m, t }) => `<b class="${t.pct >= 0 ? 'dr-up' : 'dr-down'}">${m.label} ${drPct(t.pct)}</b>`).join(' · ')}</span>` : '<span class="dr-muted">Flux équipe : saisis deux jours pour comparer.</span>'}
+      <span class="dr-goal-count"><b class="dr-up">${reached}</b> atteint${reached > 1 ? 's' : ''} · <b class="${below ? 'dr-down' : ''}">${below}</b> sous la tendance</span>
+    </div>
+    ${body}
+  </section>`;
+}
+
+function drMyGoalHtml(g) {
+  const tiles = g.metrics.filter(m => m.goal);
+  if (!tiles.length) return `<div class="dr-me"><strong>Ton objectif du jour</strong><p>Pas encore de référence : ton objectif apparaîtra dès que ton premier résultat OSC sera saisi.</p></div>`;
+  return `<div class="dr-me">
+    <div class="dr-me-head"><strong>Ton objectif du jour</strong><span>Base : ton résultat du ${escHtml(drShortDay(g.refDay || drState.day))}${g.metrics.some(m => m.set !== null) ? ', ajusté par ton superviseur' : ` + ${drState.policy.progress} %`}</span></div>
+    <div class="dr-me-tiles">${tiles.map(m => `<div class="dr-me-tile"><span>${m.label}</span><b>${m.goal}</b><small>${m.refV !== null ? `réf. ${m.refV}` : ''}${m.done !== null ? ` · réalisé ${m.done}` : ''}</small></div>`).join('')}</div>
+    ${g.focus ? `<div class="dr-me-focus"><b>Sur quoi travailler :</b> ${escHtml(g.focus)}</div>` : ''}
+  </div>`;
+}
+
+async function drSavePolicy() {
+  if (currentUser?.role !== 'admin') return;
+  const input = drEl('dr-progress');
+  const value = Math.round(Number(input.value));
+  if (!Number.isFinite(value) || value < -50 || value > 100) { input.classList.add('is-invalid'); return; }
+  try {
+    const saved = await window.taskinDataProviders.active().upsertSetting('daily_goal_policy', { progress: value }, currentUser.id);
+    if (!Array.isArray(saved) || !saved.length) throw new Error('refusé');
+    drState.policy = { progress: value };
+    drPaint();
+  } catch (e) {
+    input.classList.add('is-invalid');
+    input.title = `Réglage non enregistré : ${e.message}`;
+  }
+}
+
+function drOpenGoalEdit(agentId) {
+  if (!drCanWrite()) return;
+  const agent = (TEAM || []).find(u => u.id === agentId);
+  if (!agent) return;
+  const g = drAgentGoals(agent);
+  drGoalEdit = { agent, busy: false };
+  const overlay = drOverlay('dr-goal-overlay', drCloseGoalEdit);
+  overlay.innerHTML = `<div class="modal dr-modal dr-goal-modal" role="dialog" aria-modal="true" aria-labelledby="dr-goal-title">
+    <div class="modal-header"><div class="modal-title" id="dr-goal-title">Objectif de ${escHtml(agent.name)} — ${escHtml(drDayLabel(drState.day))}</div>
+    <button class="modal-close" type="button" onclick="drCloseGoalEdit()" aria-label="Fermer">×</button></div>
+    <div class="modal-body">
+      <p class="dr-goal-intro">Laisse une case vide pour garder le calcul automatique (${g.refDay ? `résultat du ${escHtml(drShortDay(g.refDay))}` : 'aucune référence'} + ${drState.policy.progress} %).</p>
+      <div class="dr-form-grid">${g.metrics.map(m => `<label class="dr-field"><span>${m.label}</span>
+        <input class="form-input" data-dr-goal="${m.key}" inputmode="numeric" autocomplete="off" placeholder="${m.auto ?? '—'}" value="${m.set ?? ''}">
+        <small>${m.auto !== null ? `Auto : ${m.auto} (réf. ${m.refV})` : 'Pas de référence'}</small></label>`).join('')}</div>
+      <label class="dr-field dr-field-wide"><span>Sur quoi travailler aujourd’hui (visible par l’agent)</span><textarea class="form-input" id="dr-goal-focus" rows="3" maxlength="500" placeholder="ex. Priorité aux appels, prendre 5 tickets en plus, relancer les dossiers en attente…">${escHtml(g.focus)}</textarea></label>
+      <div class="dr-status" id="dr-goal-status" role="status"></div>
+    </div>
+    <div class="modal-footer">
+      ${g.override ? '<button class="btn btn-ghost dr-delete" type="button" onclick="drResetGoal()">Revenir au calcul auto</button>' : ''}
+      <button class="btn btn-ghost" type="button" onclick="drCloseGoalEdit()">Annuler</button>
+      <button class="btn btn-primary" type="button" id="dr-goal-save" onclick="drSaveGoal()">Enregistrer</button>
+    </div></div>`;
+  overlay.classList.remove('hidden');
+  overlay.querySelector('[data-dr-goal]')?.focus();
+}
+function drCloseGoalEdit() { drGoalEdit = null; drEl('dr-goal-overlay')?.classList.add('hidden'); }
+
+async function drSaveGoal() {
+  if (!drGoalEdit || drGoalEdit.busy) return;
+  const status = drEl('dr-goal-status');
+  const goals = {};
+  let invalid = false;
+  document.querySelectorAll('#dr-goal-overlay [data-dr-goal]').forEach(input => {
+    const raw = input.value.trim();
+    const bad = raw !== '' && !/^\d{1,5}$/.test(raw);
+    input.classList.toggle('is-invalid', bad);
+    if (bad) invalid = true;
+    else if (raw !== '') goals[input.dataset.drGoal] = Number(raw);
+  });
+  if (invalid) { status.textContent = 'Objectif illisible : nombre entier attendu.'; return; }
+  const state = drGoalEdit;
+  state.busy = true;
+  drEl('dr-goal-save').disabled = true;
+  try {
+    const response = await drFetch('/rest/v1/agent_daily_goals?on_conflict=agent_id,day', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify([{ agent_id: state.agent.id, day: drState.day, goals, focus: drEl('dr-goal-focus').value.trim() || null, set_by: currentUser.id }]),
+    });
+    const saved = await response.json();
+    if (!Array.isArray(saved) || !saved.length) throw new Error('Enregistrement refusé : réservé à l’admin et au superviseur.');
+    drState.goals.set(state.agent.id, saved[0]);
+    drCloseGoalEdit();
+    drPaint();
+  } catch (e) {
+    state.busy = false;
+    drEl('dr-goal-save').disabled = false;
+    status.textContent = e.message;
+  }
+}
+
+async function drResetGoal() {
+  if (!drGoalEdit || drGoalEdit.busy) return;
+  const state = drGoalEdit;
+  state.busy = true;
+  try {
+    await drFetch(`/rest/v1/agent_daily_goals?agent_id=eq.${state.agent.id}&day=eq.${drState.day}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    drState.goals.delete(state.agent.id);
+    drCloseGoalEdit();
+    drPaint();
+  } catch (e) {
+    state.busy = false;
+    drEl('dr-goal-status').textContent = e.message;
   }
 }
