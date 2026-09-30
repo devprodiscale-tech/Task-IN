@@ -267,6 +267,9 @@
     async listActiveTimers(limit = 100) {
       return request('active_timers', {}, { select: '*', limit: String(limit) });
     },
+    async getActiveTimer(agentId) {
+      return request('active_timers', {}, { select: '*', agent_id: `eq.${encodeURIComponent(agentId)}`, limit: '1' });
+    },
     async insertTimeEntry(entry) {
       return request('time_entries', {
         method: 'POST',

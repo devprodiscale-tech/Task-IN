@@ -42,7 +42,10 @@ function taskinExtensionSignOut() {
 window.addEventListener('message', event => {
   if (event.source !== window || event.origin !== window.location.origin) return;
   const data = event.data;
-  if (!data || data.source !== TASKIN_EXT_SOURCE || data.type !== 'state') return;
+  if (!data || data.source !== TASKIN_EXT_SOURCE) return;
+  // Timer lancé / arrêté dans l'extension : relecture immédiate du timer partagé.
+  if (data.type === 'timer-changed') { window.syncOwnTimer?.(); return; }
+  if (data.type !== 'state') return;
   taskinExtensionUserId = data.userId || null;
   taskinExtensionSync();
 });

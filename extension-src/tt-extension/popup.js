@@ -49,6 +49,11 @@ let currentWizardStep = 1;
 let historyVisible = true;
 const isPortablePopup = true;
 
+const TIMER_PING_KEY = 'taskin_timer_ping';
+const TIMER_SYNC_MS = 6000;
+let timerSyncBusy = false;
+let lastStoppedTimerStart = 0;
+
 document.addEventListener('DOMContentLoaded', () => {
   initTimePickerUI();
   tryRestoreSession().then(success => {
@@ -58,41 +63,29 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       loadTeamLiveMini();
       setInterval(loadTeamLiveMini, 30000);
+      setInterval(syncTimerFromServer, TIMER_SYNC_MS);
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTimerFromServer(); });
+      window.addEventListener('focus', () => syncTimerFromServer());
     }
   });
 });
 
-// Écoute des changements en temps réel (background -> popup)
+// Écoute des changements en temps réel (autres fenêtres de l'extension, web app via le bridge)
 chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace !== 'local') return;
   // Connexion, changement de compte ou déconnexion depuis la web app.
-  if (namespace === 'local' && changes[SESSION_USER_KEY] && (changes[SESSION_USER_KEY].newValue?.id || null) !== (currentUser?.id || null)) {
+  if (changes[SESSION_USER_KEY] && (changes[SESSION_USER_KEY].newValue?.id || null) !== (currentUser?.id || null)) {
     window.location.reload();
     return;
   }
-  if (namespace === 'local' && currentUser) {
-    const key = 'activeTimer_' + currentUser.id;
-    if (changes[key]) {
-      const newVal = changes[key].newValue;
-      if (newVal) {
-        activeTimer = newVal;
-        if (!activeTimer.desc || activeTimer.desc === '') {
-          // Wizard en cours (étape 4)
-        } else {
-          showDoneView();
-        }
-        if (!timerInterval) { timerInterval = setInterval(updateClock, 1000); }
-        updateClock();
-      } else {
-        // Timer arrêté
-        activeTimer = null;
-        clearInterval(timerInterval);
-        timerInterval = null;
-        document.getElementById('done-view').classList.add('hidden');
-        document.getElementById('wizard-view').classList.add('hidden');
-        document.getElementById('idle-view').classList.remove('hidden');
-        loadHistoryAndStats();
-      }
-    }
+  if (!currentUser) return;
+  // La web app a démarré / arrêté un timer : relecture immédiate.
+  if (changes[TIMER_PING_KEY]?.newValue?.from === 'app') syncTimerFromServer();
+  const key = 'activeTimer_' + currentUser.id;
+  if (changes[key]) {
+    activeTimer = changes[key].newValue || null;
+    renderTimerState();
+    if (!activeTimer) loadHistoryAndStats();
   }
 });
 
@@ -333,83 +326,57 @@ function hideAllWizardSteps() {
   document.getElementById('step-ref').classList.add('hidden');
 }
 
+// Écrit le timer localement (toutes les fenêtres de l'extension) puis dans Supabase (web app).
+let timerSaveChain = Promise.resolve();
+async function persistTimer() {
+  if (!activeTimer) return;
+  activeTimer.rev = (activeTimer.rev || 0) + 1;
+  activeTimer.synced = false;
+  await chrome.storage.local.set({ ['activeTimer_' + currentUser.id]: activeTimer });
+  // Envois à la suite : l'état final arrive toujours en dernier dans Supabase.
+  timerSaveChain = timerSaveChain.then(() => saveActiveTimer());
+  return timerSaveChain;
+}
+
 async function startTimerImmediate() {
-  activeTimer = { id: Date.now().toString(), startTime: Date.now(), source: 'Non défini', treatment: '', desc: '', inboundTime: '' };
-  await chrome.storage.local.set({ ['activeTimer_'+currentUser.id]: activeTimer });
-  
-  document.getElementById('idle-view').classList.add('hidden');
-  document.getElementById('wizard-view').classList.remove('hidden');
-  
-  timerInterval = setInterval(updateClock, 1000);
-  updateClock();
-  
-  currentWizardStep = 1;
-  setStepIndicator(1);
-  hideAllWizardSteps();
-  document.getElementById('step-source').classList.remove('hidden');
+  if (activeTimer) { renderTimerState(); return; }
+  const now = Date.now();
+  activeTimer = { id: String(now), startTime: now, source: 'Non défini', treatment: '', desc: '', inboundTime: '', synced: false };
+  document.getElementById('wizard-view').classList.add('hidden');
+  renderTimerState();
+  await persistTimer();
 }
 
 async function goBackWizard() {
   if (currentWizardStep === 1) {
-    clearInterval(timerInterval);
+    // Annulation : le timer disparaît aussi de la web app.
+    lastStoppedTimerStart = activeTimer?.startTime || 0;
     activeTimer = null;
-    await chrome.storage.local.remove('activeTimer_'+currentUser.id);
-    clearActiveTimer();
-    
-    document.getElementById('wizard-view').classList.add('hidden');
-    document.getElementById('idle-view').classList.remove('hidden');
-  } 
-  else if (currentWizardStep === 2) {
-    currentWizardStep = 1;
-    setStepIndicator(1);
-    hideAllWizardSteps();
-    document.getElementById('step-source').classList.remove('hidden');
-  } 
-  else if (currentWizardStep === 3) {
-    currentWizardStep = 2;
-    setStepIndicator(2);
-    hideAllWizardSteps();
-    document.getElementById('step-treatment').classList.remove('hidden');
-  } 
-  else if (currentWizardStep === 4) {
-    currentWizardStep = 3;
-    setStepIndicator(3);
-    hideAllWizardSteps();
-    document.getElementById('step-time').classList.remove('hidden');
+    await chrome.storage.local.remove('activeTimer_' + currentUser.id);
+    renderTimerState();
+    await clearActiveTimer();
+    pingWebApp();
+  } else {
+    showWizardStep(currentWizardStep - 1);
   }
 }
 
 async function setSource(src) {
   activeTimer.source = src;
-  await chrome.storage.local.set({ ['activeTimer_'+currentUser.id]: activeTimer });
-  currentWizardStep = 2;
-  setStepIndicator(2);
-  hideAllWizardSteps();
-  document.getElementById('step-treatment').classList.remove('hidden');
+  showWizardStep(2);
+  await persistTimer();
 }
 
 async function setTreatment(trt) {
   activeTimer.treatment = trt;
-  await chrome.storage.local.set({ ['activeTimer_'+currentUser.id]: activeTimer });
-  currentWizardStep = 3;
-  setStepIndicator(3);
-  hideAllWizardSteps();
-  document.getElementById('step-time').classList.remove('hidden');
-  
-  const d = new Date(activeTimer.startTime);
-  pickerHour = String(d.getHours()).padStart(2, '0');
-  pickerMin = String(d.getMinutes()).padStart(2, '0');
-  syncPickerScroll();
+  showWizardStep(3);
+  await persistTimer();
 }
 
 async function setTime() {
   activeTimer.inboundTime = `${pickerHour}:${pickerMin}`;
-  await chrome.storage.local.set({ ['activeTimer_'+currentUser.id]: activeTimer });
-  currentWizardStep = 4;
-  setStepIndicator(4);
-  hideAllWizardSteps();
-  document.getElementById('step-ref').classList.remove('hidden');
-  document.getElementById('wizard-ref').focus();
+  showWizardStep(4);
+  await persistTimer();
 }
 
 async function finishWizard() {
@@ -417,13 +384,55 @@ async function finishWizard() {
   let fullDesc = activeTimer.treatment;
   if (ref) fullDesc += (activeTimer.treatment ? ' - ' : '') + ref;
   if (!fullDesc) fullDesc = 'Tâche en cours';
-  
   activeTimer.desc = fullDesc;
-  await chrome.storage.local.set({ ['activeTimer_'+currentUser.id]: activeTimer });
-  saveActiveTimer();
-  
-  document.getElementById('wizard-view').classList.add('hidden');
-  showDoneView();
+  document.getElementById('wizard-ref').value = '';
+  renderTimerState();
+  await persistTimer();
+}
+
+const WIZARD_STEPS = ['step-source', 'step-treatment', 'step-time', 'step-ref'];
+function showWizardStep(step) {
+  currentWizardStep = step;
+  setStepIndicator(step);
+  hideAllWizardSteps();
+  document.getElementById(WIZARD_STEPS[step - 1]).classList.remove('hidden');
+  if (step === 3) {
+    const d = activeTimer?.inboundTime && /^\d{2}:\d{2}$/.test(activeTimer.inboundTime) ? null : new Date(activeTimer?.startTime || Date.now());
+    if (d) { pickerHour = String(d.getHours()).padStart(2, '0'); pickerMin = String(d.getMinutes()).padStart(2, '0'); }
+    else [pickerHour, pickerMin] = activeTimer.inboundTime.split(':');
+    requestAnimationFrame(syncPickerScroll);
+  }
+  if (step === 4) setTimeout(() => document.getElementById('wizard-ref').focus(), 50);
+}
+
+// Affiche la bonne vue selon le timer : accueil, assistant (saisie en cours) ou timer en cours.
+function renderTimerState() {
+  const idle = document.getElementById('idle-view');
+  const wizard = document.getElementById('wizard-view');
+  const done = document.getElementById('done-view');
+  if (!activeTimer) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    wizard.classList.add('hidden');
+    done.classList.add('hidden');
+    idle.classList.remove('hidden');
+    return;
+  }
+  idle.classList.add('hidden');
+  if (!activeTimer.desc) {
+    done.classList.add('hidden');
+    if (wizard.classList.contains('hidden')) {
+      wizard.classList.remove('hidden');
+      // Reprend l'assistant à la première étape non renseignée.
+      const hasSource = activeTimer.source && activeTimer.source !== 'Non défini';
+      showWizardStep(!hasSource ? 1 : !activeTimer.treatment ? 2 : !activeTimer.inboundTime ? 3 : 4);
+    }
+  } else {
+    wizard.classList.add('hidden');
+    showDoneView();
+  }
+  if (!timerInterval) timerInterval = setInterval(updateClock, 1000);
+  updateClock();
 }
 
 // ==========================================
@@ -431,24 +440,25 @@ async function finishWizard() {
 // ==========================================
 async function stopTimer() {
   if (!activeTimer) return;
-  clearInterval(timerInterval);
-  const durationSec = Math.floor((Date.now() - activeTimer.startTime)/1000);
-  
+  const stopped = activeTimer;
+  lastStoppedTimerStart = stopped.startTime;
+  const durationSec = Math.floor((Date.now() - stopped.startTime) / 1000);
+  // Même identifiant que la web app : un double arrêt ne crée pas de doublon.
   const entry = {
-    id: activeTimer.id, source: activeTimer.source, desc: activeTimer.desc, treatment: activeTimer.treatment || '',
-    inboundTime: activeTimer.inboundTime || '', agent: currentUser.id, startTime: new Date(activeTimer.startTime).toISOString(), durationSec: Math.max(0, durationSec)
+    id: String(stopped.id || stopped.startTime), source: SOURCES[stopped.source] ? stopped.source : 'ticket',
+    desc: stopped.desc || stopped.treatment || 'Tâche', treatment: stopped.treatment || '',
+    inboundTime: stopped.inboundTime || '', agent: currentUser.id, startTime: new Date(stopped.startTime).toISOString(), durationSec: Math.max(0, durationSec)
   };
 
   activeTimer = null;
-  await chrome.storage.local.remove('activeTimer_'+currentUser.id);
-  
-  document.getElementById('done-view').classList.add('hidden');
-  document.getElementById('wizard-view').classList.add('hidden');
-  document.getElementById('idle-view').classList.remove('hidden');
+  await chrome.storage.local.remove('activeTimer_' + currentUser.id);
+  renderTimerState();
 
-  await saveTimeEntry(entry);
+  try { await saveTimeEntry(entry); }
+  catch (e) { if (!/duplicate|23505|409/i.test(String(e?.message || e))) console.error('Enregistrement de la tâche impossible:', e); }
   await clearActiveTimer();
-  
+  pingWebApp();
+
   // Rafraîchit l'historique après sauvegarde pour inclure cette tâche
   loadHistoryAndStats();
 }
@@ -468,34 +478,62 @@ function updateClock() {
 async function checkActiveTimer() {
   const key = 'activeTimer_' + currentUser.id;
   const data = await chrome.storage.local.get(key);
-  const saved = data[key];
-  
-  if (saved) {
-    activeTimer = saved;
-    if (!activeTimer.desc || activeTimer.desc === '') {
-      document.getElementById('wizard-view').classList.remove('hidden');
-      // Reprend l'assistant à la première étape non renseignée.
-      const hasSource = activeTimer.source && activeTimer.source !== 'Non défini';
-      currentWizardStep = !hasSource ? 1 : !activeTimer.treatment ? 2 : !activeTimer.inboundTime ? 3 : 4;
-      setStepIndicator(currentWizardStep);
-      hideAllWizardSteps();
-      document.getElementById(['step-source', 'step-treatment', 'step-time', 'step-ref'][currentWizardStep - 1]).classList.remove('hidden');
-      if (currentWizardStep === 3) {
-        const d = new Date(activeTimer.startTime);
-        pickerHour = String(d.getHours()).padStart(2, '0');
-        pickerMin = String(d.getMinutes()).padStart(2, '0');
-        requestAnimationFrame(syncPickerScroll);
+  activeTimer = data[key] || null;
+  // Anciennes versions : seul un timer finalisé (avec description) était envoyé à Supabase.
+  if (activeTimer && activeTimer.synced === undefined) activeTimer.synced = !!activeTimer.desc;
+  renderTimerState();
+  syncTimerFromServer();
+}
+
+function timerFromRow(row) {
+  const startTime = Date.parse(row.started_at);
+  const meta = row.metadata || {};
+  return {
+    id: String(meta.timer_id || startTime), startTime,
+    source: row.source || 'ticket', desc: row.description || '',
+    treatment: meta.treatment || '', inboundTime: meta.inbound_time && meta.inbound_time !== '--:--' ? meta.inbound_time : '',
+    synced: true
+  };
+}
+
+// Relit le timer partagé (Supabase) : un timer lancé ou arrêté depuis la web app apparaît ici.
+async function syncTimerFromServer() {
+  if (!currentUser?.id || timerSyncBusy || document.hidden) return;
+  timerSyncBusy = true;
+  try {
+    const rows = await supabaseClient.request(`/rest/v1/active_timers?select=*&agent_id=eq.${encodeURIComponent(currentUser.id)}&limit=1`);
+    const remote = Array.isArray(rows) && rows[0] ? timerFromRow(rows[0]) : null;
+    const key = 'activeTimer_' + currentUser.id;
+    if (remote && remote.startTime === lastStoppedTimerStart) return; // arrêt local en cours d'envoi
+    if (remote) {
+      const same = activeTimer && activeTimer.startTime === remote.startTime
+        && activeTimer.desc === remote.desc && activeTimer.source === remote.source && activeTimer.treatment === remote.treatment;
+      if (same) {
+        if (!activeTimer.synced) { activeTimer.synced = true; await chrome.storage.local.set({ [key]: activeTimer }); }
+        return;
       }
-    } else {
-      showDoneView();
+      if (activeTimer && !activeTimer.synced && activeTimer.startTime >= remote.startTime) { await saveActiveTimer(); return; }
+      activeTimer = remote;
+      await chrome.storage.local.set({ [key]: activeTimer });
+      renderTimerState();
+    } else if (activeTimer) {
+      if (!activeTimer.synced) { await saveActiveTimer(); return; }
+      // Arrêté depuis la web app : l'entrée y a déjà été enregistrée.
+      activeTimer = null;
+      await chrome.storage.local.remove(key);
+      renderTimerState();
+      loadHistoryAndStats();
     }
-    timerInterval = setInterval(updateClock, 1000);
-    updateClock();
-  } else {
-    document.getElementById('done-view').classList.add('hidden');
-    document.getElementById('wizard-view').classList.add('hidden');
-    document.getElementById('idle-view').classList.remove('hidden');
+  } catch (e) {
+    console.error('Synchronisation du timer impossible:', e);
+  } finally {
+    timerSyncBusy = false;
   }
+}
+
+// Prévient la web app ouverte dans ce navigateur (via bridge.js) qu'un timer a changé.
+function pingWebApp() {
+  chrome.storage.local.set({ [TIMER_PING_KEY]: { from: 'ext', at: Date.now() } });
 }
 
 function showDoneView() {
@@ -509,20 +547,39 @@ function showDoneView() {
 }
 
 async function saveActiveTimer() {
-  await supabaseClient.request('/rest/v1/active_timers', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify({
-      agent_id: currentUser.id,
-      source: activeTimer.source,
-      description: activeTimer.desc || '',
-      started_at: new Date(activeTimer.startTime).toISOString(),
-      metadata: { treatment: activeTimer.treatment || '', inbound_time: activeTimer.inboundTime || '' }
-    })
-  });
+  if (!activeTimer || !currentUser) return false;
+  const timer = { ...activeTimer };
+  try {
+    await supabaseClient.request('/rest/v1/active_timers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        agent_id: currentUser.id,
+        source: timer.source,
+        description: timer.desc || '',
+        started_at: new Date(timer.startTime).toISOString(),
+        metadata: { timer_id: String(timer.id || timer.startTime), treatment: timer.treatment || '', inbound_time: timer.inboundTime || '', wizard: !timer.desc }
+      })
+    });
+    if (activeTimer && activeTimer.startTime === timer.startTime && (activeTimer.rev || 0) === (timer.rev || 0) && !activeTimer.synced) {
+      activeTimer.synced = true;
+      await chrome.storage.local.set({ ['activeTimer_' + currentUser.id]: activeTimer });
+    }
+    pingWebApp();
+    return true;
+  } catch (e) {
+    console.error('Enregistrement du timer impossible:', e);
+    return false;
+  }
 }
 async function clearActiveTimer() {
-  await supabaseClient.request(`/rest/v1/active_timers?agent_id=eq.${encodeURIComponent(currentUser.id)}`, { method: 'DELETE' });
+  try {
+    await supabaseClient.request(`/rest/v1/active_timers?agent_id=eq.${encodeURIComponent(currentUser.id)}`, { method: 'DELETE' });
+    return true;
+  } catch (e) {
+    console.error('Suppression du timer impossible:', e);
+    return false;
+  }
 }
 async function saveTimeEntry(entry) {
   await supabaseClient.request('/rest/v1/time_entries', {
