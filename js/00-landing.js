@@ -132,7 +132,7 @@
 
   /* ------------------------ Boucle d'animation ------------------------ */
   let obstacle=null;
-  const measure=()=>{const p=document.querySelector('.lp-stage>.lp-panel:not(.lp-hide)'),s=scene.getBoundingClientRect();
+  const measure=()=>{const p=document.querySelector('.lp-stage>.lp-logo-hero'),s=scene.getBoundingClientRect();
     if(!p||W<700){obstacle=null;return}const r=p.getBoundingClientRect();obstacle={l:r.left-s.left,r:r.right-s.left,t:r.top-s.top,b:r.bottom-s.top}};
   setInterval(measure,300); measure();
   let last=performance.now(), running=true, sceneVisible=true;
@@ -215,66 +215,48 @@
   document.addEventListener('visibilitychange',setRunning);
   new IntersectionObserver(([e])=>{sceneVisible=e.isIntersecting;setRunning()}).observe(scene);
 
-  /* ======================= Séquence de démarrage ======================= */
-  const boot=$('lp-boot'), welcome=$('lp-welcome'), login=$('lp-login'), bar=$('lp-bar'), pct=$('lp-pct'), stepTxt=$('lp-stepTxt');
-  const items=[...$('lp-steps').children];
-  const labels=['Connexion sécurisée','Chargement des dossiers','Synchronisation de l\'équipe','Préparation du tableau de bord'];
-  const moduleCards=['vols','hotels','ferries','coaching'].map(m=>document.querySelector(`[data-module="${m}"]`));
-  let finished=false, timers=[], shown=0, target=0;
-  const BOOT_SEEN='taskin_landing_boot_seen';
-  const bootSeen=(()=>{try{return sessionStorage.getItem(BOOT_SEEN)==='1'}catch(_){return false}})();
-
-  const setProgress=v=>{target=v;bar.style.transform=`scaleX(${v/100})`};
-  (function count(){shown+=(target-shown)*.12;if(Math.abs(target-shown)<.3)shown=target;pct.textContent=Math.round(shown)+'%';if(!finished||shown<100)requestAnimationFrame(count)})();
-
+  /* ======================= Intro du logo ======================= */
+  const hero=$('lp-logo-hero');
+  const moduleCards=['vols','hotels','ferries','coaching'].map(m=>document.querySelector(`[data-module="${m}"]`)).filter(Boolean);
+  const INTRO_SEEN='taskin_landing_intro_seen';
+  const introSeen=(()=>{try{return sessionStorage.getItem(INTRO_SEEN)==='1'}catch(_){return false}})();
   const flash=c=>{c.classList.add('lp-loaded','lp-flash');setTimeout(()=>c.classList.remove('lp-flash'),900)};
-
-  const panels=[boot,welcome,login];
-  function showPanel(p){
-    panels.forEach(x=>{const on=x===p;x.classList.toggle('lp-hide',!on);x.setAttribute('aria-hidden',String(!on));x.inert=!on});
-  }
-
-  function runStep(i){
-    if(finished)return;
-    if(i>=items.length)return finish();
-    items.forEach((li,k)=>li.classList.toggle('lp-active',k===i));
-    stepTxt.textContent=labels[i]+'…';
-    setProgress(8+i*23);
-    timers.push(setTimeout(()=>{
-      items[i].classList.remove('lp-active');items[i].classList.add('lp-done');
-      if(i===1)moduleCards.slice(0,3).forEach((c,k)=>setTimeout(()=>flash(c),k*160));
-      if(i===2)flash(moduleCards[3]);
-      setProgress(8+(i+1)*23);
-      runStep(i+1);
-    },i===1?900:620));
-  }
-  let afterBoot=null;
-  function finish(){
-    if(finished)return; finished=true; timers.forEach(clearTimeout);
-    try{sessionStorage.setItem(BOOT_SEEN,'1')}catch(_){}
-    items.forEach(li=>{li.classList.remove('lp-active');li.classList.add('lp-done')});
-    moduleCards.forEach(c=>c.classList.add('lp-loaded'));
-    setProgress(100); stepTxt.textContent='Prêt';
+  function introDone(){
+    hero.classList.add('lp-ready');
     $('lp-status').classList.add('lp-ok'); $('lp-statusTxt').textContent='Système opérationnel';
-    setTimeout(()=>{ if(afterBoot){const f=afterBoot;afterBoot=null;f()} else showPanel(welcome); },reduceMotion?0:450);
+    try{sessionStorage.setItem(INTRO_SEEN,'1')}catch(_){}
   }
-  $('lp-skip').addEventListener('click',finish);
-  addEventListener('keydown',e=>{if(e.key==='Escape'&&!finished)finish()});
-  showPanel(boot);
-  if(reduceMotion||bootSeen)finish(); else setTimeout(()=>runStep(0),600);
+  if(reduceMotion||introSeen){ hero.classList.add('lp-intro-skip'); moduleCards.forEach(c=>c.classList.add('lp-loaded')); introDone(); }
+  else{
+    // le logo se pose, les modules s'allument un à un, puis la coche confirme que tout est prêt
+    moduleCards.forEach((c,k)=>setTimeout(()=>flash(c),1300+k*220));
+    setTimeout(introDone,1300+moduleCards.length*220+250);
+  }
 
-  /* ======================= Accueil, connexion et présentation ======================= */
+  /* ======================= Connexion (déroulant) et présentation ======================= */
   const screen=document.getElementById('login-screen'), header=$('lp-header'), presFrame=$('portal-site-frame');
+  const login=$('lp-login'), backdrop=document.querySelector('.lp-pop-backdrop'), openBtn=document.querySelector('.lp-login-btn');
   const email=$('login-email'), pwd=$('login-password');
+  let closeTimer=null;
 
   function openLogin(){
-    screen.scrollTo({top:0,behavior:reduceMotion?'auto':'smooth'});
-    const go=()=>{showPanel(login);setTimeout(()=>email.focus({preventScroll:true}),reduceMotion?0:380)};
-    if(!finished){afterBoot=go;finish()} else go();
+    clearTimeout(closeTimer);
+    if(screen.scrollTop>0) screen.scrollTo({top:0,behavior:reduceMotion?'auto':'smooth'});
+    login.hidden=false; backdrop.hidden=false;
+    requestAnimationFrame(()=>{login.classList.add('lp-open');backdrop.classList.add('lp-open')});
+    openBtn.setAttribute('aria-expanded','true');
+    setTimeout(()=>email.focus({preventScroll:true}),reduceMotion?0:180);
   }
-  function backToWelcome(){ showPanel(welcome); }
-  document.querySelectorAll('[data-lp-open-login]').forEach(b=>b.addEventListener('click',openLogin));
-  document.querySelector('[data-lp-back]').addEventListener('click',backToWelcome);
+  function closeLogin(returnFocus){
+    if(login.hidden)return;
+    login.classList.remove('lp-open'); backdrop.classList.remove('lp-open');
+    openBtn.setAttribute('aria-expanded','false');
+    closeTimer=setTimeout(()=>{login.hidden=true;backdrop.hidden=true},reduceMotion?0:220);
+    if(returnFocus) openBtn.focus({preventScroll:true});
+  }
+  openBtn.addEventListener('click',()=>login.hidden?openLogin():closeLogin(true));
+  document.querySelectorAll('[data-lp-close]').forEach(el=>el.addEventListener('click',()=>closeLogin(true)));
+  addEventListener('keydown',e=>{if(e.key==='Escape'&&!login.hidden)closeLogin(true)});
   document.querySelector('[data-lp-top]').addEventListener('click',e=>{e.preventDefault();screen.scrollTo({top:0,behavior:reduceMotion?'auto':'smooth'})});
 
   $('lp-eye').addEventListener('click',()=>{
@@ -304,18 +286,18 @@
   });
   const presentationTarget=id=>{try{return presFrame.contentDocument?.getElementById(id)||null}catch(_){return null}};
   function discover(id){
+    closeLogin(false);
     loadPresentation();
     const go=()=>{const t=id&&presentationTarget(id);(t||presFrame).scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'})};
     if(presFrame.contentDocument?.readyState==='complete'&&presFrame.contentDocument.body?.childElementCount) go(); else presFrame.addEventListener('load',()=>setTimeout(go,60),{once:true});
   }
   document.querySelectorAll('[data-lp-discover]').forEach(b=>b.addEventListener('click',()=>discover(null)));
   document.querySelectorAll('[data-lp-goto]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();discover(a.dataset.lpGoto)}));
-  // charge la présentation dès que l'accueil est prêt, sans ralentir l'animation d'entrée
   if('requestIdleCallback' in window) requestIdleCallback(loadPresentation,{timeout:2500}); else setTimeout(loadPresentation,1200);
 
   // barre haute : fond givré dès qu'on quitte le haut de la scène
   screen.addEventListener('scroll',()=>header.classList.toggle('lp-scrolled',screen.scrollTop>24),{passive:true});
 
   // API utilisée par l'app (déconnexion) et par la présentation
-  window.taskinLanding={ openLogin, showWelcome(){ screen.scrollTop=0; if(finished) showPanel(welcome); email.value=''; pwd.value=''; $('login-error').textContent=''; }, discover };
+  window.taskinLanding={ openLogin, showWelcome(){ screen.scrollTop=0; closeLogin(false); email.value=''; pwd.value=''; $('login-error').textContent=''; }, discover };
 })();

@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="css/04-portal.css?v=20260827">
 <link rel="stylesheet" href="css/05-production-polish.css?v=20260827c">
 <link rel="stylesheet" href="css/06-admin-overview.css?v=20260929j">
-<link rel="stylesheet" href="css/07-landing.css?v=20260930c">
+<link rel="stylesheet" href="css/07-landing.css?v=20260930d">
 </head>
 <body>
 
@@ -33,10 +33,27 @@
         <a href="#" data-lp-goto="etapes">Comment ça marche</a>
         <a href="#" data-lp-goto="faq">FAQ</a>
       </nav>
-      <button class="lp-login-btn" type="button" data-lp-open-login>
+      <button class="lp-login-btn" type="button" data-lp-open-login aria-haspopup="dialog" aria-expanded="false" aria-controls="lp-login">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <span>Connexion</span></button>
     </div>
+    <div class="lp-pop-backdrop" data-lp-close hidden></div>
+    <form class="lp-login lp-login-pop" id="lp-login" novalidate aria-labelledby="lp-loginTitle" hidden>
+      <div class="lp-head">
+        <img src="assets/landing/taskin-logo.png" alt="">
+        <div><h2 id="lp-loginTitle">Connexion</h2><p>Accédez à votre espace Task’in.</p></div>
+        <button class="lp-pop-close" type="button" data-lp-close aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <label class="lp-field"><span>Adresse e-mail</span>
+        <div class="lp-input"><input type="email" id="login-email" autocomplete="username" placeholder="prenom.nom@entreprise.com"></div>
+      </label>
+      <label class="lp-field"><span>Mot de passe</span>
+        <div class="lp-input"><input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••"><button class="lp-eye" type="button" id="lp-eye" aria-label="Afficher le mot de passe">Afficher</button></div>
+      </label>
+      <button class="lp-primary" id="lp-submit" type="submit">Se connecter &nbsp;→</button>
+      <p class="lp-err" id="login-error" role="alert"></p>
+      <p class="lp-access-note">Les accès sont créés par votre administrateur Task’in.</p>
+    </form>
   </header>
   <main class="lp-scene" id="lp-scene">
   <div class="lp-sky-glow"></div>
@@ -97,57 +114,18 @@
     </article>
   </section>
   <section class="lp-stage" id="lp-stage">
-    <!-- Étape 1 : démarrage -->
-    <div class="lp-panel" id="lp-boot" role="status" aria-live="polite">
-      <div class="lp-logo-wrap"><span class="lp-halo"></span><span class="lp-halo lp-h2"></span><img src="assets/landing/taskin-logo.png" alt="Task'in"></div>
-      <span class="lp-eyebrow">Suivi de temps · Équipe voyage</span>
-      <h1>Task'in</h1>
-      <p class="lp-sub">Préparation de votre espace de supervision…</p>
-      <div class="lp-progress" aria-hidden="true"><span id="lp-bar"></span></div>
-      <div class="lp-progress-meta"><span id="lp-stepTxt">Initialisation</span><b id="lp-pct">0%</b></div>
-      <ul class="lp-steps" id="lp-steps">
-        <li><span class="lp-ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span>Connexion sécurisée au serveur</li>
-        <li><span class="lp-ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span>Chargement des dossiers Vols, Hôtels, Ferries</li>
-        <li><span class="lp-ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span>Synchronisation de l'équipe et des rôles</li>
-        <li><span class="lp-ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span>Préparation du tableau de bord</li>
-      </ul>
-      <button class="lp-skip" id="lp-skip" type="button">Passer</button>
+    <div class="lp-logo-hero" id="lp-logo-hero">
+      <div class="lp-logo-orbit" aria-hidden="true">
+        <span class="lp-ring lp-ring-1"></span><span class="lp-ring lp-ring-2"></span><span class="lp-ring lp-ring-3"></span>
+        <svg class="lp-orbit-path" viewBox="0 0 200 200"><circle cx="100" cy="100" r="92"/></svg>
+        <span class="lp-orbit-dot lp-od-1"></span><span class="lp-orbit-dot lp-od-2"></span><span class="lp-orbit-dot lp-od-3"></span>
+        <span class="lp-logo-glow"></span>
+        <img class="lp-logo-img" src="assets/landing/taskin-logo.png" alt="">
+        <svg class="lp-logo-check" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>
+      </div>
+      <h1 class="lp-wordmark" aria-label="Task'in"><span style="--i:0">T</span><span style="--i:1">a</span><span style="--i:2">s</span><span style="--i:3">k</span><span style="--i:4">'</span><span style="--i:5">i</span><span style="--i:6">n</span></h1>
+      <p class="lp-tagline">Suivi de temps · Équipe voyage</p>
     </div>
-
-    <!-- Étape 2 : accueil -->
-    <div class="lp-panel lp-welcome lp-hide" id="lp-welcome" aria-labelledby="lp-welcome-title">
-      <div class="lp-logo-wrap"><span class="lp-halo"></span><span class="lp-halo lp-h2"></span><img src="assets/landing/taskin-logo.png" alt=""></div>
-      <span class="lp-eyebrow">Suivi de temps · Équipe voyage</span>
-      <h1 id="lp-welcome-title">Task'in</h1>
-      <p class="lp-sub">Le cockpit de supervision de votre équipe support : dossiers Vols, Hôtels, Ferries et coaching, suivis en temps réel.</p>
-      <div class="lp-welcome-actions">
-        <button class="lp-primary" type="button" data-lp-open-login>Se connecter &nbsp;→</button>
-        <button class="lp-ghost" type="button" data-lp-discover>Découvrir la plateforme
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>
-      </div>
-      <div class="lp-modules" aria-label="Modules">
-        <span>Vols</span><span>Hôtels</span><span>Ferries</span><span>Coaching</span>
-      </div>
-    </div>
-
-    <!-- Étape 3 : connexion (branchée sur doLogin de l'app) -->
-    <form class="lp-panel lp-login lp-hide" id="lp-login" novalidate aria-labelledby="lp-loginTitle">
-      <button class="lp-back" type="button" data-lp-back aria-label="Retour à l’accueil">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Retour</button>
-      <div class="lp-head">
-        <img src="assets/landing/taskin-logo.png" alt="">
-        <div><h2 id="lp-loginTitle">Bienvenue sur Task'in</h2><p>Connectez-vous pour accéder à votre espace.</p></div>
-      </div>
-      <label class="lp-field"><span>Adresse e-mail</span>
-        <div class="lp-input"><input type="email" id="login-email" autocomplete="username" placeholder="prenom.nom@entreprise.com"></div>
-      </label>
-      <label class="lp-field"><span>Mot de passe</span>
-        <div class="lp-input"><input type="password" id="login-password" autocomplete="current-password" placeholder="••••••••"><button class="lp-eye" type="button" id="lp-eye" aria-label="Afficher le mot de passe">Afficher</button></div>
-      </label>
-      <button class="lp-primary" id="lp-submit" type="submit">Se connecter &nbsp;→</button>
-      <p class="lp-err" id="login-error" role="alert"></p>
-      <p class="lp-access-note">Les accès sont créés par votre administrateur Task’in.</p>
-    </form>
   </section>
 
   <section class="lp-bottom" aria-hidden="true">
@@ -1335,7 +1313,7 @@
 <script src="js/08-analytics-advanced.js?v=20260827" defer></script>
 <script src="js/18-agent-sessions.js?v=20260928" defer></script>
 <script src="js/19-extension-bridge.js?v=20260929" defer></script>
-<script src="js/00-landing.js?v=20260930b" defer></script>
+<script src="js/00-landing.js?v=20260930c" defer></script>
 <script src="js/99-init.js?v=20260827" defer></script>
 </body>
 </html>
