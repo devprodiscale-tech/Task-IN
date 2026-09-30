@@ -18,6 +18,8 @@ const AGENT_SVG = {
   week: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>',
   training: '<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
   documentation: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+  results: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  dispatch: '<path d="M4 6h16M4 12h10M4 18h6"/><circle cx="18" cy="15" r="3"/><path d="m20.1 17.1 1.9 1.9"/>',
 };
 const agentIcon = (name, cls = '') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${AGENT_SVG[name] || ''}</svg>`;
 
@@ -118,7 +120,7 @@ function agentRenderPoleShell() {
   }
 
   // Onglets : icônes cohérentes, et pas de « Vue d'ensemble » d'équipe pour un agent.
-  const tabIcons = [['.tabs .tab.agent-only', 'today'], ['#tab-week-role', 'week'], ['#tab-training', 'training'], ['#tab-documentation', 'documentation']];
+  const tabIcons = [['.tabs .tab.agent-only', 'today'], ['#tab-week-role', 'week'], ['#tab-results', 'results'], ['#tab-training', 'training'], ['#tab-documentation', 'documentation']];
   tabIcons.forEach(([sel, icon]) => {
     const tab = document.querySelector(sel);
     if (!tab || tab.dataset.iconReady) return;

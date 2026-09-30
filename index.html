@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="css/09-supervisor.css?v=20260930c">
 <link rel="stylesheet" href="css/10-interfaces.css?v=20260930purge2">
 <link rel="stylesheet" href="css/11-form-controls.css?v=20260930a">
-<link rel="stylesheet" href="css/12-daily-results.css?v=20260930b">
+<link rel="stylesheet" href="css/12-daily-results.css?v=20260930d">
 </head>
 <body>
 
@@ -256,6 +256,8 @@
     <button class="qs-btn" onclick="quickStart('ticket')"><span class="qs-dot" style="background:#6DB36D"></span>Ticket / Manuel</button>
     <button class="qs-btn" onclick="syncRingover()"><span class="qs-dot" style="background:var(--ocean)"></span>Sync RingOver (auto)</button>
   </div>
+
+  <div class="agent-dispatch hidden" id="agent-dispatch-bar" aria-label="Mon dispatch client"></div>
 
   <div class="stats-grid agent-only" id="stats-grid-agent">
     <div class="stat-card">
@@ -1308,7 +1310,7 @@
 
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260930blocb" defer></script>
-<script src="js/00-core-init.js?v=20260930goal" defer></script>
+<script src="js/00-core-init.js?v=20260930disp" defer></script>
 <script src="js/01-core-auth-network.js?v=20260930res" defer></script>
 <script src="js/02-time-data.js?v=20260930sup" defer></script>
 <script src="js/03-dashboard-render.js?v=20260930goal" defer></script>
@@ -1325,8 +1327,9 @@
 <script src="js/08-analytics-advanced.js?v=20260930ui" defer></script>
 <script src="js/18-agent-sessions.js?v=20260930" defer></script>
 <script src="js/19-extension-bridge.js?v=20260930u" defer></script>
-<script src="js/20-agent-pole.js?v=20260930c2" defer></script>
+<script src="js/20-agent-pole.js?v=20260930disp" defer></script>
 <script src="js/21-agent-purge.js?v=20260930a" defer></script>
+<script src="js/23-agent-dispatch.js?v=20260930a" defer></script>
 <script src="js/00-landing.js?v=20260930d" defer></script>
 <script src="js/99-init.js?v=20260827" defer></script>
 </body>

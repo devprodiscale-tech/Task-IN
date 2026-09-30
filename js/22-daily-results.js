@@ -22,7 +22,7 @@ const DR_MAX_SHOTS = 10;
 const DR_BUCKET = 'daily-stats';
 
 // rows = saisies du jour affiché ; byDay = 15 derniers jours (référence J-1, tendance 7 jours).
-let drState = { day: '', pole: 'all', mode: 'entry', rows: new Map(), byDay: new Map(), goals: new Map(), policy: { progress: 5 }, loading: false, error: '' };
+let drState = { day: '', pole: 'all', mode: 'entry', rows: new Map(), byDay: new Map(), goals: new Map(), dispatch: new Map(), policy: { progress: 5 }, loading: false, error: '' };
 let drEdit = null;
 let drImport = null;
 
@@ -164,7 +164,10 @@ async function renderDailyResults() {
   drState.loading = true; drState.error = '';
   drPaint();
   try {
-    const [rows, goals, policy] = await Promise.all([drLoadRange(drShiftDay(day, -14), day), drLoadGoals(day), drLoadPolicy()]);
+    const [rows, goals, policy, dispatch] = await Promise.all([
+      drLoadRange(drShiftDay(day, -14), day), drLoadGoals(day), drLoadPolicy(),
+      typeof loadDispatchLog === 'function' ? loadDispatchLog(day).catch(() => []) : [],
+    ]);
     if (day !== drState.day) return; // un autre jour a été choisi entre-temps
     drState.byDay = new Map();
     rows.forEach(r => { if (!drState.byDay.has(r.day)) drState.byDay.set(r.day, new Map()); drState.byDay.get(r.day).set(r.agent_id, r); });
@@ -172,6 +175,8 @@ async function renderDailyResults() {
     drState.rows = drState.byDay.get(day);
     drState.goals = new Map(goals.map(g => [g.agent_id, g]));
     drState.policy = policy;
+    drState.dispatch = new Map();
+    dispatch.forEach(l => { if (!drState.dispatch.has(l.agent_id)) drState.dispatch.set(l.agent_id, []); drState.dispatch.get(l.agent_id).push(l); });
   } catch (e) {
     if (day !== drState.day) return;
     drState.rows = new Map(); drState.byDay = new Map([[day, drState.rows]]); drState.goals = new Map();
@@ -221,9 +226,9 @@ function drPaint() {
       : !rows.length
         ? '<div class="dr-empty">Aucun agent dans ce pôle.</div>'
         : `<div class="dr-table-wrap"><table class="dr-table">
-          <thead><tr><th>Agent</th><th>Travaillé</th><th>Appels<small>entr. · sort.</small></th><th>Temps d’appel</th><th>Tickets<small>en cours / assignés</small></th><th>Actions</th><th>Créés</th><th>Résolus</th><th>Crisp<small>conv. · msg/conv.</small></th><th>Preuve</th><th></th></tr></thead>
+          <thead><tr><th>Agent</th><th>Dispatch<small>déclaré par l’agent</small></th><th>Travaillé</th><th>Appels<small>entr. · sort.</small></th><th>Temps d’appel</th><th>Tickets<small>en cours / assignés</small></th><th>Actions</th><th>Créés</th><th>Résolus</th><th>Crisp<small>conv. · msg/conv.</small></th><th>Preuve</th><th></th></tr></thead>
           <tbody>${rows.map(({ agent, row }) => drRowHtml(agent, row, write)).join('')}</tbody>
-          <tfoot><tr><td>Total équipe</td><td>${drFormatDuration(sum('worked_minutes'))}</td><td>${sum('calls_in')} · ${sum('calls_out')}</td><td>${drFormatDuration(sum('call_minutes'))}</td><td>${sum('tasks_open')} / ${sum('tickets_assigned')}</td><td>${sum('actions')}</td><td>${sum('created')}</td><td>${sum('resolved')}</td><td>${conv}${msgs && conv ? ` · ${(msgs / conv).toFixed(1).replace('.', ',')}` : ''}</td><td colspan="2"></td></tr></tfoot>
+          <tfoot><tr><td>Total équipe</td><td></td><td>${drFormatDuration(sum('worked_minutes'))}</td><td>${sum('calls_in')} · ${sum('calls_out')}</td><td>${drFormatDuration(sum('call_minutes'))}</td><td>${sum('tasks_open')} / ${sum('tickets_assigned')}</td><td>${sum('actions')}</td><td>${sum('created')}</td><td>${sum('resolved')}</td><td>${conv}${msgs && conv ? ` · ${(msgs / conv).toFixed(1).replace('.', ',')}` : ''}</td><td colspan="2"></td></tr></tfoot>
         </table></div>`;
   panel.innerHTML = `<section class="dr-shell">
     <div class="dr-head">
@@ -241,6 +246,13 @@ function drPaint() {
   </section>`;
 }
 
+function drDispatchCell(agentId) {
+  const log = drState.dispatch.get(agentId);
+  if (!log?.length || typeof dispatchSummary !== 'function') return '<span class="dr-muted">non déclaré</span>';
+  const last = log[log.length - 1];
+  return `<div class="dr-dispatch" title="${escHtml(dispatchTimeline(log))}"><b>${escHtml(dispatchSummary(last.channels))}</b><small>${log.length > 1 ? `${log.length} changements · ` : ''}depuis ${dispatchTime(last.started_at)}</small></div>`;
+}
+
 function drRowHtml(agent, row, write) {
   const v = key => row?.[key];
   const dash = x => (x === null || x === undefined ? '—' : x);
@@ -250,6 +262,7 @@ function drRowHtml(agent, row, write) {
   const pole = typeof poleLabel === 'function' ? poleLabel(agent.pole) : '';
   return `<tr class="${row ? '' : 'is-missing'}">
     <td><div class="dr-agent"><span class="dr-avatar" style="--c:${safeColor(agent.color)}">${escHtml(agent.initials || '??')}</span><div><strong>${escHtml(agent.name)}</strong>${pole ? `<em class="dr-pole dr-pole-${escHtml(agent.pole)}">${pole}</em>` : ''}</div></div></td>
+    <td>${drDispatchCell(agent.id)}</td>
     <td>${drFormatDuration(v('worked_minutes'))}</td>
     <td>${row ? `${dash(v('calls_in'))} · ${dash(v('calls_out'))}` : '—'}</td>
     <td>${drFormatDuration(v('call_minutes'))}</td>
@@ -830,7 +843,7 @@ function drPaintGoals() {
           const [label, cls] = DR_STATUS[g.status];
           const pole = typeof poleLabel === 'function' ? poleLabel(g.agent.pole) : '';
           return `<tr class="${g.agent.id === currentUser?.id ? 'is-me' : ''}">
-            <td><div class="dr-agent"><span class="dr-avatar" style="--c:${safeColor(g.agent.color)}">${escHtml(g.agent.initials || '??')}</span><div><strong>${escHtml(g.agent.name)}</strong>${pole ? `<em class="dr-pole dr-pole-${escHtml(g.agent.pole)}">${pole}</em>` : ''}</div></div></td>
+            <td><div class="dr-agent"><span class="dr-avatar" style="--c:${safeColor(g.agent.color)}">${escHtml(g.agent.initials || '??')}</span><div><strong>${escHtml(g.agent.name)}</strong>${pole ? `<em class="dr-pole dr-pole-${escHtml(g.agent.pole)}">${pole}</em>` : ''}${drState.dispatch.get(g.agent.id)?.length && typeof dispatchSummary === 'function' ? `<small class="dr-dispatch-mini" title="${escHtml(dispatchTimeline(drState.dispatch.get(g.agent.id)))}">${escHtml(dispatchSummary(drState.dispatch.get(g.agent.id).at(-1).channels))}</small>` : ''}</div></div></td>
             <td>${g.refDay ? escHtml(drShortDay(g.refDay)) : '<span class="dr-muted">aucune</span>'}</td>
             ${g.metrics.map(m => drGoalCell(m, g.refDay)).join('')}
             <td>${g.agentVar !== null ? `<b class="${g.agentVar >= 0 ? 'dr-up' : 'dr-down'}">${drPct(g.agentVar)}</b>` : '—'}${g.team ? ` · <span class="dr-muted">${drPct(g.team.pct)}</span>` : ''}</td>
