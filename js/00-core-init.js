@@ -13,6 +13,24 @@ const TREATMENT_TYPES_DEFAULT = [
   '🏨 Accommodation','🧳 Luggage','✈️ Flights','📞 Welcome call','👋 Goodbye call'
 ];
 
+// ===== Sécurité d'affichage =====
+// Tout texte saisi par un utilisateur (nom, description, note…) passe par escHtml avant
+// d'être inséré dans du HTML : il s'affiche tel quel au lieu d'être interprété comme du code.
+function escHtml(value) {
+  return String(value ?? '').replace(/[&<>"'`]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c]));
+}
+// Couleur de profil utilisée dans des attributs style : uniquement un code hexadécimal.
+function safeColor(value, fallback = '#2563EB') {
+  return /^#[0-9a-f]{3,8}$/i.test(String(value || '')) ? value : fallback;
+}
+// Photo de profil utilisée dans url(...) : https ou image base64, sans caractère qui casserait le style.
+function safePhoto(value) {
+  const v = String(value || '');
+  if (/^https:\/\/[^\s"'()<>\\]+$/.test(v)) return v;
+  if (/^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(v)) return v;
+  return '';
+}
+
 let currentUser = null;
 let entries = [];
 let activeTimer = null;
@@ -25,7 +43,7 @@ let searchTimeout = null;
 const moduleCache = new Map();
 // Version des modules chargés à la demande : à incrémenter quand l’un d’eux change,
 // sinon le navigateur peut garder l’ancienne copie en cache.
-const TASKIN_MODULE_VERSION = '20260930a';
+const TASKIN_MODULE_VERSION = '20260930sec';
 async function loadModule(name) {
   if (moduleCache.has(name)) return moduleCache.get(name);
   const promise = new Promise((resolve, reject) => {

@@ -502,7 +502,8 @@ async function syncTimerFromServer() {
   timerSyncBusy = true;
   try {
     const rows = await supabaseClient.request(`/rest/v1/active_timers?select=*&agent_id=eq.${encodeURIComponent(currentUser.id)}&limit=1`);
-    const remote = Array.isArray(rows) && rows[0] ? timerFromRow(rows[0]) : null;
+    let remote = Array.isArray(rows) && rows[0] ? timerFromRow(rows[0]) : null;
+    if (remote && !Number.isFinite(remote.startTime)) remote = null; // ligne incomplète : ignorée
     const key = 'activeTimer_' + currentUser.id;
     if (remote && remote.startTime === lastStoppedTimerStart) return; // arrêt local en cours d'envoi
     if (remote) {

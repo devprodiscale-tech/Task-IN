@@ -29,9 +29,17 @@
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
       const detail = payload?.msg || payload?.message || payload?.error_description || payload?.hint || `HTTP ${response.status}`;
-      throw new Error(`Supabase ${label}: ${detail}`);
+      const error = new Error(`Supabase ${label}: ${detail}`);
+      error.status = response.status;
+      throw error;
     }
     return payload;
+  }
+
+  // Session réellement refusée par Supabase (jeton invalide ou révoqué). Une coupure réseau
+  // (pas de statut) ou une panne serveur (5xx) ne doit jamais déconnecter l'extension.
+  function isAuthRejection(error) {
+    return [400, 401, 403].includes(Number(error?.status));
   }
 
   async function getSession() {
@@ -77,7 +85,7 @@
       try {
         return await storeSession(await parseResponse(response, 'Refresh Auth'));
       } catch (error) {
-        await clearStorage();
+        if (isAuthRejection(error)) await clearStorage();
         throw error;
       }
     })();
@@ -112,8 +120,13 @@
       await chrome.storage.local.set({ [USER_KEY]: user });
       return user;
     } catch (error) {
-      await clearStorage();
-      return null;
+      if (isAuthRejection(error)) {
+        await clearStorage();
+        return null;
+      }
+      // Hors ligne ou serveur indisponible : on garde la session et le dernier utilisateur connu.
+      console.warn('Vérification de session impossible, session conservée :', error);
+      return session.user?.id ? session.user : null;
     }
   }
 

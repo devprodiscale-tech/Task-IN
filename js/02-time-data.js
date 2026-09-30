@@ -133,7 +133,8 @@ async function syncOwnTimer() {
   timerSyncBusy = true;
   try {
     const rows = await supabase.getActiveTimer(currentUser.id);
-    const remote = rows?.[0] ? timerFromRow(rows[0]) : null;
+    let remote = rows?.[0] ? timerFromRow(rows[0]) : null;
+    if (remote && !Number.isFinite(remote.startTime)) remote = null; // ligne incomplète : ignorée
     if (remote && remote.startTime === lastStoppedTimerStart) return; // arrêt local en cours d'envoi
     if (remote) {
       const same = activeTimer && activeTimer.startTime === remote.startTime
@@ -263,10 +264,10 @@ async function fetchPermanentLiveAgents() {
     const timeColor = elapsedMin > 15 ? '#C9604F' : '#84A9DE';
     html += `<div class="live-agent-card">
       <div class="live-agent-top">
-        <span class="live-agent-name">👤 ${agentName}</span>
+        <span class="live-agent-name">👤 ${escHtml(agentName)}</span>
         <span class="live-agent-time" style="color:${timeColor}">${elapsedMin} min</span>
       </div>
-      <div class="live-agent-task"><strong>${t.source}</strong><br>${t.desc}</div>
+      <div class="live-agent-task"><strong>${escHtml(t.source)}</strong><br>${escHtml(t.desc)}</div>
     </div>`;
   });
   grid.innerHTML = html;
@@ -284,10 +285,10 @@ async function loadEntries(shouldRender = true) {
     const rows = await supabase.listTimeEntries(1000);
     entries = (rows || []).map(row => ({
       id: row.id,
-      rawId: row.raw_id || '', source: row.source || 'ticket', desc: row.description || '',
-      treatment: row.treatment || '', agent: row.agent_id, inboundTime: row.inbound_time || '--:--',
+      rawId: row.raw_id || '', source: /^[a-z_-]{1,24}$/.test(row.source || '') ? row.source : 'ticket', desc: row.description || '',
+      treatment: row.treatment || '', agent: row.agent_id, inboundTime: /^(\d{2}:\d{2}|--:--)$/.test(row.inbound_time || '') ? row.inbound_time : '--:--',
       startTimeStr: row.started_at, durationSec: Number(row.duration_seconds || 0)
-    })).filter(e => e.startTimeStr).sort((a,b)=> getEntryDate(b.startTimeStr)-getEntryDate(a.startTimeStr));
+    })).filter(e => e.startTimeStr && /^[A-Za-z0-9_.:-]{1,80}$/.test(String(e.id))).sort((a,b)=> getEntryDate(b.startTimeStr)-getEntryDate(a.startTimeStr));
     if (typeof invalidateFilterCache === 'function') invalidateFilterCache();
     if (shouldRender) renderCurrentView();
   } catch (e) { window.taskinLastLoadError = e; console.error('Lecture entrées Supabase impossible:', e); }
@@ -306,7 +307,19 @@ async function saveTimeEntry(entry) {
 
 async function deleteEntry(id) {
   if (!confirm('Supprimer cette entrée ?')) return;
-  entries = entries.filter(e=>e.id!==id);
+  const index = entries.findIndex(e => e.id === id);
+  if (index < 0) return;
+  const [removed] = entries.splice(index, 1);
+  if (typeof invalidateFilterCache === 'function') invalidateFilterCache();
   renderAll();
-  await window.taskinDataProviders.supabase.deleteTimeEntry(id);
+  try {
+    await window.taskinDataProviders.supabase.deleteTimeEntry(id);
+  } catch (error) {
+    // Échec côté serveur : l'entrée revient à sa place et l'utilisateur est prévenu.
+    console.error('Suppression impossible:', error);
+    entries.splice(Math.min(index, entries.length), 0, removed);
+    if (typeof invalidateFilterCache === 'function') invalidateFilterCache();
+    renderAll();
+    alert('La suppression n’a pas pu être enregistrée. Vérifie ta connexion puis réessaie.');
+  }
 }

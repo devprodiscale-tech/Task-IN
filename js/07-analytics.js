@@ -60,7 +60,7 @@ function renderMosaicKpis(activeTimers) {
     const avatarStyle = a.photo
       ? `background-image:url(${a.photo});background-size:cover;background-color:transparent`
       : `background:${a.color}20;color:${a.color}`;
-    const avatarContent = a.photo ? '' : a.initials;
+    const avatarContent = a.photo ? '' : escHtml(a.initials);
 
     return `<div class="mosaic-card" onclick="viewAgentDetail('${a.id}')">
       ${currentUser.role === 'admin' ? `<button class="icon-btn" title="Gérer ce compte" onclick="event.stopPropagation();openAccountEditModal('${a.id}')" style="position:absolute;top:10px;right:10px;background:var(--surface2);border-radius:6px;width:26px;height:26px;font-size:13px">⚙</button>` : ''}
@@ -70,8 +70,8 @@ function renderMosaicKpis(activeTimers) {
           <span class="mosaic-status-dot ${isActive ? 'active' : 'idle'}"></span>
         </div>
         <div style="flex:1;min-width:0">
-          <div class="mosaic-agent-name">${a.name}</div>
-          <div class="mosaic-agent-task">${isActive ? (t.desc || t.source) : 'Inactif'}</div>
+          <div class="mosaic-agent-name">${escHtml(a.name)}</div>
+          <div class="mosaic-agent-task">${isActive ? escHtml(t.desc || t.source) : 'Inactif'}</div>
         </div>
         ${isActive ? `<span class="mosaic-timer">${timerStr}</span>` : ''}
       </div>

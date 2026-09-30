@@ -144,7 +144,7 @@ async function svDeleteDoc(collection, id) {
 }
 
 function svAgentOptions(selectedId) {
-  return agentsOnly().map(a => `<option value="${a.id}" ${a.id === selectedId ? 'selected' : ''}>${a.name}</option>`).join('');
+  return agentsOnly().map(a => `<option value="${a.id}" ${a.id === selectedId ? 'selected' : ''}>${escHtml(a.name)}</option>`).join('');
 }
 function svAgentName(id) { const a = TEAM.find(t => t.id === id); return a ? a.name : id; }
 
@@ -424,8 +424,8 @@ function svRenderOverview() {
   const wlEl = document.getElementById('sv-ov-watchlist');
   wlEl.innerHTML = watchlist.length ? watchlist.map(w => `
     <div style="display:flex;align-items:center;gap:10px;padding:6px 4px;border-radius:8px;cursor:pointer" onclick="document.getElementById('sv-ov-agent-picker').value='${w.agent.id}';svRenderAgentFocusCard('${w.agent.id}')">
-      <div style="width:28px;height:28px;border-radius:50%;background:${w.color === 'danger' ? 'var(--red-dim)' : 'var(--amber-dim)'};color:${w.color === 'danger' ? 'var(--red)' : 'var(--amber)'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${w.agent.initials}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:12.5px">${w.agent.name}</div><div style="font-size:11px;color:${w.color === 'danger' ? 'var(--red)' : 'var(--amber)'}">${docEsc(w.reason)}</div></div>
+      <div style="width:28px;height:28px;border-radius:50%;background:${w.color === 'danger' ? 'var(--red-dim)' : 'var(--amber-dim)'};color:${w.color === 'danger' ? 'var(--red)' : 'var(--amber)'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${escHtml(w.agent.initials)}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:12.5px">${escHtml(w.agent.name)}</div><div style="font-size:11px;color:${w.color === 'danger' ? 'var(--red)' : 'var(--amber)'}">${docEsc(w.reason)}</div></div>
     </div>`).join('') : '<div class="sv-empty" style="padding:14px">Rien à signaler 👍</div>';
 
   const picker = document.getElementById('sv-ov-agent-picker');
@@ -463,8 +463,8 @@ function svRenderAgentFocusCard(agentId) {
 
   target.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-      <div class="mosaic-avatar" style="${avatarStyle};width:44px;height:44px;font-size:15px">${a.photo ? '' : a.initials}</div>
-      <div><div style="font-weight:700;font-size:14.5px">${a.name}</div><div style="font-size:12px;color:var(--text2)">${a.role === 'agent' ? 'Agent' : a.role}</div></div>
+      <div class="mosaic-avatar" style="${avatarStyle};width:44px;height:44px;font-size:15px">${a.photo ? '' : escHtml(a.initials)}</div>
+      <div><div style="font-weight:700;font-size:14.5px">${escHtml(a.name)}</div><div style="font-size:12px;color:var(--text2)">${a.role === 'agent' ? 'Agent' : a.role}</div></div>
       ${scorePct !== null ? `<span class="sv-pill" style="margin-left:auto;background:${scorePct>=70?'var(--green-dim)':scorePct>=50?'var(--amber-dim)':'var(--red-dim)'};color:${scorePct>=70?'var(--green)':scorePct>=50?'var(--amber)':'var(--red)'};font-size:12px;padding:5px 12px">Score ${scorePct}%</span>` : ''}
     </div>
     ${chartHtml ? `<div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:12px"><div class="sv-card-meta" style="margin-bottom:6px">Évolution qualité (${history.length} grilles)</div>${chartHtml}</div>` : ''}
@@ -556,12 +556,12 @@ function svRenderReporting() {
   const heatEl = document.getElementById('sv-rep-heatmap');
   heatEl.innerHTML = agents.map(a => {
     const review = svLatestReview(a.id);
-    if (!review) return `<div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center;cursor:pointer" onclick="svSwitchSubTab('overview');setTimeout(()=>{document.getElementById('sv-ov-agent-picker').value='${a.id}';svRenderAgentFocusCard('${a.id}')},50)"><div style="font-size:11px;color:var(--text2)">${a.name}</div><div style="font-size:10px;color:var(--text2);margin-top:4px">Pas de donnée</div></div>`;
+    if (!review) return `<div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center;cursor:pointer" onclick="svSwitchSubTab('overview');setTimeout(()=>{document.getElementById('sv-ov-agent-picker').value='${a.id}';svRenderAgentFocusCard('${a.id}')},50)"><div style="font-size:11px;color:var(--text2)">${escHtml(a.name)}</div><div style="font-size:10px;color:var(--text2);margin-top:4px">Pas de donnée</div></div>`;
     const pct = svReviewPct(review);
     const bg = pct >= 75 ? 'var(--green-dim)' : pct >= 55 ? 'var(--amber-dim)' : 'var(--red-dim)';
     const fg = pct >= 75 ? 'var(--green)' : pct >= 55 ? 'var(--amber)' : 'var(--red)';
     return `<div style="background:${bg};border-radius:8px;padding:8px;text-align:center;cursor:pointer" onclick="svSwitchSubTab('overview');setTimeout(()=>{document.getElementById('sv-ov-agent-picker').value='${a.id}';svRenderAgentFocusCard('${a.id}')},50)">
-      <div style="font-size:11px;font-weight:600;color:${fg}">${a.name}</div>
+      <div style="font-size:11px;font-weight:600;color:${fg}">${escHtml(a.name)}</div>
       <div style="font-family:var(--display);font-weight:700;font-size:16px;color:${fg};margin-top:2px">${pct}%</div>
     </div>`;
   }).join('') || '<div class="sv-empty">Aucun agent.</div>';
@@ -573,7 +573,7 @@ function svRenderReporting() {
     const dev = Math.round(pct - teamAvg);
     const pos = dev >= 0;
     return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <span style="font-size:12px;width:110px;flex-shrink:0">${a.name}</span>
+      <span style="font-size:12px;width:110px;flex-shrink:0">${escHtml(a.name)}</span>
       <div style="flex:1;height:8px;background:var(--surface2);border-radius:4px;position:relative">
         <div style="position:absolute;${pos ? 'left:50%' : 'right:50%'};width:${Math.min(Math.abs(dev), 50)}%;height:100%;background:${pos ? 'var(--green)' : 'var(--red)'};border-radius:4px"></div>
       </div>
@@ -595,7 +595,7 @@ function svRenderTimeline(agents) {
         return { startMin, endMin: startMin + e.durationSec / 60 };
       }).sort((x, y) => x.startMin - y.startMin);
     if (!todays.length) return `<div style="display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin-bottom:6px">
-      <span style="font-size:12px">${a.name}</span>
+      <span style="font-size:12px">${escHtml(a.name)}</span>
       <div style="position:relative;height:16px;background:var(--surface2);border-radius:6px"></div>
     </div>`;
     let blocks = '';
@@ -613,7 +613,7 @@ function svRenderTimeline(agents) {
       }
     });
     return `<div style="display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin-bottom:6px">
-      <span style="font-size:12px">${a.name}</span>
+      <span style="font-size:12px">${escHtml(a.name)}</span>
       <div style="position:relative;height:16px;background:var(--surface2);border-radius:6px">${blocks}</div>
     </div>`;
   }).join('');
@@ -625,7 +625,7 @@ function svRenderTimeline(agents) {
 
 // ---- GRILLE D'ÉCOUTE ----
 function svPopulateReviewAgentFilters() {
-  const opts = '<option value="__all">Tous les agents</option>' + agentsOnly().map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  const opts = '<option value="__all">Tous les agents</option>' + agentsOnly().map(a => `<option value="${a.id}">${escHtml(a.name)}</option>`).join('');
   const filterEl = document.getElementById('sv-review-agent-filter');
   if (filterEl && filterEl.options.length <= 1) filterEl.innerHTML = opts;
   const coachFilterEl = document.getElementById('sv-coaching-agent-filter');

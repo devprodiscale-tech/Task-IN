@@ -340,18 +340,18 @@ async function logout() {
 
 function populateFilters() {
   const sel = document.getElementById('filter-agent');
-  sel.innerHTML = '<option value="">Tous les agents</option>' + agentsOnly().map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+  sel.innerHTML = '<option value="">Tous les agents</option>' + agentsOnly().map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('');
 
   // Sélecteur agent de l'accordéon Vue Globale
   const supSel = document.getElementById('sup-agent-filter');
   if (supSel) {
-    supSel.innerHTML = '<option value="">Équipe entière</option>' + agentsOnly().map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+    supSel.innerHTML = '<option value="">Équipe entière</option>' + agentsOnly().map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('');
   }
 
   // Point 3 : remplissage dynamique du select Agent dans les filtres du tableau
   const fAgt = document.getElementById('f-agt');
   if (fAgt) {
-    fAgt.innerHTML = '<option value="">Tous</option>' + agentsOnly().map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+    fAgt.innerHTML = '<option value="">Tous</option>' + agentsOnly().map(u=>`<option value="${u.id}">${escHtml(u.name)}</option>`).join('');
   }
 
   const tSel = document.getElementById('filter-treatment');

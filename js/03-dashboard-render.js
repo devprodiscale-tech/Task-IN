@@ -16,7 +16,7 @@ function sourceTag(s) {
 function agentCell(id) {
   const u = teamById.get(id) || TEAM.find(t=>t.id===id);
   if (!u) return '—';
-  return `<div class="agent-cell"><div class="mini-avatar" style="background:${u.color}20;color:${u.color}">${u.initials}</div>${u.name}</div>`;
+  return `<div class="agent-cell"><div class="mini-avatar" style="background:${u.color}20;color:${u.color}">${escHtml(u.initials)}</div>${escHtml(u.name)}</div>`;
 }
 
 function getEntryDate(iso) {
@@ -347,10 +347,10 @@ function renderTable(filtered) {
     // Hors aujourd'hui, le jour précède l'heure (sinon « Cette semaine » mélange des heures sans date).
     const startStr = startDate && !isToday(e.startTimeStr) ? `${startDate.toLocaleDateString('fr-FR', {weekday:'short', day:'numeric'}).replace('.', '')} · ${startTime}` : startTime;
     return `<tr>
-      <td class="dur-cell" style="font-weight:600">${e.inboundTime || '--:--'}</td>
+      <td class="dur-cell" style="font-weight:600">${escHtml(e.inboundTime || '--:--')}</td>
       <td class="dur-cell">${startStr}</td>
       <td>${sourceTag(e.source)}</td>
-      <td id="desc-${e.id}" style="width:35%">${e.desc}</td>
+      <td id="desc-${e.id}" style="width:35%">${escHtml(e.desc)}</td>
       <td>${agentCell(e.agent)}</td>
       <td class="dur-cell ${durClass}" title="DMT cible : ${fmtDuration(dmt)}">${Math.ceil(e.durationSec/60)} min</td>
       <td><div class="row-actions">
@@ -367,18 +367,34 @@ function editEntry(id) {
   if (!entry) return;
   const cell = document.getElementById('desc-' + id);
   const current = entry.desc;
-  cell.innerHTML = `<input class="form-input" id="edit-input-${id}" value="${current.replace(/"/g,'&quot;')}" placeholder="Ex: Ticket #68554..." style="padding:5px 8px; font-size:13px; width:100%; box-sizing:border-box;" />`;
+  cell.innerHTML = `<input class="form-input" id="edit-input-${id}" value="${escHtml(current)}" placeholder="Ex: Ticket #68554..." style="padding:5px 8px; font-size:13px; width:100%; box-sizing:border-box;" />`;
   const input = document.getElementById('edit-input-' + id);
   input.focus();
   input.setSelectionRange(input.value.length, input.value.length);
+  let finished = false;
   const save = async () => {
+    if (finished) return;
+    finished = true;
     const newDesc = input.value.trim() || current;
-    entry.desc = newDesc;
     cell.textContent = newDesc;
-    saveTimeEntry(entry);
+    if (newDesc === current) return;
+    entry.desc = newDesc;
+    // Mise à jour de l'entrée existante (et non création d'une nouvelle, refusée comme doublon).
+    try {
+      await window.taskinDataProviders.supabase.updateTimeEntry(id, { description: newDesc });
+      if (typeof invalidateFilterCache === 'function') invalidateFilterCache();
+    } catch (error) {
+      console.error('Modification de la description impossible:', error);
+      entry.desc = current;
+      if (cell.isConnected) cell.textContent = current;
+      alert('La modification n’a pas pu être enregistrée. Vérifie ta connexion puis réessaie.');
+    }
   };
   input.addEventListener('blur', save);
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') input.blur();
+    if (e.key === 'Escape') { input.value = current; input.blur(); }
+  });
 }
 
 const ADMIN_SIDEBAR_NARROW = '(max-width: 850px)';
@@ -714,7 +730,7 @@ function agentsOnly() { return TEAM.filter(u => u.role === 'agent'); }
 function renderSupervisorBanner(activeTimers) {
   const agents = agentsOnly(); const activeIds = new Set(activeTimers.map(t => t.agentId));
   const activeAgents = agents.filter(a => activeIds.has(a.id));
-  const avatarsHtml = activeAgents.slice(0,3).map(a => `<div class="role-banner-avatar" style="background:${a.color};margin-right:-8px">${a.initials}</div>`).join('') + (agents.length > 3 ? `<div class="role-banner-avatar role-banner-avatar-more">+${agents.length-3}</div>` : '');
+  const avatarsHtml = activeAgents.slice(0,3).map(a => `<div class="role-banner-avatar" style="background:${a.color};margin-right:-8px">${escHtml(a.initials)}</div>`).join('') + (agents.length > 3 ? `<div class="role-banner-avatar role-banner-avatar-more">+${agents.length-3}</div>` : '');
   document.getElementById('sup-banner-avatars').innerHTML = avatarsHtml || '<div class="role-banner-avatar role-banner-avatar-more">0</div>';
   document.getElementById('sup-banner-title').textContent = `${activeAgents.length} sur ${agents.length} agents actifs`;
   const idleAgent = findLongestIdleAgent(agents, activeIds);
@@ -747,13 +763,13 @@ function renderTeamLiveList(activeTimers) {
       const mins = Math.floor(elapsed/60); const secs = elapsed%60;
       const timeStr = mins + ':' + String(secs).padStart(2,'0');
       return `<div class="team-row" onclick="viewAgentDetail('${a.id}')" style="cursor:pointer">
-        <div class="mini-avatar" style="background:${a.color}20;color:${a.color}">${a.initials}</div>
-        <div class="team-row-info"><div class="team-row-name">${a.name}</div><div class="team-row-role">${t.desc}</div></div>
+        <div class="mini-avatar" style="background:${a.color}20;color:${a.color}">${escHtml(a.initials)}</div>
+        <div class="team-row-info"><div class="team-row-name">${escHtml(a.name)}</div><div class="team-row-role">${escHtml(t.desc)}</div></div>
         <span class="team-row-timer">${timeStr}</span></div>`;
     }
     return `<div class="team-row" onclick="viewAgentDetail('${a.id}')" style="cursor:pointer">
-      <div class="mini-avatar" style="background:var(--border2);color:var(--text2)">${a.initials}</div>
-      <div class="team-row-info"><div class="team-row-name">${a.name}</div><div class="team-row-role" style="color:var(--text3)">Inactif</div></div>
+      <div class="mini-avatar" style="background:var(--border2);color:var(--text2)">${escHtml(a.initials)}</div>
+      <div class="team-row-info"><div class="team-row-name">${escHtml(a.name)}</div><div class="team-row-role" style="color:var(--text3)">Inactif</div></div>
       <span class="team-row-timer" style="color:var(--text3)">—</span></div>`;
   }).join('');
 }

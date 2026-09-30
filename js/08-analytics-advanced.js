@@ -107,7 +107,7 @@ async function renderLeaderboard() {
     const qualityClass = r.quality === null ? '' : r.quality >= 75 ? 'good' : r.quality >= 55 ? 'warn' : 'bad';
     return `<tr>
       <td>${rankDisplay}</td>
-      <td><div class="agent-cell"><div class="mini-avatar" style="background:${r.agent.color}20;color:${r.agent.color}">${r.agent.initials}</div>${r.agent.name}</div></td>
+      <td><div class="agent-cell"><div class="mini-avatar" style="background:${r.agent.color}20;color:${r.agent.color}">${escHtml(r.agent.initials)}</div>${escHtml(r.agent.name)}</div></td>
       <td><span class="lb-val">${r.volume}</span></td>
       <td><span class="lb-val">${r.frt !== null ? r.frt + 'min' : '—'}</span></td>
       <td><span class="lb-val ${dmtClass}">${r.dmt ? r.dmt + 'min' : '—'}</span></td>

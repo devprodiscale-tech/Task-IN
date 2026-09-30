@@ -118,7 +118,8 @@
     try {
       return storeSession(await parseResponse(response, 'Refresh Auth'));
     } catch (error) {
-      signOut();
+      // Déconnexion seulement si Supabase refuse la session, pas sur une panne serveur passagère.
+      if ([400, 401, 403].includes(response.status)) signOut();
       throw error;
     }
   }
@@ -198,11 +199,11 @@
       id: profile.id,
       name: profile.name || 'Sans nom',
       email: profile.email || '',
-      color: profile.color || '#2B4C7E',
+      // Couleur et photo finissent dans des attributs style : on n'accepte que des valeurs sûres.
+      color: /^#[0-9a-f]{3,8}$/i.test(String(profile.color || '')) ? profile.color : '#2B4C7E',
       initials: profile.initials || '??',
       role: profile.role || 'agent',
-      pole: profile.pole || null,
-      photo: profile.photo || '',
+      photo: /^(https:\/\/[^\s"'()<>\\]+|data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+)$/.test(String(profile.photo || '')) ? profile.photo : '',
       pole: profile.pole || ''
     };
   }
@@ -277,8 +278,21 @@
         body: JSON.stringify(entry)
       });
     },
+    // Supabase ne signale pas d'erreur quand les règles d'accès bloquent une modification :
+    // il répond simplement « 0 ligne ». On demande les lignes touchées pour le détecter.
     async deleteTimeEntry(id) {
-      return request('time_entries', { method: 'DELETE', headers: { Prefer: 'return=minimal' } }, { id: `eq.${encodeURIComponent(id)}` });
+      const rows = await request('time_entries', { method: 'DELETE', headers: { Prefer: 'return=representation' } }, { id: `eq.${encodeURIComponent(id)}` });
+      if (!Array.isArray(rows) || !rows.length) throw new Error('Supabase time_entries: suppression refusée ou entrée introuvable.');
+      return rows;
+    },
+    async updateTimeEntry(id, patch) {
+      const rows = await request('time_entries', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(patch)
+      }, { id: `eq.${encodeURIComponent(id)}` });
+      if (!Array.isArray(rows) || !rows.length) throw new Error('Supabase time_entries: modification refusée ou entrée introuvable.');
+      return rows;
     },
     async upsertActiveTimer(timer) {
       return request('active_timers', {

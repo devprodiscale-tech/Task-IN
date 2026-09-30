@@ -9,8 +9,8 @@ function renderTeamList() {
   document.getElementById('team-count').textContent = TEAM.length + ' comptes';
   document.getElementById('team-list').innerHTML = TEAM.map(u => `
     <div class="team-row" onclick="openAccountEditModal('${u.id}')" style="cursor:pointer">
-      <div class="mini-avatar" style="background:${u.color}20;color:${u.color}${u.photo?`;background-image:url(${u.photo});background-size:cover`:''}">${u.photo?'':u.initials}</div>
-      <div class="team-row-info"><div class="team-row-name">${u.name}</div><div class="team-row-role">${roleLabel(u.role, u.pole)}</div></div>
+      <div class="mini-avatar" style="background:${u.color}20;color:${u.color}${u.photo?`;background-image:url(${u.photo});background-size:cover`:''}">${u.photo?'':escHtml(u.initials)}</div>
+      <div class="team-row-info"><div class="team-row-name">${escHtml(u.name)}</div><div class="team-row-role">${roleLabel(u.role, u.pole)}</div></div>
       <span style="font-size:11px;color:var(--ocean);font-weight:600;margin-left:auto;">Modifier →</span>
     </div>`).join('');
 }
@@ -242,8 +242,8 @@ async function loadAccounts() {
   try {
     TEAM = (await supabase.listProfiles(200) || []).map(profile => ({
       id: profile.id, name: profile.name || 'Sans nom', email: profile.email || '',
-      color: profile.color || '#2B4C7E', initials: profile.initials || '??',
-      role: profile.role || 'agent', pole: profile.pole || null, photo: profile.photo || ''
+      color: safeColor(profile.color, '#2B4C7E'), initials: profile.initials || '??',
+      role: profile.role || 'agent', pole: profile.pole || null, photo: safePhoto(profile.photo)
     }));
     teamById = new Map(TEAM.map(member => [member.id, member]));
   } catch (e) { window.taskinLastLoadError = e; console.error('loadAccounts Supabase:', e); }
@@ -265,12 +265,12 @@ async function saveAccount(user) {
 // ===== EVOLUTION CHART =====
 function populateChartScopeSelect() {
   const sel = document.getElementById('chart-scope'); if (!sel) return;
-  sel.innerHTML = '<option value="team">Équipe entière</option>' + agentsOnly().map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  sel.innerHTML = '<option value="team">Équipe entière</option>' + agentsOnly().map(a => `<option value="${a.id}">${escHtml(a.name)}</option>`).join('');
 }
 
 function populateDonutAgentSelect() {
   const sel = document.getElementById('donut-agent'); if (!sel) return;
-  sel.innerHTML = '<option value="team">Équipe entière</option>' + agentsOnly().map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  sel.innerHTML = '<option value="team">Équipe entière</option>' + agentsOnly().map(a => `<option value="${a.id}">${escHtml(a.name)}</option>`).join('');
 }
 
 function renderEvolutionChart() {

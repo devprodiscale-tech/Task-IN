@@ -488,7 +488,8 @@ function docParseTextToBlocks(text) {
 }
 
 function docSlugify(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
-function docEsc(s) { if (!s) return ''; return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+// Guillemets échappés aussi : docEsc est utilisé dans des attributs (value="…").
+function docEsc(s) { if (!s) return ''; return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 function docEscAttr(s) { return docEsc(s).replace(/"/g, '&quot;'); }
 
 // ===== SEED — 15 procédures OnSpot (contenu réel des PDFs fournis) =====
