@@ -96,7 +96,7 @@ async function doLogin() {
 // La page de présentation est locale au dépôt : elle reste accessible même si
 // un domaine externe, un tunnel ou une session Google devient indisponible.
 // La propriété window.TASKIN_PRESENTATION_URL permet toujours de la surcharger.
-const TASKIN_PRESENTATION_URL = window.TASKIN_PRESENTATION_URL || 'presentation.html?v=20260827d';
+const TASKIN_PRESENTATION_URL = window.TASKIN_PRESENTATION_URL || 'presentation.html?v=20260930';
 let portalPointerStartX = null;
 function ensurePortalPresentation() {
   const frame = document.getElementById('portal-site-frame');
