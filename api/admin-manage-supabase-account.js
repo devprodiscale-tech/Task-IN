@@ -18,12 +18,14 @@ async function supabase(path, options = {}) {
   return payload;
 }
 
+// { user } si administrateur ; { status: 401 } si la session est absente ou expirée ; { status: 403 } sinon.
 async function requesterProfile(accessToken) {
+  if (!accessToken) return { status: 401 };
   const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${accessToken}` } });
   const user = await userResponse.json().catch(() => null);
-  if (!userResponse.ok || !user?.id) return null;
+  if (!userResponse.ok || !user?.id) return { status: 401 };
   const profiles = await supabase(`/rest/v1/profiles?select=id,role&id=eq.${encodeURIComponent(user.id)}&limit=1`);
-  return profiles?.[0]?.role === 'admin' ? user : null;
+  return profiles?.[0]?.role === 'admin' ? { user } : { status: 403 };
 }
 
 module.exports = async (req, res) => {
@@ -37,8 +39,10 @@ module.exports = async (req, res) => {
 
   try {
     const accessToken = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-    const requester = await requesterProfile(accessToken);
-    if (!requester) return res.status(403).json({ error: 'Seuls les administrateurs Supabase peuvent effectuer cette action.' });
+    const auth = await requesterProfile(accessToken);
+    if (auth.status === 401) return res.status(401).json({ error: 'Session expirée : reconnecte-toi.' });
+    if (auth.status === 403) return res.status(403).json({ error: 'Seuls les administrateurs peuvent effectuer cette action.' });
+    const requester = auth.user;
 
     const { action, uid, email, password, name, role, color, initials, pole } = req.body || {};
     if (action === 'setPassword') {

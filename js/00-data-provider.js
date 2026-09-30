@@ -66,7 +66,47 @@
     return storeSession(session);
   }
 
-  async function refreshSession() {
+  // Un seul renouvellement à la fois : Supabase invalide l'ancien refresh token à chaque rotation,
+  // deux renouvellements simultanés déconnecteraient l'utilisateur.
+  let refreshInFlight = null;
+  function refreshSession() {
+    if (!refreshInFlight) refreshInFlight = doRefreshSession().finally(() => { refreshInFlight = null; });
+    return refreshInFlight;
+  }
+
+  function tokenExpiresAt(token) {
+    try {
+      const payload = JSON.parse(atob(String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      return Number(payload.exp) * 1000 || 0;
+    } catch (_) { return 0; }
+  }
+
+  // Jeton d'accès valide pour les API serveur (/api/*) : renouvelé s'il expire dans la minute.
+  async function getFreshAccessToken() {
+    const session = getSession();
+    if (!session?.access_token) return '';
+    if (session.refresh_token && tokenExpiresAt(session.access_token) - Date.now() < 60000) {
+      try { await refreshSession(); } catch (_) { return ''; }
+    }
+    return getSession()?.access_token || '';
+  }
+
+  // fetch vers une API serveur avec la session Supabase ; en cas de 401, renouvelle et réessaie une fois.
+  async function authFetch(url, init = {}) {
+    const send = token => {
+      const headers = new Headers(init.headers || {});
+      if (token) headers.set('Authorization', `Bearer ${token}`);
+      return fetch(url, { ...init, headers });
+    };
+    let response = await send(await getFreshAccessToken());
+    if (response.status === 401 && getSession()?.refresh_token) {
+      try { await refreshSession(); } catch (_) { return response; }
+      response = await send(getSession()?.access_token || '');
+    }
+    return response;
+  }
+
+  async function doRefreshSession() {
     assertConfigured();
     const refreshToken = global.localStorage?.getItem(REFRESH_TOKEN_KEY) || '';
     if (!refreshToken) throw new Error('Refresh token Supabase absent.');
@@ -175,6 +215,8 @@
     signOut,
     refreshSession,
     getSession,
+    getFreshAccessToken,
+    authFetch,
     getUser,
     updatePassword,
     async getCurrentProfile() {

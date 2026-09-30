@@ -23,7 +23,7 @@ async function taskinExtensionSync() {
   if (taskinExtensionUserId === currentUser.id) return;
   taskinExtensionSyncing = true;
   try {
-    const res = await fetch('/api/extension-session', { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } });
+    const res = await supabase.authFetch('/api/extension-session', { method: 'POST' });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.tokenHash) throw new Error(data.error || `HTTP ${res.status}`);
     if (data.userId !== currentUser?.id) return;

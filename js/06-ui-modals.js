@@ -196,8 +196,7 @@ async function adminSetPassword(uid, newPassword) {
   const supabase = window.taskinDataProviders?.supabase;
   if (!supabase?.enabled()) return { ok: false, error: 'Supabase n’est pas configuré.' };
   try {
-    const session = supabase.getSession();
-    const res = await fetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify({ action: 'setPassword', uid, password: newPassword }) });
+    const res = await supabase.authFetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'setPassword', uid, password: newPassword }) });
     const data = await res.json().catch(() => ({}));
     return res.ok ? { ok: true } : { ok: false, error: data.error || `Erreur (${res.status})` };
   } catch (e) { return { ok: false, error: e.message }; }
@@ -214,8 +213,7 @@ async function deleteAccountFromModal() {
   try {
     const supabase = window.taskinDataProviders?.supabase;
     if (!supabase?.enabled()) { errEl.textContent = 'Supabase n’est pas configuré.'; return; }
-    const session = supabase.getSession();
-    const res = await fetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify({ action: 'delete', uid: u.id }) });
+    const res = await supabase.authFetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete', uid: u.id }) });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { errEl.textContent = 'Erreur : ' + (data.error || res.status); return; }
     TEAM = TEAM.filter(t => t.id !== u.id);
@@ -260,10 +258,9 @@ async function submitCreateAccount() {
   try {
     const supabase = window.taskinDataProviders?.supabase;
     if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
-    const session = supabase.getSession();
     const colors = ['#2B4C7E','#E98A7D','#3B8C6E','#DCAE1D','#7B68EE','#FF7F50'];
     const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    const res = await fetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify({ action: 'create', email, password: tempPassword, name, role, pole, color: colors[TEAM.length % colors.length], initials }) });
+    const res = await supabase.authFetch('/api/admin-manage-supabase-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', email, password: tempPassword, name, role, pole, color: colors[TEAM.length % colors.length], initials }) });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { errEl.textContent = data.error || 'Erreur création.'; btn.disabled = false; btn.textContent = 'Créer le compte'; return; }
     const newUser = { id: data.user.id, name, email, color: colors[TEAM.length % colors.length], initials, role, pole: pole || null, photo: '' };

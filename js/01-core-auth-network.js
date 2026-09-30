@@ -30,7 +30,10 @@ async function apiFetch(url, options = {}, config = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(url, { ...options, headers: networkHeaders(options.headers), signal: options.signal || controller.signal });
+      const supabase = window.taskinDataProviders?.supabase;
+      const init = { ...options, headers: networkHeaders(options.headers), signal: options.signal || controller.signal };
+      if (supabase?.getSession()?.access_token && typeof supabase.authFetch === 'function') init.headers.delete('Authorization');
+      const response = supabase?.getSession()?.access_token && typeof supabase.authFetch === 'function' ? await supabase.authFetch(url, init) : await fetch(url, init);
       if (response.ok || !RETRYABLE_HTTP_STATUS.has(response.status) || attempt === maxRetries) {
         networkState.online = true;
         if (!response.ok) networkState.lastError = `${label} (${response.status})`;
