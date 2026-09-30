@@ -93,7 +93,9 @@
     el.addEventListener('pointercancel',release);
     el.addEventListener('lostpointercapture',release);
 
+    // la molette fait défiler la page ; elle règle la profondeur seulement avec Alt ou en mode « Profondeur »
     el.addEventListener('wheel',e=>{
+      if(!(e.altKey||mode==='depth'))return;
       e.preventDefault();
       c.tz=clamp(c.tz-e.deltaY*.8,Z_MIN,Z_MAX);
     },{passive:false});

@@ -95,7 +95,7 @@ async function doLogin() {
 // ===== ACCUEIL : SCÈNE, CONNEXION ET PRÉSENTATION ENCHAÎNÉE =====
 // L'accueil (js/00-landing.js) affiche la page de présentation sous la scène.
 // window.TASKIN_PRESENTATION_URL permet toujours de surcharger son adresse.
-window.TASKIN_PRESENTATION_URL = window.TASKIN_PRESENTATION_URL || 'presentation.html?v=20260930b';
+window.TASKIN_PRESENTATION_URL = window.TASKIN_PRESENTATION_URL || 'presentation.html?v=20260930c';
 // Compatibilité : anciens appels au portail (« login » ouvre la connexion, sinon la présentation).
 function showPortalPanel(panel) {
   if (panel === 'login') window.taskinLanding?.openLogin();

@@ -279,6 +279,35 @@
     .timer-art b{font:600 34px var(--mono);letter-spacing:-.02em}
     .timer-art small{display:block;color:var(--faint);font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase}
 
+    /* Étapes épinglées : la section reste à l'écran et les étapes se remplacent au défilement */
+    .steps-section{padding:0}
+    .steps-stage{display:flex;align-items:center;padding:clamp(72px,9vw,110px) 0}
+    .steps-inner{width:min(1180px,100% - 48px)}
+    .steps-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:clamp(28px,4vw,48px)}
+    .steps-head h2{margin-top:14px}
+    .steps-rail{position:relative;display:flex;gap:6px;margin:0;padding:6px;list-style:none;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+    .steps-rail button{position:relative;z-index:1;display:flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:10px;color:var(--sub);font-weight:700;font-size:14px;transition:color .3s ease}
+    .steps-rail b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--surface-2);color:var(--sub);font-size:13px;transition:background-color .3s ease,color .3s ease}
+    .steps-rail li.on button{color:#fff}
+    .steps-rail li.on b{background:rgba(255,255,255,.22);color:#fff}
+    .steps-rail li.done b{background:var(--green-soft);color:var(--green)}
+    .steps-rail-fill{position:absolute;z-index:0;top:6px;bottom:6px;left:var(--fx,6px);width:var(--fw,0px);border-radius:10px;background:var(--blue);transition:left .45s var(--ease),width .45s var(--ease)}
+    .steps-track{position:relative;display:grid;gap:clamp(64px,9vw,120px)}
+    .steps-pin.is-pinned .steps-track{display:block;height:var(--track-h,440px)}
+    .steps-pin.is-pinned .step{position:absolute;inset:0;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .5s ease,visibility 0s .5s}
+    .steps-pin.is-pinned .step.is-active{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .5s ease}
+    .steps-pin.is-pinned .step > div:first-child{transform:translateY(26px);opacity:0;transition:transform .7s var(--ease),opacity .5s ease}
+    .steps-pin.is-pinned .step.is-active > div:first-child{transform:none;opacity:1;transition-delay:.08s}
+    .steps-pin.is-pinned .step .step-art{transform:translateX(48px);opacity:0;transition:transform .8s var(--ease),opacity .5s ease}
+    .steps-pin.is-pinned .step.is-active .step-art{transform:none;opacity:1;transition-delay:.14s}
+    .steps-pin.is-pinned .step.is-before > div:first-child{transform:translateY(-26px)}
+    .steps-pin.is-pinned .step.is-before .step-art{transform:translateX(-48px)}
+    .steps-pin.is-pinned .step-num{transform:translateX(24px) scale(.7);opacity:0;transition:transform .8s cubic-bezier(.34,1.56,.64,1),opacity .4s ease}
+    .steps-pin.is-pinned .step.is-active .step-num{transform:translateX(24px);opacity:1;transition-delay:.2s}
+    .step.is-active .bars span{transform:scaleY(1)}
+    .steps-pin.is-pinned .steps-stage{padding:88px 0 28px}
+    @media(max-width:960px){.steps-head{flex-direction:column;align-items:flex-start}.steps-rail{display:none}}
+
     /* Carrousel */
     .carousel{display:grid;grid-template-columns:.8fr 1.2fr;gap:56px;align-items:center}
     .car-nav{display:flex;gap:10px;margin-top:28px}
@@ -673,21 +702,31 @@
     </section>
 
     <!-- Étapes -->
-    <section class="section soft" id="etapes">
-      <div class="wrap">
-        <div class="section-head" style="text-align:left;margin-left:0">
-          <span class="eyebrow reveal">Comment ça marche</span>
-          <h2 class="reveal" style="--d:.06s">Aussi simple que…</h2>
-        </div>
-        <div class="steps">
-          <div class="step" id="extension">
+    <section class="section soft steps-section" id="etapes">
+      <div class="steps-pin" id="extension">
+        <div class="steps-stage" id="steps-stage">
+          <div class="wrap steps-inner">
+            <div class="steps-head">
+              <div>
+                <span class="eyebrow">Comment ça marche</span>
+                <h2>Aussi simple que…</h2>
+              </div>
+              <ol class="steps-rail" aria-label="Étapes">
+                <li><button type="button" data-goto-step="0"><b>1</b><span>Se connecter</span></button></li>
+                <li><button type="button" data-goto-step="1"><b>2</b><span>Lancer le timer</span></button></li>
+                <li><button type="button" data-goto-step="2"><b>3</b><span>Piloter</span></button></li>
+                <i class="steps-rail-fill" aria-hidden="true"></i>
+              </ol>
+            </div>
+            <div class="steps-track">
+          <div class="step" data-step="0">
             <div>
-              <h3 class="reveal">Se connecter une seule fois</h3>
-              <p class="reveal" style="--d:.08s">L’agent se connecte sur la web app. L’extension Chrome récupère automatiquement la même session : aucun second identifiant à saisir.</p>
-              <a class="btn btn-dark reveal" style="--d:.14s" href="downloads/taskin-extension-v1.10.0.zip" download>Télécharger l’extension · v1.10.0
+              <h3 class="">Se connecter une seule fois</h3>
+              <p class="">L’agent se connecte sur la web app. L’extension Chrome récupère automatiquement la même session : aucun second identifiant à saisir.</p>
+              <a class="btn btn-dark" href="downloads/taskin-extension-v1.10.0.zip" download>Télécharger l’extension · v1.10.0
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></a>
             </div>
-            <div class="step-art reveal from-right" style="--d:.1s">
+            <div class="step-art">
               <span class="step-num" aria-hidden="true">1</span>
               <div class="mock form-art" aria-hidden="true">
                 <div class="fhead"><span class="brand-mark" style="width:30px;height:30px"><img src="assets/taskin-icon48.png" alt="" style="width:26px;height:26px" /></span>Connexion</div>
@@ -698,12 +737,12 @@
               <span class="half-moon" aria-hidden="true"></span>
             </div>
           </div>
-          <div class="step">
+          <div class="step" data-step="1">
             <div>
-              <h3 class="reveal">Lancer le timer sur chaque tâche</h3>
-              <p class="reveal" style="--d:.08s">Depuis le widget flottant, l’agent choisit la source et le type de traitement, puis démarre. Le temps est enregistré pendant qu’il travaille dans ses outils habituels.</p>
+              <h3 class="">Lancer le timer sur chaque tâche</h3>
+              <p class="">Depuis le widget flottant, l’agent choisit la source et le type de traitement, puis démarre. Le temps est enregistré pendant qu’il travaille dans ses outils habituels.</p>
             </div>
-            <div class="step-art reveal from-right" style="--d:.1s">
+            <div class="step-art">
               <span class="step-num" aria-hidden="true">2</span>
               <div class="mock" aria-hidden="true">
                 <div class="sources"><span class="src">Appel entrant</span><span class="src on">Crisp Chat</span><span class="src">Crisp Email</span><span class="src">Ticket</span></div>
@@ -712,14 +751,14 @@
               <span class="half-moon" aria-hidden="true"></span>
             </div>
           </div>
-          <div class="step">
+          <div class="step" data-step="2">
             <div>
-              <h3 class="reveal">Piloter l’équipe en temps réel</h3>
-              <p class="reveal" style="--d:.08s">Superviseurs et admins voient l’activité se mettre à jour, comparent les pôles et repèrent les pics de charge pour ajuster le planning.</p>
-              <a class="btn btn-dark reveal" style="--d:.14s" href="./" data-login>Se connecter
+              <h3 class="">Piloter l’équipe en temps réel</h3>
+              <p class="">Superviseurs et admins voient l’activité se mettre à jour, comparent les pôles et repèrent les pics de charge pour ajuster le planning.</p>
+              <a class="btn btn-dark" href="./" data-login>Se connecter
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
             </div>
-            <div class="step-art reveal from-right" style="--d:.1s">
+            <div class="step-art">
               <span class="step-num" aria-hidden="true">3</span>
               <div class="mock" aria-hidden="true" style="padding:16px">
                 <div class="mock-title"><strong>Répartition par pôle</strong><span class="chip amber">Cette semaine</span></div>
@@ -728,6 +767,8 @@
               </div>
               <span class="half-moon" aria-hidden="true"></span>
             </div>
+          </div>
+        </div>
           </div>
         </div>
       </div>
@@ -955,6 +996,62 @@
     // Ne démarre la rotation qu'une fois la section visible
     new IntersectionObserver(([e]) => { if (e.isIntersecting) { if (!timer && !paused) schedule(DUR); } else { clearTimeout(timer); timer = null; } }, { threshold: .3 }).observe(document.getElementById('roles'));
     if (reduce) tablist.style.setProperty('--dur', '0ms');
+
+    // Étapes épinglées : la section se fige et l'étape active suit la progression du défilement.
+    // Intégrée sous l'accueil, la page ne défile pas elle-même : on suit le défilement du parent
+    // et on reproduit l'épinglage par translation.
+    (() => {
+      const pin = document.querySelector('.steps-pin'), stage = document.getElementById('steps-stage');
+      const steps = [...pin.querySelectorAll('.step')], railItems = [...pin.querySelectorAll('.steps-rail li')];
+      const fill = pin.querySelector('.steps-rail-fill'), track = pin.querySelector('.steps-track');
+      const frameEl = embed ? window.frameElement : null;
+      const host = embed ? window.parent : window;
+      const PER_STEP = .85; // part de hauteur d'écran à défiler pour passer d'une étape à l'autre
+      let active = -1, pinned = false, raf = 0;
+      const viewH = () => host.innerHeight;
+      const topOf = el => el.getBoundingClientRect().top + (frameEl ? frameEl.getBoundingClientRect().top : 0);
+      const setActive = i => {
+        if (i === active) return; active = i;
+        steps.forEach((s, n) => { s.classList.toggle('is-active', n === i); s.classList.toggle('is-before', n < i); s.setAttribute('aria-hidden', String(pinned && n !== i)); });
+        railItems.forEach((li, n) => { li.classList.toggle('on', n === i); li.classList.toggle('done', n < i); });
+        const btn = railItems[i]?.querySelector('button');
+        if (btn && fill) { fill.style.setProperty('--fx', btn.offsetLeft + 'px'); fill.style.setProperty('--fw', btn.offsetWidth + 'px'); }
+      };
+      const layout = () => {
+        pinned = !reduce && window.matchMedia('(min-width: 961px)').matches && host.innerWidth > 960;
+        pin.classList.toggle('is-pinned', pinned);
+        if (!pinned) { pin.style.height = ''; stage.style.height = ''; stage.style.transform = ''; track.style.removeProperty('--track-h'); steps.forEach(s => { s.classList.add('is-active'); s.classList.remove('is-before'); s.removeAttribute('aria-hidden'); }); active = -1; return; }
+        const V = viewH();
+        stage.style.height = V + 'px';
+        track.style.setProperty('--track-h', Math.max(...steps.map(s => s.scrollHeight), 320) + 'px');
+        pin.style.height = Math.round(V + (steps.length - 1) * V * PER_STEP + V * .25) + 'px';
+        if (!embed) { stage.style.position = 'sticky'; stage.style.top = '0'; }
+        update();
+      };
+      const update = () => {
+        raf = 0;
+        if (!pinned) return;
+        const V = viewH(), top = topOf(pin), travel = Math.max(1, pin.offsetHeight - V);
+        const scrolled = Math.min(Math.max(-top, 0), travel);
+        if (embed) stage.style.transform = `translate3d(0,${scrolled}px,0)`;
+        const progress = scrolled / travel;
+        setActive(Math.min(steps.length - 1, Math.floor(progress * steps.length * .999)));
+      };
+      const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+      host.addEventListener('scroll', onScroll, { capture: true, passive: true });
+      host.addEventListener('resize', layout);
+      window.addEventListener('resize', layout);
+      window.addEventListener('load', layout);
+      document.fonts?.ready.then(layout);
+      // indicateur 1-2-3 : amène le défilement sur l'étape choisie
+      railItems.forEach((li, n) => li.querySelector('button').addEventListener('click', () => {
+        if (!pinned) return steps[n].scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+        const V = viewH(), travel = pin.offsetHeight - V, delta = topOf(pin) + (travel * (n + .5) / steps.length);
+        const scroller = embed ? window.parent.document.getElementById('login-screen') : null;
+        if (scroller) scroller.scrollBy({ top: delta, behavior: 'smooth' }); else window.scrollBy({ top: delta, behavior: 'smooth' });
+      }));
+      layout();
+    })();
 
     // Carrousel
     const track = document.getElementById('car-track'), slides = [...track.children], dots = document.getElementById('car-dots');

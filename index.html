@@ -147,7 +147,7 @@
       <button type="button" id="lp-resetAll" title="Remettre les icônes en place"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/></svg><span class="lp-txt">Réinitialiser</span></button>
     </div>
   </div>
-  <div class="lp-hint" id="lp-hint">Glissez une icône pour la déplacer · <kbd>Maj</kbd> pour pivoter · <kbd>Alt</kbd> ou molette pour la profondeur · double-clic pour la replacer</div>
+  <div class="lp-hint" id="lp-hint">Glissez une icône pour la déplacer · <kbd>Maj</kbd> pour pivoter · <kbd>Alt</kbd> + molette pour la profondeur · double-clic pour la replacer</div>
 
   <div class="lp-toast" id="lp-toast" role="status" aria-live="polite"></div>
   <button class="lp-scroll-cue" type="button" data-lp-discover aria-label="Découvrir la présentation">
@@ -171,7 +171,7 @@
     <span class="role-badge hidden" id="role-badge"></span>
     <div class="topbar-right">
       <span id="network-status" class="network-status hidden" role="status" aria-live="polite"></span>
-      <button class="btn btn-ghost presentation-topbar-btn" onclick="window.open('presentation.html?v=20260930b','_blank','noopener,noreferrer')">Présentation</button><a class="btn btn-primary extension-download-topbar" href="downloads/taskin-extension-v1.10.0.zip" download>↓ Télécharger l’extension</a>
+      <button class="btn btn-ghost presentation-topbar-btn" onclick="window.open('presentation.html?v=20260930c','_blank','noopener,noreferrer')">Présentation</button><a class="btn btn-primary extension-download-topbar" href="downloads/taskin-extension-v1.10.0.zip" download>↓ Télécharger l’extension</a>
       <button type="button" class="btn btn-ghost topbar-action topbar-refresh" id="topbar-refresh" onclick="runManualRefresh()" data-state="idle" title="Recharger les données"><span class="topbar-refresh-icon" aria-hidden="true"><svg class="topbar-icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg><svg class="topbar-icon-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><svg class="topbar-icon-error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5"/><path d="M12 16.5h.01"/><circle cx="12" cy="12" r="9"/></svg></span><span class="topbar-refresh-label" aria-live="polite">Actualiser</span></button>
       <button type="button" class="theme-toggle-btn topbar-icon-btn" id="theme-toggle" onclick="toggleTheme()" title="Passer en mode sombre" aria-label="Passer en mode sombre"><svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg><svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg></button>
       <button type="button" class="user-pill" onclick="openProfileModal()" title="Mon profil"><div class="mini-avatar" id="topbar-avatar"></div><span id="topbar-name"></span></button>
@@ -1299,7 +1299,7 @@
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260928" defer></script>
 <script src="js/00-core-init.js?v=20260930a" defer></script>
-<script src="js/01-core-auth-network.js?v=20260930c" defer></script>
+<script src="js/01-core-auth-network.js?v=20260930d" defer></script>
 <script src="js/02-time-data.js?v=20260929" defer></script>
 <script src="js/03-dashboard-render.js?v=20260930a" defer></script>
 <script src="js/04-admin.js?v=20260929" defer></script>
@@ -1315,7 +1315,7 @@
 <script src="js/08-analytics-advanced.js?v=20260827" defer></script>
 <script src="js/18-agent-sessions.js?v=20260928" defer></script>
 <script src="js/19-extension-bridge.js?v=20260929" defer></script>
-<script src="js/00-landing.js?v=20260930c" defer></script>
+<script src="js/00-landing.js?v=20260930d" defer></script>
 <script src="js/99-init.js?v=20260827" defer></script>
 </body>
 </html>
