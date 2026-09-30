@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="css/07-landing.css?v=20260930d">
 <link rel="stylesheet" href="css/08-agent.css?v=20260930b">
 <link rel="stylesheet" href="css/09-supervisor.css?v=20260930c">
-<link rel="stylesheet" href="css/10-interfaces.css?v=20260930c2b">
+<link rel="stylesheet" href="css/10-interfaces.css?v=20260930purge2">
 </head>
 <body>
 
@@ -1026,7 +1026,8 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" style="color:var(--red);margin-right:auto" onclick="deleteAccountFromModal()">Supprimer le compte</button>
+      <button class="btn btn-ghost" style="color:var(--red)" onclick="deleteAccountFromModal()">Supprimer le compte</button>
+      <button class="btn btn-ghost" style="color:var(--red);margin-right:auto" onclick="const id = editingAccountId; closeAccountEditModal(); openAgentPurgeModal(id)">Effacer les données…</button>
       <button class="btn btn-ghost" onclick="closeAccountEditModal()">Annuler</button>
       <button class="btn btn-primary" onclick="saveAccountEdit()">Enregistrer</button>
     </div>
@@ -1313,7 +1314,7 @@
 <script src="js/13-admin-stat.js?v=20260930ui" defer></script>
 <script src="js/14-admin-quality.js?v=20260918" defer></script>
 <script src="js/15-admin-training.js?v=20260918" defer></script>
-<script src="js/16-admin-settings.js?v=20260930c2" defer></script>
+<script src="js/16-admin-settings.js?v=20260930purge" defer></script>
 <script src="js/17-admin-local-features.js?v=20260930sec" defer></script>
 <script src="js/06-ui-modals.js?v=20260930t" defer></script>
 <script src="js/07-analytics.js?v=20260930c2" defer></script>
@@ -1321,6 +1322,7 @@
 <script src="js/18-agent-sessions.js?v=20260930" defer></script>
 <script src="js/19-extension-bridge.js?v=20260930u" defer></script>
 <script src="js/20-agent-pole.js?v=20260930c2" defer></script>
+<script src="js/21-agent-purge.js?v=20260930a" defer></script>
 <script src="js/00-landing.js?v=20260930d" defer></script>
 <script src="js/99-init.js?v=20260827" defer></script>
 </body>

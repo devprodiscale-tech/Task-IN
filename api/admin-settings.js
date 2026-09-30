@@ -103,6 +103,46 @@ module.exports = async (req, res) => {
       await saveSetting('goals', value, admin.id);
       return json(res, { message: 'Objectifs enregistrés.', value });
     }
+    if (action === 'purgeAgentData') {
+      // Efface les données d'un compte (le compte lui-même est conservé).
+      // dryRun = true : renvoie seulement le nombre de lignes concernées.
+      const uid = str(payload.uid, 64);
+      if (!/^[0-9a-f-]{36}$/i.test(uid)) return fail(res, 400, 'Compte invalide.');
+      const profile = await request(`/rest/v1/profiles?select=id,name&id=eq.${uid}&limit=1`);
+      if (!profile?.[0]) return fail(res, 404, 'Compte introuvable.');
+      const mode = ['all', 'before', 'demo'].includes(payload.mode) ? payload.mode : 'all';
+      const beforeMs = Date.parse(str(payload.before, 40));
+      if (mode === 'before' && !Number.isFinite(beforeMs)) return fail(res, 400, 'Date limite invalide.');
+      const before = mode === 'before' ? new Date(beforeMs).toISOString() : '';
+      const scopes = Array.isArray(payload.scopes) ? payload.scopes.filter(s => ['entries', 'timer', 'sessions', 'quality', 'training'].includes(s)) : [];
+      if (!scopes.length) return fail(res, 400, 'Choisis au moins un type de données.');
+      // Chaque cible : table, colonne de date pour « avant le », filtre « démo » (null = rien à effacer en mode démo).
+      const targets = {
+        entries: [['time_entries', 'started_at', 'id=like.demo-*']],
+        timer: [['active_timers', 'started_at', null]],
+        sessions: [['agent_sessions', 'created_at', null]],
+        quality: [['coaching_reviews', 'created_at', 'data->>demo=eq.true'], ['coaching_sheets', 'created_at', 'data->>demo=eq.true'], ['complex_cases', 'created_at', 'data->>demo=eq.true']],
+        training: [['training_progress', 'updated_at', null], ['training_acknowledgements', 'acknowledged_at', null]],
+      };
+      const counts = {};
+      for (const scope of scopes) {
+        counts[scope] = 0;
+        for (const [table, dateCol, demoFilter] of targets[scope]) {
+          if (mode === 'demo' && !demoFilter) continue;
+          const filters = [`agent_id=eq.${uid}`];
+          if (mode === 'before') filters.push(`${dateCol}=lt.${encodeURIComponent(before)}`);
+          if (mode === 'demo') { const [key, value] = demoFilter.split('='); filters.push(`${encodeURIComponent(key)}=${value}`); }
+          const key = table === 'active_timers' ? 'agent_id' : 'id'; // active_timers n'a pas de colonne id
+          const query = `/rest/v1/${table}?select=${key}&${filters.join('&')}`;
+          const rows = payload.dryRun
+            ? await request(`${query}&limit=100000`)
+            : await request(query, { method: 'DELETE', headers: { Prefer: 'return=representation' } });
+          counts[scope] += Array.isArray(rows) ? rows.length : 0;
+        }
+      }
+      const total = Object.values(counts).reduce((s, n) => s + n, 0);
+      return json(res, { message: payload.dryRun ? `${total} ligne(s) concernée(s).` : `${total} ligne(s) effacée(s).`, counts, total, dryRun: !!payload.dryRun });
+    }
     if (action === 'upsertTreatmentType') {
       const name = str(payload.name, 100);
       if (!name) return fail(res, 400, 'Nom de traitement requis.');
