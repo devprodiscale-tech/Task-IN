@@ -13,11 +13,11 @@
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Public+Sans:wght@400;500;600;700&family=Sigmar+One&family=Spline+Sans+Mono:wght@500;600&display=swap"></noscript>
 <link rel="stylesheet" href="css/00-base.css?v=20260929b">
 <link rel="stylesheet" href="css/01-ops-dashboard.css?v=20260827">
-<link rel="stylesheet" href="css/02-core-ui.css?v=20260827">
-<link rel="stylesheet" href="css/03-features.css?v=20260827">
+<link rel="stylesheet" href="css/02-core-ui.css?v=20260930a">
+<link rel="stylesheet" href="css/03-features.css?v=20260930a">
 <link rel="stylesheet" href="css/04-portal.css?v=20260827">
 <link rel="stylesheet" href="css/05-production-polish.css?v=20260827c">
-<link rel="stylesheet" href="css/06-admin-overview.css?v=20260929j">
+<link rel="stylesheet" href="css/06-admin-overview.css?v=20260930a">
 <link rel="stylesheet" href="css/07-landing.css?v=20260930d">
 </head>
 <body>
@@ -629,11 +629,6 @@
         </div>
       </div>
     </div>
-  </div>
-    <div id="admin-workflow-panel" class="admin-overview-section hidden"></div>
-    <div id="admin-stat-panel" class="admin-overview-section hidden"></div>
-    <div id="admin-quality-panel" class="admin-overview-section hidden"></div>
-    <div id="admin-training-panel" class="admin-overview-section hidden"></div>
 
     <!-- P2 : Leaderboard panel -->
     <div id="leaderboard-panel" class="hidden" style="padding:0">
@@ -818,7 +813,6 @@
       </div>
     </div>
 
-</div>
 
     <!-- FORMATION -->
     <div id="training-panel" class="hidden" style="padding:0">
@@ -827,6 +821,14 @@
         <div id="training-content"></div>
       </div>
     </div>
+  </div>
+
+  <!-- Sections Admin : enfants directs de #app (décalage sidebar via #app > .admin-overview-section) -->
+  <div id="admin-workflow-panel" class="admin-overview-section hidden"></div>
+  <div id="admin-stat-panel" class="admin-overview-section hidden"></div>
+  <div id="admin-quality-panel" class="admin-overview-section hidden"></div>
+  <div id="admin-training-panel" class="admin-overview-section hidden"></div>
+</div>
 
 <!-- MODALE CAS COMPLEXE -->
 <div class="modal-overlay hidden" id="sv-esc-overlay" onclick="if(event.target===this) svCloseEscalationModal()">
@@ -1296,17 +1298,17 @@
 
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260928" defer></script>
-<script src="js/00-core-init.js?v=20260923" defer></script>
-<script src="js/01-core-auth-network.js?v=20260930b" defer></script>
+<script src="js/00-core-init.js?v=20260930a" defer></script>
+<script src="js/01-core-auth-network.js?v=20260930c" defer></script>
 <script src="js/02-time-data.js?v=20260929" defer></script>
-<script src="js/03-dashboard-render.js?v=20260929b" defer></script>
+<script src="js/03-dashboard-render.js?v=20260930a" defer></script>
 <script src="js/04-admin.js?v=20260929" defer></script>
-<script src="js/11-admin-overview.js?v=20260929" defer></script>
+<script src="js/11-admin-overview.js?v=20260930a" defer></script>
 <script src="js/12-admin-workflow.js?v=20260923" defer></script>
 <script src="js/13-admin-stat.js?v=20260918" defer></script>
 <script src="js/14-admin-quality.js?v=20260918" defer></script>
 <script src="js/15-admin-training.js?v=20260918" defer></script>
-<script src="js/16-admin-settings.js?v=20260929" defer></script>
+<script src="js/16-admin-settings.js?v=20260930a" defer></script>
 <script src="js/17-admin-local-features.js?v=20260920" defer></script>
 <script src="js/06-ui-modals.js?v=20260929" defer></script>
 <script src="js/07-analytics.js?v=20260929" defer></script>

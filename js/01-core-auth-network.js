@@ -182,13 +182,6 @@ function applyRoleUI() {
   const app = document.getElementById('app');
   const isOpsRole = role === 'admin' || role === 'supervisor';
   document.body.classList.toggle('ops-dashboard', isOpsRole);
-  const opsHeading = document.getElementById('ops-page-heading');
-  if (opsHeading) {
-    opsHeading.classList.toggle('hidden', !isOpsRole);
-    document.getElementById('ops-page-title').textContent = role === 'admin' ? 'Vue d’ensemble' : 'Supervision opérationnelle';
-    document.getElementById('ops-page-subtitle').textContent = role === 'admin' ? 'Dashboard Admin · Hub central de l’activité et de la performance.' : 'Suis les performances, les cas complexes et les alertes de l’équipe.';
-    document.getElementById('ops-context-label').textContent = role === 'admin' ? 'Contrôle global' : 'Équipe en direct';
-  }
   app.classList.remove('role-agent','role-supervisor','role-formateur','role-admin');
   app.classList.add('role-' + role);
   const adminSidebar = document.getElementById('admin-sidebar');

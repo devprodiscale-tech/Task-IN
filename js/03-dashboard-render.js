@@ -254,10 +254,11 @@ function renderSupKpis() {
   if (totalLabel) totalLabel.textContent = `Total (${periodLabels[supPeriod] || ''})`;
 
   const kpi = calcKpiSet(pool);
-  document.getElementById('sup-s-total').textContent = kpi.total;
-  document.getElementById('sup-s-dmt').textContent   = kpi.dmt;
-  document.getElementById('sup-s-frt').textContent   = kpi.frt;
-  document.getElementById('sup-s-count').textContent = kpi.count;
+  // Les cartes KPI Sup ne sont pas présentes sur tous les écrans : écriture sans erreur.
+  [['sup-s-total', kpi.total], ['sup-s-dmt', kpi.dmt], ['sup-s-frt', kpi.frt], ['sup-s-count', kpi.count]].forEach(([id, value]) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+  });
 }
 
 // Fonction calcKpiSet extraite — partagée avec renderStats et renderLeaderboard
@@ -497,9 +498,22 @@ function setRoleTabActive(view){
   });
 }
 
+// Pages de détail ouvertes depuis l’espace Admin : elles gardent leur rubrique
+// parente allumée dans la sidebar pour que l’admin sache toujours où il se trouve.
+const ADMIN_NAV_PARENT = { training: 'admin-training', documentation: 'admin-training', supervision: 'quality', leaderboard: 'team', today: 'team' };
 function setAdminSidebarActive(view) {
-  const activeView = view === 'admin-training' ? 'admin-training' : view;
-  document.querySelectorAll('[data-admin-nav]').forEach(link => link.classList.toggle('active', link.dataset.adminNav === activeView));
+  const activeView = ADMIN_NAV_PARENT[view] || view;
+  document.querySelectorAll('[data-admin-nav]').forEach(link => {
+    const active = link.dataset.adminNav === activeView;
+    link.classList.toggle('active', active);
+    if (active) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+  });
+}
+
+// Chaque changement de page repart du haut : sans cela, la page suivante s’ouvrait
+// à la hauteur de défilement de la précédente et paraissait coupée.
+function resetViewScroll() {
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 }
 
 function taskinViewKey(role = currentUser?.role) { return `taskin_view_${role || 'guest'}`; }
@@ -555,10 +569,16 @@ async function preloadAdminInterfaces() {
 // Point 5 : switchTab renforcé — guards stricts pour agent et non-admin
 async function switchTab(view, btn, options = {}) {
   const sequence = ++navigationSequence;
+  // L’Admin n’a pas d’accueil « home » : sa vue d’ensemble est « admin ».
+  if (currentUser?.role === 'admin' && view === 'home') view = 'admin';
+  // Remonte en haut à chaque navigation (y compris re-clic sur la page active),
+  // sauf lors d’un simple rafraîchissement de la vue courante (history:false, même vue).
+  const viewChanged = view !== currentView || options.history !== false;
   const adminSubViews = {
     'workflow-kpi': { panel: 'admin-workflow-panel', render: () => adminWorkflowRender() },
     'stat': { panel: 'admin-stat-panel', render: () => adminStatRender() },
-    'quality': { panel: 'admin-quality-panel', render: async () => { await loadModule('10-supervision.js'); if (typeof svInit === 'function') await svInit(); return adminQualityRender(); } },
+    // Charge les données Supervision SANS basculer sur l’écran Supervision.
+    'quality': { panel: 'admin-quality-panel', render: async () => { await loadModule('10-supervision.js'); if (typeof svLoadSupervisionData === 'function') await svLoadSupervisionData(); return adminQualityRender(); } },
     'admin-training': { panel: 'admin-training-panel', render: () => adminTrainingRender() },
     'admin-settings': { panel: 'admin-settings-panel', render: () => adminSettingsRender() },
     'agent-sessions': { panel: 'admin-agent-sessions-panel', render: () => agentSessionsAdminRender() },
@@ -567,24 +587,21 @@ async function switchTab(view, btn, options = {}) {
     if (!currentUser || currentUser.role !== 'admin') return;
     setAdminSidebarActive(view);
     currentView = view;
+    if (viewChanged) resetViewScroll();
     if (options.history !== false) rememberTaskinView(view);
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     if (btn) btn.classList.add('active');
     hideAdminSubPanels();
     ['admin-panel','team-live-panel','leaderboard-panel','documentation-panel','supervision-panel','training-panel','channel-matrix-panel'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
-    // Le nouvel arbre admin-* est la seule architecture active.
-    document.getElementById('admin-panel')?.classList.add('hidden');
     document.querySelector('.toolbar')?.classList.add('hidden');
     document.querySelector('.entries-table-wrap')?.classList.add('hidden');
     document.getElementById('date-filter-bar')?.classList.add('hidden');
-    ['admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel','admin-settings-panel'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
-    document.getElementById(adminSubViews[view].panel)?.classList.remove('hidden');
     const panel = document.getElementById(adminSubViews[view].panel);
+    panel?.classList.remove('hidden');
     if (panel?.dataset.adminReady !== '1') {
       await adminSubViews[view].render();
       panel?.setAttribute('data-admin-ready', '1');
     }
-    if (sequence !== navigationSequence || currentView !== view) return;
     return;
   }
   if (currentUser.role === 'agent' && (view === 'admin' || view === 'supervision' || view === 'team' || view === 'leaderboard')) return;
@@ -592,6 +609,7 @@ async function switchTab(view, btn, options = {}) {
   if (currentUser.role === 'formateur' && (view === 'supervision' || view === 'admin')) return;
 
   currentView = view;
+  if (viewChanged) resetViewScroll();
   if (options.history !== false) rememberTaskinView(view);
   if (currentUser.role === 'admin') setAdminSidebarActive(view);
   if (currentUser.role === 'supervisor' || currentUser.role === 'formateur') setRoleTabActive(view);
@@ -738,15 +756,13 @@ function renderTeamLiveList(activeTimers) {
   }).join('');
 }
 
-function viewAgentDetail(agentId) {
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+// Passe par switchTab pour masquer proprement la page d’origine (Admin, Supervision…)
+// au lieu d’afficher le tableau des entrées par-dessus.
+async function viewAgentDetail(agentId) {
   const agentTab = document.querySelector('.tab.agent-only');
-  if (agentTab) { agentTab.classList.remove('hidden'); agentTab.classList.add('active'); }
-  currentView = 'today';
-  document.getElementById('team-live-panel').classList.add('hidden');
-  document.getElementById('admin-panel').classList.add('hidden');
-  document.querySelector('.toolbar').classList.remove('hidden');
-  document.querySelector('.entries-table-wrap').classList.remove('hidden');
-  document.getElementById('filter-agent').value = agentId;
+  agentTab?.classList.remove('hidden');
+  await switchTab('today', agentTab);
+  const filter = document.getElementById('filter-agent');
+  if (filter) filter.value = agentId;
   renderAll();
 }

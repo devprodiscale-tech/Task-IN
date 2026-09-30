@@ -25,6 +25,9 @@
 .btn{padding:8px 16px;border-radius:9px;border:none;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:7px;transition:all .15s}
 .btn-ghost{background:rgba(255,255,255,.08);color:#D8E2EE;border:1px solid rgba(255,255,255,.15)}
 .btn-ghost:hover{color:#fff;background:rgba(255,255,255,.16)}
+/* Dans la page et les fenêtres (fond clair), le style « topbar » était illisible pour Formateur et Agent. */
+.content .btn-ghost,.modal .btn-ghost{background:var(--surface2);border-color:var(--border);color:var(--text2)}
+.content .btn-ghost:hover,.modal .btn-ghost:hover{background:var(--surface2);border-color:var(--ocean);color:var(--text)}
 
 /* TIMER BANNER */
 .timer-banner{margin:20px 24px 0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 26px;display:flex;align-items:center;gap:22px}

@@ -12,7 +12,7 @@
 
 /* ===== P2 : LEADERBOARD ===== */
 #tab-leaderboard{display:inline-flex}
-#leaderboard-panel{display:none}
+/* Visibilité gérée par la classe .hidden (une règle display:none ici masquait le classement partout). */
 .lb-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .lb-period-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
 .lb-period-btn.active{background:var(--ocean);color:#fff;border-color:var(--ocean)}
