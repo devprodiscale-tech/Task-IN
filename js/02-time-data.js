@@ -282,7 +282,7 @@ async function loadEntries(shouldRender = true) {
   const supabase = window.taskinDataProviders?.supabase;
   if (!supabase?.enabled()) return;
   try {
-    const rows = await supabase.listTimeEntries(1000);
+    const rows = await supabase.listTimeEntries();
     entries = (rows || []).map(row => ({
       id: row.id,
       rawId: row.raw_id || '', source: /^[a-z_-]{1,24}$/.test(row.source || '') ? row.source : 'ticket', desc: row.description || '',

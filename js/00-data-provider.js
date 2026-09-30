@@ -189,7 +189,7 @@
   }
 
   async function getProfile(id) {
-    const rows = await request('profiles', {}, { select: '*', id: `eq.${encodeURIComponent(id)}`, limit: '1' });
+    const rows = await request('profiles', {}, { select: '*', id: `eq.${id}`, limit: '1' });
     return Array.isArray(rows) ? rows[0] || null : null;
   }
 
@@ -228,7 +228,7 @@
       return request('profiles', {}, { select: '*', order: 'name.asc', limit: String(limit) });
     },
     async getSetting(key) {
-      const rows = await request('settings', {}, { select: 'key,value', key: `eq.${encodeURIComponent(key)}`, limit: '1' });
+      const rows = await request('settings', {}, { select: 'key,value', key: `eq.${key}`, limit: '1' });
       return Array.isArray(rows) ? rows[0] || null : null;
     },
     async upsertSetting(key, value, updatedBy) {
@@ -243,7 +243,7 @@
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
         body: JSON.stringify(profile)
-      }, { id: `eq.${encodeURIComponent(id)}` });
+      }, { id: `eq.${id}` });
     },
     async listTable(table, limit = 500, order = '') {
       const params = { select: '*', limit: String(limit) };
@@ -254,22 +254,37 @@
       return request(table, { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(row) });
     },
     async updateRow(table, id, row) {
-      return request(table, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(row) }, { id: `eq.${encodeURIComponent(id)}` });
+      return request(table, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(row) }, { id: `eq.${id}` });
     },
     async deleteRow(table, id) {
-      return request(table, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }, { id: `eq.${encodeURIComponent(id)}` });
+      return request(table, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }, { id: `eq.${id}` });
     },
     async list(table, select = '*', limit = 20) {
       return request(table, {}, { select, limit: String(limit) });
     },
-    async listTimeEntries(limit = 100) {
-      return request('time_entries', {}, { select: '*', order: 'started_at.desc', limit: String(limit) });
+    // Lecture paginée : Supabase plafonne chaque réponse, on enchaîne les pages pour ne
+    // jamais tronquer l'historique (stats et moyennes justes quel que soit le volume).
+    async listTimeEntries({ pageSize = 1000, maxRows = 50000 } = {}) {
+      // On avance du nombre de lignes réellement reçues et on s'arrête sur une page vide :
+      // robuste même si le plafond serveur (max-rows) est inférieur à pageSize.
+      const all = [];
+      let previousFirstId = null;
+      while (all.length < maxRows) {
+        const page = await request('time_entries', {}, { select: '*', order: 'started_at.desc,id.desc', limit: String(pageSize), offset: String(all.length) });
+        if (!Array.isArray(page) || !page.length) break;
+        // Garde-fou : si le serveur ignore le décalage, la même page revient en boucle.
+        if (previousFirstId !== null && page[0]?.id === previousFirstId) break;
+        previousFirstId = page[0]?.id ?? null;
+        all.push(...page);
+      }
+      if (all.length >= maxRows) console.warn(`time_entries : limite de ${maxRows} lignes atteinte, historique plus ancien non chargé.`);
+      return all;
     },
     async listActiveTimers(limit = 100) {
       return request('active_timers', {}, { select: '*', limit: String(limit) });
     },
     async getActiveTimer(agentId) {
-      return request('active_timers', {}, { select: '*', agent_id: `eq.${encodeURIComponent(agentId)}`, limit: '1' });
+      return request('active_timers', {}, { select: '*', agent_id: `eq.${agentId}`, limit: '1' });
     },
     async insertTimeEntry(entry) {
       return request('time_entries', {
@@ -281,7 +296,7 @@
     // Supabase ne signale pas d'erreur quand les règles d'accès bloquent une modification :
     // il répond simplement « 0 ligne ». On demande les lignes touchées pour le détecter.
     async deleteTimeEntry(id) {
-      const rows = await request('time_entries', { method: 'DELETE', headers: { Prefer: 'return=representation' } }, { id: `eq.${encodeURIComponent(id)}` });
+      const rows = await request('time_entries', { method: 'DELETE', headers: { Prefer: 'return=representation' } }, { id: `eq.${id}` });
       if (!Array.isArray(rows) || !rows.length) throw new Error('Supabase time_entries: suppression refusée ou entrée introuvable.');
       return rows;
     },
@@ -290,7 +305,7 @@
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
         body: JSON.stringify(patch)
-      }, { id: `eq.${encodeURIComponent(id)}` });
+      }, { id: `eq.${id}` });
       if (!Array.isArray(rows) || !rows.length) throw new Error('Supabase time_entries: modification refusée ou entrée introuvable.');
       return rows;
     },
@@ -302,7 +317,7 @@
       });
     },
     async removeActiveTimer(agentId) {
-      return request('active_timers', { method: 'DELETE', headers: { Prefer: 'return=minimal' } }, { agent_id: `eq.${encodeURIComponent(agentId)}` });
+      return request('active_timers', { method: 'DELETE', headers: { Prefer: 'return=minimal' } }, { agent_id: `eq.${agentId}` });
     },
     async health() {
       const started = performance.now();

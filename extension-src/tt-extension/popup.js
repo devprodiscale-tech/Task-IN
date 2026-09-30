@@ -122,17 +122,51 @@ document.addEventListener('scroll', (e) => {
 // ==========================================
 // AUTHENTIFICATION ET INIT
 // ==========================================
+// Ouverture instantanée : on affiche tout de suite la session et les données mémorisées,
+// puis Supabase vérifie la session en arrière-plan. S'il la refuse, getUser vide le stockage,
+// ce qui recharge le popup (écouteur SESSION_USER_KEY) sur l'écran « Ouvrir Task'in ».
 async function tryRestoreSession() {
-  const user = await supabaseClient.getUser();
-  if (!user?.id) return false;
-  await enterApp(user.id);
+  const session = await supabaseClient.getSession();
+  const uid = session?.user?.id;
+  if (!uid) {
+    const user = await supabaseClient.getUser();
+    if (!user?.id) return false;
+    await enterApp(user.id);
+    return true;
+  }
+  await enterApp(uid);
+  supabaseClient.getUser().catch(() => {});
   return true;
+}
+
+// Petit cache local (chrome.storage) pour afficher sans attendre le réseau.
+const CACHE_PREFIX = 'taskin_cache_';
+async function readCache(name) {
+  try { return (await chrome.storage.local.get(CACHE_PREFIX + name))[CACHE_PREFIX + name] ?? null; } catch (e) { return null; }
+}
+function writeCache(name, value) {
+  // Écriture asynchrone : l'erreur éventuelle est absorbée ici (sinon promesse rejetée non gérée).
+  try { Promise.resolve(chrome.storage.local.set({ [CACHE_PREFIX + name]: value })).catch(() => {}); } catch (e) {}
+}
+function localDayKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 async function enterApp(uid) {
   currentUser = { id: uid, initials: '??', name: 'Chargement...', color: '#2563EB' };
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').classList.remove('hidden');
+  const [profile, treatments, today] = await Promise.all([
+    readCache('profile_' + uid), readCache('treatments'), readCache('today_' + uid)
+  ]);
+  // Un cache abîmé ne doit jamais bloquer l'ouverture : il est simplement ignoré.
+  try {
+    if (profile && typeof profile === 'object') { Object.assign(currentUser, profile); updateTopbarUI(); }
+    if (Array.isArray(treatments) && treatments.length) customTreatmentTypes = treatments.map(String);
+    if (today?.day === localDayKey() && Array.isArray(today.entries)) renderTodayEntries(today.entries);
+  } catch (e) { console.warn('Cache ignoré :', e); }
+  renderTreatmentList();
+  historyDayKey = localDayKey();
   await checkActiveTimer();
   document.getElementById('app-loading').classList.add('hidden');
   fetchAccountProfile(uid).then(() => updateTopbarUI());
@@ -149,6 +183,7 @@ async function fetchAccountProfile(uid) {
       currentUser.color = profile.color || '#2563EB';
       currentUser.role = profile.role || 'agent';
       currentUser.pole = profile.pole || '';
+      writeCache('profile_' + uid, { name: currentUser.name, initials: currentUser.initials, color: currentUser.color, role: currentUser.role, pole: currentUser.pole });
     }
   } catch (e) {}
 }
@@ -203,61 +238,74 @@ async function loadTeamLiveMini() {
   const el = document.getElementById('team-live-mini');
   if (!el) return;
   try {
-    const rows = await supabaseClient.request('/rest/v1/active_timers?select=agent_id&limit=50');
-    if (!rows.length) {
-      el.innerHTML = '<div class="mini-empty">Aucun agent actif pour le moment.</div>';
-      return;
-    }
-    el.innerHTML = `<div class="mini-team-count">${rows.length} agent${rows.length > 1 ? 's' : ''} actif${rows.length > 1 ? 's' : ''}</div>`;
+    // Les règles d'accès ne montrent à un agent que son propre timer : la fonction
+    // taskin_active_agents_count renvoie le nombre d'agents actifs de toute l'équipe.
+    const count = Number(await supabaseClient.request('/rest/v1/rpc/taskin_active_agents_count', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+    })) || 0;
+    el.innerHTML = count
+      ? `<div class="mini-team-count">${count} agent${count > 1 ? 's' : ''} actif${count > 1 ? 's' : ''}</div>`
+      : '<div class="mini-empty">Aucun agent actif pour le moment.</div>';
   } catch (e) {
     el.innerHTML = '<div class="mini-empty">—</div>';
   }
 }
 
+let historyLoadSeq = 0;
+let historyDayKey = '';
+// Popup resté ouvert après minuit : « aujourd'hui » repart à zéro automatiquement.
+setInterval(() => {
+  if (currentUser?.id && historyDayKey && historyDayKey !== localDayKey()) {
+    historyDayKey = localDayKey();
+    loadHistoryAndStats();
+  }
+}, 60000);
 async function loadHistoryAndStats() {
   const list = document.getElementById('history-list');
+  const seq = ++historyLoadSeq;
+  const uid = currentUser.id;
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
   try {
-    const rows = await supabaseClient.request('/rest/v1/time_entries?select=*&order=started_at.desc&limit=1000');
-    const now = new Date();
-    const todayEntries = rows.map(row => ({
+    const rows = await supabaseClient.request(
+      `/rest/v1/time_entries?select=source,treatment,description,started_at,duration_seconds`
+      + `&agent_id=eq.${encodeURIComponent(uid)}&started_at=gte.${encodeURIComponent(midnight.toISOString())}`
+      + `&order=started_at.desc&limit=500`);
+    if (seq !== historyLoadSeq || currentUser?.id !== uid) return; // réponse périmée
+    const entries = (Array.isArray(rows) ? rows : []).map(row => ({
       source: row.source || 'ticket',
       treatment: row.treatment || '',
       desc: row.description || '',
-      agent: row.agent_id || '',
-      startTimeDate: new Date(row.started_at),
+      startedAt: row.started_at,
       durationSec: Number(row.duration_seconds || 0)
-    })).filter(e => {
-      // SOLUTION : Filtrage de sécurité ultra strict sur l'ID de l'agent et vérification de la date du jour locale
-      const isMyTask = String(e.agent).trim() === String(currentUser.id).trim();
-      const isToday = e.startTimeDate.getDate() === now.getDate() &&
-                      e.startTimeDate.getMonth() === now.getMonth() &&
-                      e.startTimeDate.getFullYear() === now.getFullYear();
-      return isMyTask && isToday;
-    }).sort((a,b) => b.startTimeDate - a.startTimeDate);
-      
-    // Mise à jour des stats
-    const totalSec = todayEntries.reduce((s, e) => s + e.durationSec, 0);
-    const durH = Math.floor(totalSec / 3600);
-    const durM = Math.floor((totalSec % 3600) / 60);
-    const totalStr = durH > 0 ? `${durH}h${String(durM).padStart(2,'0')}` : `${durM}m`;
-    
-    document.getElementById('stat-tasks').textContent = todayEntries.length;
-    document.getElementById('stat-total').textContent = totalStr;
+    }));
+    renderTodayEntries(entries);
+    writeCache('today_' + uid, { day: localDayKey(), entries });
+  } catch (e) {
+    if (seq !== historyLoadSeq) return;
+    // Hors ligne : on garde l'affichage mémorisé s'il existe.
+    if (!list.querySelector('.history-item')) list.innerHTML = '<div class="mini-empty-row error">Erreur réseau ou chargement.</div>';
+  }
+}
 
-    // Rendu de la liste
-    if (todayEntries.length === 0) {
-      list.innerHTML = '<div class="mini-empty-row">Aucune tâche aujourd\'hui.</div>';
-      return;
-    }
-    
-    list.innerHTML = todayEntries.map(e => {
-      const info = sourceInfo(e.source);
-      const title = escapeHtml(e.desc || e.treatment || info.label);
-      const itemDurM = Math.ceil(e.durationSec / 60);
-      const itemDurH = Math.floor(e.durationSec / 3600);
-      const itemDurStr = itemDurH > 0 ? `${itemDurH}h${String(Math.floor((e.durationSec % 3600) / 60)).padStart(2,'0')}` : `${itemDurM}min`;
-      
-      return `
+function renderTodayEntries(rawEntries) {
+  const list = document.getElementById('history-list');
+  const entries = (rawEntries || []).filter(e => e && typeof e === 'object')
+    .map(e => ({ ...e, durationSec: Math.max(0, Number(e.durationSec) || 0) }));
+  const totalSec = entries.reduce((s, e) => s + e.durationSec, 0);
+  const durH = Math.floor(totalSec / 3600);
+  const durM = Math.floor((totalSec % 3600) / 60);
+  document.getElementById('stat-tasks').textContent = entries.length;
+  document.getElementById('stat-total').textContent = durH > 0 ? `${durH}h${String(durM).padStart(2, '0')}` : `${durM}m`;
+  if (!entries.length) {
+    list.innerHTML = '<div class="mini-empty-row">Aucune tâche aujourd\'hui.</div>';
+    return;
+  }
+  list.innerHTML = entries.map(e => {
+    const info = sourceInfo(e.source);
+    const title = escapeHtml(e.desc || e.treatment || info.label);
+    const itemDurH = Math.floor(e.durationSec / 3600);
+    const itemDurStr = itemDurH > 0 ? `${itemDurH}h${String(Math.floor((e.durationSec % 3600) / 60)).padStart(2, '0')}` : `${Math.ceil(e.durationSec / 60)}min`;
+    return `
       <div class="history-item">
           <div class="history-item-left">
               <div class="h-icon-box" style="--c:${info.color}" title="${escapeHtml(info.label)}">${sourceIconSvg(e.source)}</div>
@@ -265,11 +313,7 @@ async function loadHistoryAndStats() {
           </div>
           <span class="history-item-dur">${itemDurStr}</span>
       </div>`;
-    }).join('');
-    
-  } catch (e) {
-    list.innerHTML = '<div class="mini-empty-row error">Erreur réseau ou chargement.</div>';
-  }
+  }).join('');
 }
 
 // ==========================================
@@ -291,14 +335,13 @@ function getTreatmentColors(emoji) {
 }
 
 async function loadTreatments() {
-  renderTreatmentList();
   try {
     const rows = await supabaseClient.request('/rest/v1/settings?select=value&key=eq.treatments&limit=1');
     const values = rows[0]?.value?.list || [];
-    if (values.length) {
-      customTreatmentTypes = values.map(String);
-      renderTreatmentList();
-    }
+    // Liste de l'admin si elle existe, sinon la liste par défaut (jamais une ancienne copie).
+    customTreatmentTypes = values.length ? values.map(String) : [...TREATMENT_TYPES_DEFAULT];
+    renderTreatmentList();
+    writeCache('treatments', values.length ? customTreatmentTypes : null);
   } catch(e) {}
 }
 

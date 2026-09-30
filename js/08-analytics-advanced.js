@@ -310,7 +310,9 @@ function syncTaskinToSheets() {
   const dayEnd    = new Date(yesterday); dayEnd.setHours(23,59,59,999);
   
   // Récupération Supabase avec un jeton utilisateur soumis aux policies RLS
-  const url = \`\${SUPABASE_URL}/rest/v1/time_entries?select=id,source,description,agent_id,inbound_time,started_at,duration_seconds&order=started_at.desc&limit=1000\`;
+  // Filtre fait par Supabase : uniquement les entrées d'hier, sans plafond à 1000 lignes.
+  const range = encodeURIComponent(\`(started_at.gte.\${dayStart.toISOString()},started_at.lte.\${dayEnd.toISOString()})\`);
+  const url = \`\${SUPABASE_URL}/rest/v1/time_entries?select=id,source,description,agent_id,inbound_time,started_at,duration_seconds&and=\${range}&order=started_at.desc&limit=10000\`;
   const res  = UrlFetchApp.fetch(url, { headers: { apikey: SUPABASE_ANON_KEY, Authorization: \`Bearer \${SUPABASE_ACCESS_TOKEN}\` } });
   const docs  = JSON.parse(res.getContentText());
   

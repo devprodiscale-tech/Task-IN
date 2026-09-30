@@ -22,7 +22,17 @@
   }
 
   async function clearStorage() {
+    // Session + données mémorisées pour l'affichage instantané (profil, tâches du jour…) :
+    // rien ne doit rester pour la personne suivante sur un poste partagé.
+    // La session est retirée en premier : le nettoyage du cache ne doit jamais l'empêcher.
     await chrome.storage.local.remove([ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, USER_KEY]);
+    try {
+      const all = await chrome.storage.local.get(null);
+      const cacheKeys = Object.keys(all || {}).filter(key => key.startsWith('taskin_cache_'));
+      if (cacheKeys.length) await chrome.storage.local.remove(cacheKeys);
+    } catch (error) {
+      console.warn('Nettoyage du cache impossible :', error);
+    }
   }
 
   async function parseResponse(response, label) {
