@@ -1,0 +1,96 @@
+/* ===== Espace Agent : interface par pôle (FO / BO / Reconf), palette des canaux, mobile ===== */
+#app.role-agent{--pole:#2563EB}
+#app.role-agent.pole-bo{--pole:#7C3AED}
+#app.role-agent.pole-reconf{--pole:#16A34A}
+
+/* Bandeau du pôle */
+.agent-pole-banner{display:flex;align-items:center;gap:18px;margin:22px 24px 0;box-sizing:border-box;padding:18px 20px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(120deg,color-mix(in srgb,var(--pole) 10%,var(--surface)),var(--surface) 60%);box-shadow:var(--ui-shadow-sm,0 4px 14px rgba(15,35,65,.06));animation:agent-rise .45s cubic-bezier(.22,1,.36,1) both}
+.agent-pole-banner.hidden{display:none}
+.agent-pole-icon{display:grid;place-items:center;flex:none;width:52px;height:52px;border-radius:14px;background:var(--pole);color:#fff;box-shadow:0 10px 22px color-mix(in srgb,var(--pole) 35%,transparent)}
+.agent-pole-icon svg{width:26px;height:26px}
+.agent-pole-text{min-width:0;flex:1}
+.agent-pole-eyebrow{display:block;color:var(--pole);font:700 10.5px var(--font);letter-spacing:.12em;text-transform:uppercase}
+.agent-pole-text strong{display:block;margin-top:3px;color:var(--text);font-size:20px;font-weight:800;letter-spacing:-.02em}
+.agent-pole-text p{margin:4px 0 0;color:var(--text2);font-size:13px;line-height:1.5}
+.agent-pole-channels{display:grid;gap:7px;justify-items:end}
+.agent-pole-channels>span{color:var(--text3);font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.agent-pole-channels>div{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.agent-pole-channels em{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;background:color-mix(in srgb,var(--c) 12%,var(--surface));color:color-mix(in srgb,var(--c) 80%,var(--text));font-size:12px;font-style:normal;font-weight:700}
+.agent-pole-channels em svg{width:14px;height:14px}
+@keyframes agent-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* Timer : accent du pôle */
+body.ops-dashboard #app.role-agent .timer-btn-play{background:var(--pole);border-color:var(--pole)}
+body.ops-dashboard #app.role-agent .timer-clock.active{color:var(--pole)}
+
+/* Raccourcis : canaux prioritaires en grand, les autres regroupés */
+#app.role-agent .quickstart{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+#app.role-agent .qs-group{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#app.role-agent .qs-group-label{margin-right:2px;color:var(--text3);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+body.ops-dashboard #app.role-agent .qs-btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-weight:700;transition:transform .18s cubic-bezier(.22,1,.36,1),border-color .18s ease,background-color .18s ease,color .18s ease,box-shadow .18s ease}
+#app.role-agent .qs-icon{width:16px;height:16px;flex:none;color:var(--c)}
+body.ops-dashboard #app.role-agent .qs-primary{padding:11px 16px;border-color:color-mix(in srgb,var(--c) 35%,var(--border));background:color-mix(in srgb,var(--c) 8%,var(--surface));color:var(--text);font-size:13px}
+#app.role-agent .qs-primary .qs-icon{width:18px;height:18px}
+body.ops-dashboard #app.role-agent .qs-primary:hover{border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,var(--surface));color:var(--text);transform:translateY(-2px)}
+body.ops-dashboard #app.role-agent .qs-secondary{padding:7px 12px;font-size:12px}
+body.ops-dashboard #app.role-agent .qs-secondary:hover{border-color:var(--c,var(--ocean));color:var(--text)}
+#app.role-agent .qs-sync{--c:var(--ocean)}
+#app.role-agent .qs-btn:focus-visible{outline:2px solid var(--c,var(--ocean));outline-offset:2px}
+
+/* Cartes d'indicateurs : accent du pôle, carte « contextuelle » sans barre de progression */
+body.ops-dashboard #app.role-agent .stat-card::after{background:linear-gradient(90deg,var(--pole),transparent)}
+#app.role-agent .stat-card.stat-muted .kpi-progress-bar{visibility:hidden}
+#app.role-agent .stat-card.kpi-main{order:-2}
+#app.role-agent .stat-card.kpi-dmt{order:-1}
+#app.role-agent .stat-card.kpi-main .stat-value{color:var(--pole)!important}
+#app.role-agent #s-frt{color:var(--text)!important}
+#app.role-agent #s-dmt{color:var(--text)!important}
+#app.role-agent .kpi-goal-label{min-height:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Historique 7 jours */
+#app.role-agent .agent-history-title{color:var(--text2)}
+#app.role-agent .agent-hbar.today{background:var(--pole)}
+#app.role-agent .agent-hbar.has-data:not(.today){background:color-mix(in srgb,var(--pole) 28%,var(--surface2))}
+#app.role-agent .agent-hbar{transition:height .5s cubic-bezier(.22,1,.36,1),background-color .2s ease}
+#app.role-agent .agent-hbar-col:hover .agent-hbar{filter:brightness(1.08)}
+#app.role-agent .agent-hbar-label{display:flex;flex-direction:column;align-items:center;line-height:1.2}
+#app.role-agent .agent-hbar-label b{color:var(--text2);font:600 11px var(--font);text-transform:capitalize}
+#app.role-agent .agent-hbar-label small{color:var(--text3);font-size:10px}
+#app.role-agent .agent-hbar-col:last-child .agent-hbar-label b{color:var(--pole)}
+
+/* Onglets avec icônes */
+.tabs .tab{display:inline-flex;align-items:center;gap:7px}
+.tabs .tab-icon{width:16px;height:16px;flex:none;opacity:.8}
+.tabs .tab.active .tab-icon{opacity:1}
+body.ops-dashboard #app.role-agent .tab.active{color:var(--pole);box-shadow:0 -2px 0 var(--pole) inset}
+
+/* Fenêtre « Démarrer un timer » : même palette que les raccourcis */
+.source-picker .source-opt{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--c,#64748B) 30%,var(--border));border-radius:12px;background:color-mix(in srgb,var(--c,#64748B) 7%,var(--surface));color:var(--text);font-weight:700;font-size:13px;cursor:pointer;transition:border-color .16s ease,background-color .16s ease,box-shadow .16s ease,transform .16s ease}
+.source-picker .source-opt .src-icon{width:17px;height:17px;flex:none;color:var(--c)}
+.source-picker .source-opt i{position:absolute;top:-8px;right:10px;padding:1px 7px;border-radius:99px;background:var(--c);color:#fff;font:700 9.5px var(--font);font-style:normal;letter-spacing:.04em;text-transform:uppercase}
+.source-picker .source-opt:hover{border-color:var(--c);transform:translateY(-1px)}
+.source-picker .source-opt.selected{border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,var(--surface));box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent)}
+
+/* Étiquettes de canal dans le tableau */
+.source-tag[style*="--c"]{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:color-mix(in srgb,var(--c) 12%,var(--surface));color:color-mix(in srgb,var(--c) 78%,var(--text));font-size:11.5px;font-weight:700;white-space:nowrap}
+.source-tag .src-tag-icon{width:13px;height:13px;flex:none}
+
+/* Filtres : pastille de période vide masquée */
+#date-range-label:empty{display:none}
+
+/* Mobile */
+@media(max-width:760px){
+  .agent-pole-banner{margin:14px 14px 0;flex-wrap:wrap;padding:16px}
+  .agent-pole-channels{justify-items:start;width:100%}
+  .agent-pole-channels>div{justify-content:flex-start}
+  body.ops-dashboard #app.role-agent .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #app.role-agent .quickstart{justify-content:flex-start}
+  #app.role-agent .qs-group{width:100%}
+  body.ops-dashboard #app.role-agent .qs-primary{flex:1 1 auto;justify-content:center}
+  body.ops-dashboard #app.role-agent .tabs{overflow-x:auto;padding-inline:14px}
+  #app.role-agent .timer-task{overflow-wrap:anywhere}
+  #app.role-agent .entries-table-wrap{overflow-x:auto}
+  .source-picker{grid-template-columns:1fr!important}
+  .source-picker .source-opt{grid-column:auto!important}
+}
+@media(prefers-reduced-motion:reduce){.agent-pole-banner{animation:none}#app.role-agent .agent-hbar{transition:none}}

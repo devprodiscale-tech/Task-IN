@@ -184,7 +184,8 @@ function applyRoleUI() {
   const badge = document.getElementById('role-badge');
   const app = document.getElementById('app');
   const isOpsRole = role === 'admin' || role === 'supervisor';
-  document.body.classList.toggle('ops-dashboard', isOpsRole);
+  // Même habillage (topbar clair, cartes, onglets, responsive) pour tous les rôles, agent compris.
+  document.body.classList.toggle('ops-dashboard', isOpsRole || role === 'agent');
   app.classList.remove('role-agent','role-supervisor','role-formateur','role-admin');
   app.classList.add('role-' + role);
   const adminSidebar = document.getElementById('admin-sidebar');

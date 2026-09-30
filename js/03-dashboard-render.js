@@ -343,7 +343,9 @@ function renderTable(filtered) {
     if (ratio > 1.2) durClass = 'dur-over';
     else if (ratio > 1) durClass = 'dur-warn';
     const startDate = getEntryDate(e.startTimeStr);
-    const startStr = startDate ? startDate.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) : '--:--';
+    const startTime = startDate ? startDate.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) : '--:--';
+    // Hors aujourd'hui, le jour précède l'heure (sinon « Cette semaine » mélange des heures sans date).
+    const startStr = startDate && !isToday(e.startTimeStr) ? `${startDate.toLocaleDateString('fr-FR', {weekday:'short', day:'numeric'}).replace('.', '')} · ${startTime}` : startTime;
     return `<tr>
       <td class="dur-cell" style="font-weight:600">${e.inboundTime || '--:--'}</td>
       <td class="dur-cell">${startStr}</td>
