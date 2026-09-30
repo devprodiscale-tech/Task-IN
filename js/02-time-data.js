@@ -231,7 +231,10 @@ async function loadActiveTimers() {
   if (!supabase?.enabled()) return [];
   try {
     const rows = await supabase.listActiveTimers(100);
-    return (rows || []).map(row => ({ agentId: row.agent_id, source: row.source || 'ticket', desc: row.description || '', startTime: new Date(row.started_at).getTime() }));
+    const timers = (rows || []).map(row => ({ agentId: row.agent_id, source: row.source || 'ticket', desc: row.description || '', startTime: new Date(row.started_at).getTime() }));
+    // Dernier état connu, partagé avec le cockpit Workflow / KPI (« Équipe live »).
+    window.taskinActiveTimers = timers;
+    return timers;
   } catch (e) { console.error('Lecture timers Supabase impossible:', e); return []; }
 }
 
@@ -249,9 +252,17 @@ function stopLiveRefresh() {
 }
 
 async function fetchPermanentLiveAgents() {
-  if (currentUser.role === 'agent') return;
+  if (!currentUser || currentUser.role === 'agent') return;
   const activeTimers = await loadActiveTimers();
+  // « Équipe live » du cockpit suit l'actualisation toutes les 15 s quand il est affiché.
+  if (typeof adminWorkflowRender === 'function') {
+    ['sv-workflow-panel', 'admin-workflow-panel'].forEach(id => {
+      const panel = document.getElementById(id);
+      if (panel && panel.offsetParent !== null) adminWorkflowRender(id);
+    });
+  }
   const grid = document.getElementById('live-agents-grid');
+  if (!grid) return;
   if (activeTimers.length === 0) {
     grid.innerHTML = '<div style="opacity:0.6; padding:10px;">Aucun agent actif pour le moment.</div>';
     return;

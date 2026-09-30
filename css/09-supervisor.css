@@ -1,0 +1,57 @@
+/* ===== Espace Superviseur (et Formateur) : onglets, indicateurs, cartes, états vides ===== */
+
+/* Onglets métier : icônes SVG et soulignement, comme l'espace Agent */
+#role-tabs.role-tabs{gap:2px;border-bottom:1px solid var(--border)}
+#role-tabs .role-tab{gap:8px;padding:11px 14px;border:0;border-radius:9px 9px 0 0;background:transparent;color:var(--text2);font-weight:650;box-shadow:none}
+#role-tabs .role-tab:hover{background:var(--surface2);color:var(--text)}
+#role-tabs .role-tab.active{background:transparent;color:var(--ocean);box-shadow:inset 0 -2px 0 var(--ocean)}
+#role-tabs .role-tab:focus-visible{outline:2px solid var(--ocean);outline-offset:-2px}
+.role-tab-icon{width:16px;height:16px;flex:none;opacity:.75;transition:opacity .16s ease}
+#role-tabs .role-tab.active .role-tab-icon,#role-tabs .role-tab:hover .role-tab-icon{opacity:1}
+
+/* Indicateurs de la vue d'ensemble */
+.sv-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.sv-kpi{position:relative;display:flex;align-items:center;gap:13px;min-width:0;padding:15px 16px;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:var(--ui-shadow-sm,0 4px 14px rgba(15,35,65,.06));animation:sv-rise .4s cubic-bezier(.22,1,.36,1) both}
+.sv-kpi::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--c),transparent)}
+.sv-kpi:nth-child(2){animation-delay:.04s}.sv-kpi:nth-child(3){animation-delay:.08s}.sv-kpi:nth-child(4){animation-delay:.12s}
+.sv-kpi-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:color-mix(in srgb,var(--c) 14%,var(--surface));color:var(--c)}
+.sv-kpi-icon .sv-icon{width:20px;height:20px}
+.sv-kpi-copy{min-width:0}
+.sv-kpi-copy span{display:block;color:var(--text2);font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.sv-kpi-copy strong{display:block;margin-top:3px;color:var(--text);font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.sv-kpi-copy strong em{color:var(--text3);font-size:15px;font-style:normal;font-weight:700}
+.sv-kpi-copy small{display:block;margin-top:3px;overflow:hidden;color:var(--text3);font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+.sv-kpi-alert{color:var(--red);font-style:normal;font-weight:700}
+@keyframes sv-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Titres de cartes avec icône colorée */
+.sv-card-title-icon{display:flex;align-items:center;gap:9px}
+.sv-title-icon{display:block;flex:none;width:30px;height:30px;padding:7px;border-radius:9px;background:color-mix(in srgb,var(--c,var(--ocean)) 13%,var(--surface));color:var(--c,var(--ocean));box-sizing:border-box}
+.btn .btn-icon{width:15px;height:15px;margin-right:6px;vertical-align:-2px}
+
+/* États vides dessinés (plus d'emojis) */
+.sv-empty-state{display:grid;justify-items:center;gap:6px;padding:22px 14px;text-align:center}
+.sv-empty-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,var(--c) 12%,var(--surface));color:var(--c)}
+.sv-empty-icon .sv-icon{width:21px;height:21px}
+.sv-empty-state strong{color:var(--text);font-size:13.5px;font-weight:700}
+.sv-empty-state p{max-width:340px;margin:0;color:var(--text2);font-size:12.5px;line-height:1.5}
+#sv-escalations-list .sv-empty-state,#sv-reviews-list .sv-empty-state,#sv-coaching-list .sv-empty-state{margin-top:8px;padding:40px 16px;border:1px dashed var(--border2);border-radius:14px;background:var(--surface)}
+
+/* Cockpit « Équipe live » et canaux : couleurs des canaux, badge en ligne */
+.admin-workflow-sources>div[style*="--c"] span i{background:var(--c)}
+.admin-workflow-sources>div[style*="--c"] em{background:var(--c);opacity:.85}
+.admin-workflow-live-row i.live{padding:3px 7px;border-radius:99px;background:color-mix(in srgb,var(--green) 16%,var(--surface));color:var(--green)}
+.admin-workflow-live-row:has(i.live){border-color:color-mix(in srgb,var(--green) 35%,var(--border))}
+
+/* Indicateurs du cockpit : une colonne ne s'élargit jamais à cause d'un texte long */
+.admin-workflow-kpis>div{min-width:0}
+@media(max-width:680px){.admin-workflow-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Mobile : grilles en ligne empilées */
+@media(max-width:900px){.sv-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+  #sv-view-overview>div[style*="grid-template-columns:1fr 1fr"],#sv-rep-kpis{grid-template-columns:1fr!important}
+  #role-tabs .role-tab{padding:10px 12px}
+}
+@media(max-width:480px){.sv-kpi-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.sv-kpi{animation:none}}

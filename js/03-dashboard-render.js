@@ -463,9 +463,26 @@ function adminSidebarSetupTooltips() {
 }
 
 const roleTabItems = {
-  supervisor: [['supervision','👁️ Supervision'],['team','👥 Équipe'],['leaderboard','📊 Performance']],
-  formateur: [['training','🎓 Formation'],['documentation','📄 Documentation']],
+  supervisor: [['supervision','Supervision'],['team','Équipe'],['leaderboard','Performance']],
+  formateur: [['training','Formation'],['documentation','Documentation']],
 };
+// Icônes des onglets métier : même style SVG que l'espace Agent (plus d'emojis).
+const ROLE_TAB_SVG = {
+  supervision: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  overview: '<rect width="7" height="9" x="3" y="3" rx="1.5"/><rect width="7" height="5" x="14" y="3" rx="1.5"/><rect width="7" height="9" x="14" y="12" rx="1.5"/><rect width="7" height="5" x="3" y="16" rx="1.5"/>',
+  escalations: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+  reviews: '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>',
+  coaching: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/>',
+  reporting: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+  sessions: '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/>',
+  team: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  leaderboard: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+  documentation: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+  training: '<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
+};
+function roleTabLabel(view, label) {
+  return `<svg class="role-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ROLE_TAB_SVG[view] || ''}</svg><span>${label}</span>`;
+}
 function renderRoleTabs(role) {
   const rail=document.getElementById('role-tabs'); if(!rail) return;
   const supervisor=role==='supervisor';
@@ -476,17 +493,17 @@ function renderRoleTabs(role) {
   if(context) context.textContent=supervisor?'Équipe en direct':'Learning & Knowledge';
   if(eyebrow) eyebrow.textContent=supervisor?'SUPERVISION':'FORMATION';
   if (supervisor) {
-    const subViews=[['overview','🧭 Vue d’ensemble'],['escalations','🚩 Cas complexes'],['reviews','🎧 Grille d’écoute'],['coaching','🤝 Coaching 1:1'],['reporting','📊 Reporting'],['sessions','🔐 Connexions']];
-    const workspaceViews=[['team','👥 Équipe'],['leaderboard','🏆 Classement'],['documentation','📄 Documentation']];
+    const subViews=[['overview','Vue d’ensemble'],['escalations','Cas complexes'],['reviews','Grille d’écoute'],['coaching','Coaching 1:1'],['reporting','Reporting'],['sessions','Connexions']];
+    const workspaceViews=[['team','Équipe'],['leaderboard','Classement'],['documentation','Documentation']];
     const items=[...subViews,...workspaceViews];
     rail.innerHTML=items.map(([view,label])=>{
       const isSubView=subViews.some(([id])=>id===view);
       return isSubView
-        ? `<button type="button" class="role-tab sv-tab-btn" id="sv-tab-${view}" data-role-tab="${view}">${label}</button>`
-        : `<button type="button" class="role-tab" data-role-tab="${view}">${label}</button>`;
+        ? `<button type="button" class="role-tab sv-tab-btn" id="sv-tab-${view}" data-role-tab="${view}">${roleTabLabel(view, label)}</button>`
+        : `<button type="button" class="role-tab" data-role-tab="${view}">${roleTabLabel(view, label)}</button>`;
     }).join('');
   } else {
-    rail.innerHTML=(roleTabItems[role]||[]).map(([view,label])=>`<button type="button" class="role-tab" data-role-tab="${view}">${label}</button>`).join('');
+    rail.innerHTML=(roleTabItems[role]||[]).map(([view,label])=>`<button type="button" class="role-tab" data-role-tab="${view}">${roleTabLabel(view, label)}</button>`).join('');
   }
   rail.querySelectorAll('[data-role-tab]').forEach(button => {
     button.addEventListener('click', event => {

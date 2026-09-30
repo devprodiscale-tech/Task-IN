@@ -319,7 +319,8 @@ function applyRoleUI() {
   if (role === 'formateur') {
     document.getElementById('training-panel').classList.remove('hidden');
   }
-  if ((role === 'supervisor' || role === 'formateur') && typeof setWorkspaceSidebarActive === 'function') {
+  // Onglet actif surligné dès l'arrivée (setWorkspaceSidebarActive n'existe plus : la condition bloquait l'appel).
+  if ((role === 'supervisor' || role === 'formateur') && typeof setRoleTabActive === 'function') {
     setRoleTabActive(currentView);
   }
   if (typeof rememberTaskinView === 'function') rememberTaskinView(currentView, true);

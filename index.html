@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="css/06-admin-overview.css?v=20260930c">
 <link rel="stylesheet" href="css/07-landing.css?v=20260930d">
 <link rel="stylesheet" href="css/08-agent.css?v=20260930b">
+<link rel="stylesheet" href="css/09-supervisor.css?v=20260930b">
 </head>
 <body>
 
@@ -705,22 +706,22 @@
           <button class="btn btn-ghost" style="margin-left:auto" onclick="svSwitchSubTab('escalations')">Voir les cas →</button>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px" id="sv-ov-kpis"></div>
+        <div class="sv-kpi-grid" id="sv-ov-kpis"></div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start">
           <div style="display:flex;flex-direction:column;gap:12px">
             <div class="sv-card" style="cursor:default">
-              <div class="sv-card-title" style="margin-bottom:10px">Cas complexes prioritaires</div>
+              <div class="sv-card-title sv-card-title-icon" style="margin-bottom:10px;--c:#E5484D"><svg class="sv-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/></svg>Cas complexes prioritaires</div>
               <div id="sv-ov-priority-cases"></div>
             </div>
             <div class="sv-card" style="cursor:default">
-              <div class="sv-card-title" style="margin-bottom:10px">Agents à surveiller</div>
+              <div class="sv-card-title sv-card-title-icon" style="margin-bottom:10px;--c:#D97706"><svg class="sv-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/></svg>Agents à surveiller</div>
               <div id="sv-ov-watchlist"></div>
             </div>
           </div>
           <div class="sv-card" style="cursor:default">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-              <div class="sv-card-title" style="margin:0">Fiche agent</div>
+              <div class="sv-card-title sv-card-title-icon" style="margin:0;--c:#2563EB"><svg class="sv-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>Fiche agent</div>
               <select class="filter-select" id="sv-ov-agent-picker" style="margin-left:auto" onchange="svRenderAgentFocusCard(this.value)"></select>
             </div>
             <div id="sv-ov-focus-card"></div>
@@ -783,14 +784,14 @@
       <div id="sv-view-reporting" class="hidden">
         <div class="doc-toolbar">
           <div style="font-size:13px;font-weight:700;color:var(--text)">Cette semaine <span style="font-weight:400;color:var(--text2)">vs semaine dernière</span></div>
-          <button class="btn btn-ghost" style="margin-left:auto" onclick="exportExcel()">📄 Exporter (Excel)</button>
+          <button class="btn btn-ghost" style="margin-left:auto" onclick="exportExcel()"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Exporter (Excel)</button>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px" id="sv-rep-kpis"></div>
 
         <div class="sv-card" style="cursor:default;margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-            <div class="sv-card-title" style="margin:0">Heatmap équipe — score qualité</div>
+            <div class="sv-card-title sv-card-title-icon" style="margin:0;--c:#7C3AED"><svg class="sv-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/></svg>Heatmap équipe — score qualité</div>
             <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2)">
               <span style="width:10px;height:10px;border-radius:2px;background:var(--red-dim);display:inline-block"></span>Faible
               <span style="width:10px;height:10px;border-radius:2px;background:var(--amber-dim);display:inline-block;margin-left:4px"></span>Moyen
@@ -1301,13 +1302,13 @@
 
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260930blocb" defer></script>
-<script src="js/00-core-init.js?v=20260930sec" defer></script>
-<script src="js/01-core-auth-network.js?v=20260930sec" defer></script>
-<script src="js/02-time-data.js?v=20260930blocb" defer></script>
-<script src="js/03-dashboard-render.js?v=20260930sec" defer></script>
-<script src="js/04-admin.js?v=20260930sec" defer></script>
+<script src="js/00-core-init.js?v=20260930sup" defer></script>
+<script src="js/01-core-auth-network.js?v=20260930sup" defer></script>
+<script src="js/02-time-data.js?v=20260930sup" defer></script>
+<script src="js/03-dashboard-render.js?v=20260930sup" defer></script>
+<script src="js/04-admin.js?v=20260930sup" defer></script>
 <script src="js/11-admin-overview.js?v=20260930a" defer></script>
-<script src="js/12-admin-workflow.js?v=20260923" defer></script>
+<script src="js/12-admin-workflow.js?v=20260930sup" defer></script>
 <script src="js/13-admin-stat.js?v=20260918" defer></script>
 <script src="js/14-admin-quality.js?v=20260918" defer></script>
 <script src="js/15-admin-training.js?v=20260918" defer></script>

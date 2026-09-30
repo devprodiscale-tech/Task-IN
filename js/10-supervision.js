@@ -1,5 +1,5 @@
 // ===== SUPERVISION : Cas complexes, Grille d'écoute, Coaching 1:1 =====
-let svSubTab = 'escalations';
+let svSubTab = 'overview'; // l'espace Superviseur s'ouvre sur la vue d'ensemble
 let escalations = [];
 let qualityReviews = [];
 let coachingSheets = [];
@@ -157,6 +157,7 @@ function svNormalizeEscalation(e, collection = 'escalations') {
 async function svLoadSupervisionData() {
   const [sharedEsc, legacyEsc, rev, coach] = await Promise.all([
     svFetchCollection('escalations'), svFetchCollection('complexCases'), svFetchCollection('qualityReviews'), svFetchCollection('coachingSheets'),
+    typeof loadActiveTimers === 'function' ? loadActiveTimers() : null,
   ]);
   escalations = [...sharedEsc.map(e => svNormalizeEscalation(e, 'escalations')), ...legacyEsc.map(e => svNormalizeEscalation(e, 'complexCases'))];
   qualityReviews = rev; coachingSheets = coach;
@@ -234,7 +235,7 @@ function svRenderEscalations() {
   list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   document.getElementById('sv-esc-count-badge').textContent = `${list.length} cas`;
   const container = document.getElementById('sv-escalations-list');
-  if (!list.length) { container.innerHTML = '<div class="sv-empty">Aucun cas complexe pour ces filtres.</div>'; return; }
+  if (!list.length) { container.innerHTML = svEmptyState('flag', 'Aucun cas complexe', 'Aucun cas ne correspond à ces filtres. Crée un cas avec « + Nouveau cas ».', '#E5484D'); return; }
   const now = Date.now();
   container.innerHTML = list.map(e => {
     const overdue = e.status !== 'resolu' && e.deadlineAt && e.deadlineAt < now;
@@ -383,6 +384,28 @@ function svComputeWatchlist() {
   });
   return reasons.sort((a, b) => b.severity - a.severity).slice(0, 5);
 }
+// ===== Éléments visuels partagés de l'espace Superviseur =====
+const SV_ICONS = {
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+  users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  alert: '<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4M12 17h.01"/>',
+  check: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+  person: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+  coaching: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/>',
+  headset: '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>',
+};
+function svIcon(name, cls = 'sv-icon') {
+  return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SV_ICONS[name] || ''}</svg>`;
+}
+function svEmptyState(icon, title, text = '', color = 'var(--ocean)') {
+  return `<div class="sv-empty-state" style="--c:${color}"><span class="sv-empty-icon">${svIcon(icon)}</span><strong>${title}</strong>${text ? `<p>${text}</p>` : ''}</div>`;
+}
+function svKpi(icon, label, value, sub, color) {
+  return `<div class="sv-kpi" style="--c:${color}"><span class="sv-kpi-icon">${svIcon(icon)}</span><div class="sv-kpi-copy"><span>${label}</span><strong>${value}</strong>${sub ? `<small>${sub}</small>` : ''}</div></div>`;
+}
+
 function svRenderOverview() {
   const now = Date.now();
   const overdue = escalations.filter(e => e.status !== 'resolu' && e.deadlineAt && e.deadlineAt < now);
@@ -397,12 +420,12 @@ function svRenderOverview() {
   const activeToday = new Set(entries.filter(e => isToday(e.startTimeStr)).map(e => e.agent));
   const totalAgents = agentsOnly().length;
 
-  document.getElementById('sv-ov-kpis').innerHTML = `
-    <div class="sv-card" style="cursor:default"><div class="sv-card-meta">DMT équipe (semaine)</div><div style="font-family:var(--display);font-weight:700;font-size:22px;margin-top:4px">${teamDMT.label}</div></div>
-    <div class="sv-card" style="cursor:default"><div class="sv-card-meta">Score qualité moy.</div><div style="font-family:var(--display);font-weight:700;font-size:22px;margin-top:4px">${avgScore !== null ? avgScore + '%' : '—'}</div></div>
-    <div class="sv-card" style="cursor:default"><div class="sv-card-meta">Cas ouverts</div><div style="font-family:var(--display);font-weight:700;font-size:22px;margin-top:4px">${openCases.length}</div>${overdue.length ? `<div style="font-size:11px;color:var(--red);margin-top:2px">${overdue.length} en retard</div>` : ''}</div>
-    <div class="sv-card" style="cursor:default"><div class="sv-card-meta">Agents actifs (jour)</div><div style="font-family:var(--display);font-weight:700;font-size:22px;margin-top:4px">${activeToday.size}/${totalAgents}</div></div>
-  `;
+  document.getElementById('sv-ov-kpis').innerHTML = [
+    svKpi('clock', 'DMT équipe', teamDMT.label, 'Cette semaine', '#2563EB'),
+    svKpi('star', 'Score qualité moyen', avgScore !== null ? avgScore + '%' : '—', avgScore !== null ? 'Dernières grilles d’écoute' : 'Aucune grille d’écoute', '#7C3AED'),
+    svKpi('flag', 'Cas ouverts', openCases.length, overdue.length ? `<em class="sv-kpi-alert">${overdue.length} en retard</em>` : 'Aucun en retard', overdue.length ? '#E5484D' : '#D97706'),
+    svKpi('users', 'Agents actifs', `${activeToday.size}<em>/${totalAgents}</em>`, 'Au moins une tâche aujourd’hui', '#16A34A'),
+  ].join('');
 
   const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
   const priorityCases = openCases.slice().sort((a, b) => {
@@ -418,7 +441,7 @@ function svRenderOverview() {
       <span style="font-size:12.5px;flex:1">${docEsc(e.title)}</span>
       <span style="font-size:11.5px;color:${isOver ? 'var(--red)' : 'var(--text2)'}">${isOver ? 'En retard' : (e.deadlineAt ? new Date(e.deadlineAt).toLocaleDateString('fr-FR') : '')}</span>
     </div>`;
-  }).join('') : '<div class="sv-empty" style="padding:14px">Aucun cas ouvert 🎉</div>';
+  }).join('') : svEmptyState('check', 'Aucun cas ouvert', 'Les cas complexes en attente apparaîtront ici.', '#16A34A');
 
   const watchlist = svComputeWatchlist();
   const wlEl = document.getElementById('sv-ov-watchlist');
@@ -426,13 +449,13 @@ function svRenderOverview() {
     <div style="display:flex;align-items:center;gap:10px;padding:6px 4px;border-radius:8px;cursor:pointer" onclick="document.getElementById('sv-ov-agent-picker').value='${w.agent.id}';svRenderAgentFocusCard('${w.agent.id}')">
       <div style="width:28px;height:28px;border-radius:50%;background:${w.color === 'danger' ? 'var(--red-dim)' : 'var(--amber-dim)'};color:${w.color === 'danger' ? 'var(--red)' : 'var(--amber)'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${escHtml(w.agent.initials)}</div>
       <div style="flex:1;min-width:0"><div style="font-size:12.5px">${escHtml(w.agent.name)}</div><div style="font-size:11px;color:${w.color === 'danger' ? 'var(--red)' : 'var(--amber)'}">${docEsc(w.reason)}</div></div>
-    </div>`).join('') : '<div class="sv-empty" style="padding:14px">Rien à signaler 👍</div>';
+    </div>`).join('') : svEmptyState('check', 'Rien à signaler', 'Aucun agent ne demande d’attention particulière.', '#16A34A');
 
   const picker = document.getElementById('sv-ov-agent-picker');
   picker.innerHTML = svAgentOptions();
   const defaultAgent = watchlist[0]?.agent.id || agentsOnly()[0]?.id;
   if (defaultAgent) { picker.value = defaultAgent; svRenderAgentFocusCard(defaultAgent); }
-  else { document.getElementById('sv-ov-focus-card').innerHTML = '<div class="sv-empty">Aucun agent.</div>'; }
+  else { document.getElementById('sv-ov-focus-card').innerHTML = svEmptyState('person', 'Aucun agent', 'Crée des comptes agents pour suivre leur activité.'); }
 }
 function svRenderAgentFocusCard(agentId) {
   const a = TEAM.find(t => t.id === agentId);
@@ -459,7 +482,7 @@ function svRenderAgentFocusCard(agentId) {
 
   const objectifsHtml = coaching && coaching.objectifs && coaching.objectifs.length
     ? coaching.objectifs.map(o => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="sv-pill sv-pill-${o.status === 'atteint' ? 'resolu' : o.status === 'en cours' ? 'en_cours' : 'low'}" style="min-width:70px;text-align:center">${o.status}</span><span style="font-size:12.5px">${docEsc(o.text)}</span></div>`).join('')
-    : '<div class="sv-empty" style="padding:10px">Aucune fiche de coaching.</div>';
+    : svEmptyState('coaching', 'Aucune fiche de coaching', '', '#7C3AED');
 
   target.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
@@ -645,7 +668,7 @@ function svRenderReviews() {
   } else { chartWrap.innerHTML = ''; }
 
   const container = document.getElementById('sv-reviews-list');
-  if (!list.length) { container.innerHTML = '<div class="sv-empty">Aucune grille d\'écoute enregistrée.</div>'; return; }
+  if (!list.length) { container.innerHTML = svEmptyState('headset', 'Aucune grille d’écoute', 'Évalue un appel ou un échange avec « + Nouvelle grille ».', '#0EA5E9'); return; }
   container.innerHTML = list.map(r => {
     const pct = svReviewPct(r);
     const meta = CHANNEL_META[r.channel] || CHANNEL_META.ticket;
@@ -763,7 +786,7 @@ function svRenderCoaching() {
   list.sort((a, b) => (b.date || 0) - (a.date || 0));
   document.getElementById('sv-coaching-count-badge').textContent = `${list.length} fiche(s)`;
   const container = document.getElementById('sv-coaching-list');
-  if (!list.length) { container.innerHTML = '<div class="sv-empty">Aucune fiche de coaching enregistrée.</div>'; return; }
+  if (!list.length) { container.innerHTML = svEmptyState('coaching', 'Aucune fiche de coaching', 'Planifie un point 1:1 avec « + Nouvelle fiche ».', '#7C3AED'); return; }
   container.innerHTML = list.map(c => {
     const objs = c.objectifs || [];
     const done = objs.filter(o => o.status === 'atteint').length;

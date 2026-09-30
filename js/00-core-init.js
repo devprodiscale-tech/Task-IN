@@ -43,7 +43,7 @@ let searchTimeout = null;
 const moduleCache = new Map();
 // Version des modules chargés à la demande : à incrémenter quand l’un d’eux change,
 // sinon le navigateur peut garder l’ancienne copie en cache.
-const TASKIN_MODULE_VERSION = '20260930sec';
+const TASKIN_MODULE_VERSION = '20260930sup';
 async function loadModule(name) {
   if (moduleCache.has(name)) return moduleCache.get(name);
   const promise = new Promise((resolve, reject) => {
