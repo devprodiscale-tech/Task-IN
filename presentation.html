@@ -332,6 +332,11 @@
     .to-top.show{opacity:1;transform:none;pointer-events:auto}
     .to-top svg{width:18px;height:18px}
 
+    /* Mode intégré (sous la scène d'accueil de l'app) : pas de barre propre, défilement porté par l'accueil */
+    html.embed{scroll-padding-top:0;overflow:hidden}
+    html.embed .nav,html.embed .to-top{display:none}
+    html.embed section[id]{scroll-margin-top:78px}
+
     /* Apparition au défilement */
     .reveal{opacity:0;transform:translateY(28px);transition:opacity .8s var(--ease),transform .8s var(--ease);transition-delay:var(--d,0s)}
     .reveal.from-left{transform:translateX(-36px)}
@@ -819,8 +824,27 @@
     const store = { get(k){ try { return localStorage.getItem(k); } catch (_) { return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch (_) {} } };
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // Thème
-    if (store.get('taskin-html-theme') === 'dark') doc.dataset.theme = 'dark';
+    // Intégré sous l'accueil de l'app : hauteur transmise au parent, liens internes et connexion relayés.
+    const embed = new URLSearchParams(location.search).has('embed') && window.parent !== window;
+    const toParent = data => { try { window.parent.postMessage(data, location.origin); } catch (_) {} };
+    if (embed) {
+      doc.classList.add('embed');
+      const sendHeight = () => toParent({ type: 'taskin-presentation-height', height: doc.scrollHeight });
+      new ResizeObserver(sendHeight).observe(document.body);
+      window.addEventListener('load', sendHeight);
+      document.fonts?.ready.then(sendHeight);
+      document.addEventListener('click', event => {
+        const link = event.target.closest('a[href^="#"]');
+        if (!link) return;
+        const target = document.querySelector(link.getAttribute('href') === '#top' ? '#top' : link.getAttribute('href'));
+        if (!target) return;
+        event.preventDefault();
+        target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      });
+    }
+
+    // Thème (l'accueil de l'app reste en clair)
+    if (!embed && store.get('taskin-html-theme') === 'dark') doc.dataset.theme = 'dark';
     document.getElementById('theme').addEventListener('click', () => {
       const dark = doc.dataset.theme === 'dark';
       if (dark) delete doc.dataset.theme; else doc.dataset.theme = 'dark';
@@ -829,6 +853,7 @@
 
     // « Se connecter » : dans le portail de l'app, bascule sur le panneau de connexion ; sinon ouvre l'app.
     document.querySelectorAll('[data-login]').forEach(link => link.addEventListener('click', event => {
+      if (embed) { event.preventDefault(); toParent({ type: 'taskin-presentation-login' }); return; }
       try {
         if (window.parent !== window && typeof window.parent.showPortalPanel === 'function') {
           event.preventDefault(); window.parent.showPortalPanel('login'); return;

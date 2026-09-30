@@ -92,78 +92,15 @@ async function doLogin() {
   } catch(e) { err.textContent = 'Erreur de connexion. Réessaie.'; console.error(e); }
 }
 
-// ===== PORTAIL DIRECTIONNEL : CONNEXION NATIVE ET SITE DE PRÉSENTATION =====
-// La page de présentation est locale au dépôt : elle reste accessible même si
-// un domaine externe, un tunnel ou une session Google devient indisponible.
-// La propriété window.TASKIN_PRESENTATION_URL permet toujours de la surcharger.
-const TASKIN_PRESENTATION_URL = window.TASKIN_PRESENTATION_URL || 'presentation.html?v=20260930';
-let portalPointerStartX = null;
-function ensurePortalPresentation() {
-  const frame = document.getElementById('portal-site-frame');
-  if (frame && !frame.src) frame.src = TASKIN_PRESENTATION_URL;
-}
+// ===== ACCUEIL : SCÈNE, CONNEXION ET PRÉSENTATION ENCHAÎNÉE =====
+// L'accueil (js/00-landing.js) affiche la page de présentation sous la scène.
+// window.TASKIN_PRESENTATION_URL permet toujours de surcharger son adresse.
+window.TASKIN_PRESENTATION_URL = window.TASKIN_PRESENTATION_URL || 'presentation.html?v=20260930b';
+// Compatibilité : anciens appels au portail (« login » ouvre la connexion, sinon la présentation).
 function showPortalPanel(panel) {
-  const frame = document.getElementById('portal-frame');
-  const slider = document.getElementById('portal-slider');
-  if (!frame) return;
-  const next = ['login','split','presentation'].includes(panel) ? panel : 'split';
-  frame.classList.remove('login-active','split-active','presentation-active');
-  frame.classList.add(`${next}-active`);
-  frame.dataset.active = next;
-  if (next === 'presentation') ensurePortalPresentation();
-  if (slider) slider.setAttribute('aria-pressed', String(next === 'presentation'));
+  if (panel === 'login') window.taskinLanding?.openLogin();
+  else window.taskinLanding?.discover();
 }
-function togglePortalPanel() {
-  const frame = document.getElementById('portal-frame');
-  const active = frame?.dataset.active || 'split';
-  showPortalPanel(active === 'presentation' ? 'login' : active === 'login' ? 'presentation' : 'presentation');
-}
-function togglePortalPreviewTheme() {
-  const frame = document.getElementById('portal-frame');
-  if (frame) frame.classList.toggle('portal-night');
-}
-function openTaskinPresentation() {
-  showPortalPanel('presentation');
-  openPortalFullscreen();
-}
-function openPortalFullscreen() {
-  const site = document.getElementById('portal-live-site');
-  if (!site) return;
-  const request = site.requestFullscreen || site.webkitRequestFullscreen || site.msRequestFullscreen;
-  if (request) {
-    const result = request.call(site);
-    if (result && typeof result.catch === 'function') result.catch(() => {});
-  }
-}
-function exitPortalFullscreen() {
-  const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
-  if (exit && (document.fullscreenElement || document.webkitFullscreenElement)) exit.call(document);
-}
-function initPortalDirectionalGesture() {
-  const frame = document.getElementById('portal-frame');
-  if (!frame) return;
-  frame.addEventListener('pointerdown', event => { portalPointerStartX = event.clientX; });
-  frame.addEventListener('pointerup', event => {
-    if (portalPointerStartX === null) return;
-    const distance = event.clientX - portalPointerStartX;
-    portalPointerStartX = null;
-    if (Math.abs(distance) < 64) return;
-    // Glisser vers la gauche révèle la présentation ; vers la droite révèle la connexion native.
-    showPortalPanel(distance < 0 ? 'presentation' : 'login');
-  });
-  window.addEventListener('keydown', event => {
-    if (event.key === 'ArrowLeft') showPortalPanel('presentation');
-    if (event.key === 'ArrowRight') showPortalPanel('login');
-    if (event.key === 'Escape') {
-      exitPortalFullscreen();
-      showPortalPanel('split');
-    }
-  });
-  document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement && frame.dataset.active === 'presentation') showPortalPanel('split');
-  });
-}
-initPortalDirectionalGesture();
 
 async function fetchAccountProfile(uid) {
   const supabase = window.taskinDataProviders?.supabase;
@@ -401,6 +338,7 @@ async function logout() {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-email').value = ''; document.getElementById('login-password').value = '';
+  window.taskinLanding?.showWelcome();
 }
 
 function populateFilters() {
