@@ -153,7 +153,7 @@ function agentRenderPoleStats() {
     const callSec = calls.reduce((s, e) => s + e.durationSec, 0);
     document.getElementById('s-count').textContent = calls.length;
     document.getElementById('s-dmt').textContent = calls.length ? `${Math.floor(callSec / calls.length / 60)}min` : '0min';
-    const goal = agentGoals?.count || 0;
+    const goal = (typeof currentAgentGoals === 'function' ? currentAgentGoals() : agentGoals)?.count || 0;
     const bar = document.getElementById('pb-count'), label = document.getElementById('gl-count');
     if (bar && goal) { const ratio = calls.length / goal; bar.style.width = Math.min(ratio * 100, 100) + '%'; bar.className = 'kpi-progress-fill ' + (ratio >= 1 ? 'good' : ratio >= .6 ? 'warn' : 'bad'); }
     if (label && goal) label.textContent = `${calls.length} / objectif ${goal}`;
@@ -161,7 +161,7 @@ function agentRenderPoleStats() {
     if (dmtLabel) dmtLabel.textContent = calls.length ? `sur ${agentPlural(calls.length, 'appel')}` : 'aucun appel aujourd’hui';
     if (!calls.length) document.getElementById('s-dmt').textContent = '—';
     if (dmtBar) {
-      const avgMin = calls.length ? callSec / calls.length / 60 : 0, goalDmt = agentGoals?.dmt || 0;
+      const avgMin = calls.length ? callSec / calls.length / 60 : 0, goalDmt = (typeof currentAgentGoals === 'function' ? currentAgentGoals() : agentGoals)?.dmt || 0;
       const ratio = goalDmt && calls.length ? avgMin / goalDmt : 0;
       dmtBar.style.width = calls.length ? Math.min(ratio * 100, 100) + '%' : '0%';
       dmtBar.className = 'kpi-progress-fill ' + (ratio <= 1 ? 'good' : ratio <= 1.3 ? 'warn' : 'bad');

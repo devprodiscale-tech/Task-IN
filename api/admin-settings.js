@@ -77,9 +77,31 @@ module.exports = async (req, res) => {
     if (action === 'updateGoals') {
       const target = { count: num(payload.count, 0, 100000), total: num(payload.total, 0, 1000000), dmt: num(payload.dmt, 0, 1440), frt: num(payload.frt, 0, 1440) };
       if (Object.values(target).some(value => value === null)) return fail(res, 400, 'Objectifs numériques invalides.');
+      // Objectifs par pôle (FO / BO / Reconf) : un champ vide = même valeur que l'objectif global.
+      // Sans « poles » dans la requête, les objectifs par pôle déjà enregistrés sont conservés.
+      const limits = { count: 100000, total: 1000000, dmt: 1440, frt: 1440 };
+      let poles;
+      if (payload.poles && typeof payload.poles === 'object') {
+        poles = {};
+        for (const pole of ['fo', 'bo', 'reconf']) {
+          const src = payload.poles[pole] && typeof payload.poles[pole] === 'object' ? payload.poles[pole] : {};
+          const clean = {};
+          for (const key of Object.keys(limits)) {
+            if (src[key] === '' || src[key] === null || src[key] === undefined) continue;
+            const value = num(src[key], 0, limits[key]);
+            if (value === null) return fail(res, 400, `Objectif ${key} invalide pour le pôle ${pole.toUpperCase()}.`);
+            clean[key] = value;
+          }
+          if (Object.keys(clean).length) poles[pole] = clean;
+        }
+      } else {
+        const stored = await setting('goals');
+        poles = stored && typeof stored.poles === 'object' ? stored.poles : {};
+      }
+      const value = { ...target, poles };
       // Source de vérité consommée par loadGoals() et tous les calculs KPI/DMT/FRT.
-      await saveSetting('goals', target, admin.id);
-      return json(res, { message: 'Objectifs enregistrés.', value: target });
+      await saveSetting('goals', value, admin.id);
+      return json(res, { message: 'Objectifs enregistrés.', value });
     }
     if (action === 'upsertTreatmentType') {
       const name = str(payload.name, 100);

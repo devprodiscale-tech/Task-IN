@@ -140,6 +140,21 @@ function renderAgentHistory() {
 
 // ===== FEAT 3 : BARRES KPI OBJECTIF =====
 let agentGoals = { count: 20, total: 360, dmt: 8, frt: 3 };
+// Objectifs par pôle (bloc C2) : valeurs partielles, un champ absent = objectif global.
+let poleGoals = {};
+const GOAL_KEYS = ['count', 'total', 'dmt', 'frt'];
+function goalsForPole(pole) {
+  const own = pole && poleGoals[pole] ? poleGoals[pole] : {};
+  const merged = { ...agentGoals };
+  GOAL_KEYS.forEach(key => { if (Number.isFinite(Number(own[key])) && own[key] !== '' && own[key] !== null) merged[key] = Number(own[key]); });
+  return merged;
+}
+// Objectifs de l'agent connecté (son pôle), ou globaux pour les autres rôles.
+function currentAgentGoals() {
+  return goalsForPole(currentUser?.role === 'agent' ? currentUser?.pole : null);
+}
+window.goalsForPole = goalsForPole;
+window.currentAgentGoals = currentAgentGoals;
 
 async function loadGoals() {
   const supabase = window.taskinDataProviders?.supabase;
@@ -148,6 +163,16 @@ async function loadGoals() {
     const setting = await supabase.getSetting('goals');
     const value = setting?.value || {};
     agentGoals = { count: Number(value.count ?? 20), total: Number(value.total ?? 360), dmt: Number(value.dmt ?? 8), frt: Number(value.frt ?? 3) };
+    poleGoals = {};
+    if (value.poles && typeof value.poles === 'object') {
+      ['fo', 'bo', 'reconf'].forEach(pole => {
+        const src = value.poles[pole];
+        if (!src || typeof src !== 'object') return;
+        const clean = {};
+        GOAL_KEYS.forEach(key => { const n = Number(src[key]); if (src[key] !== '' && src[key] !== null && Number.isFinite(n) && n >= 0) clean[key] = n; });
+        if (Object.keys(clean).length) poleGoals[pole] = clean;
+      });
+    }
     renderGoalInputs();
   } catch (e) { window.taskinLastLoadError = e; console.error('loadGoals Supabase:', e); }
 }
@@ -159,16 +184,25 @@ function renderGoalInputs() {
   gi('goal-total', agentGoals.total);
   gi('goal-dmt',   agentGoals.dmt);
   gi('goal-frt',   agentGoals.frt);
-  // Sup inputs (même données)
+  // Sup inputs (même données) : lecture seule pour le superviseur, seul l'admin peut enregistrer.
   gi('goal-count-sup', agentGoals.count);
   gi('goal-total-sup', agentGoals.total);
   gi('goal-dmt-sup',   agentGoals.dmt);
   gi('goal-frt-sup',   agentGoals.frt);
+  const readOnly = currentUser?.role !== 'admin';
+  ['goal-count-sup', 'goal-total-sup', 'goal-dmt-sup', 'goal-frt-sup'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = readOnly; });
+  const supCard = document.getElementById('goals-sup-card');
+  if (supCard) {
+    supCard.querySelectorAll('button').forEach(b => { b.classList.toggle('hidden', readOnly); });
+    const badge = supCard.querySelector('.count-badge');
+    if (badge) badge.textContent = readOnly ? 'Réglés par l’admin' : 'Admin';
+  }
 }
 
 // saveGoals pour le superviseur — lit les inputs -sup
 async function saveGoalsSup() {
-  if (!requireRoles('admin', 'supervisor')) return;
+  // Seul l'admin peut écrire les réglages (règle Supabase settings_write_admin).
+  if (!requireRoles('admin')) return;
   agentGoals = {
     count: parseInt(document.getElementById('goal-count-sup')?.value || 20),
     total: parseInt(document.getElementById('goal-total-sup')?.value || 360),
@@ -178,11 +212,11 @@ async function saveGoalsSup() {
   const supabase = window.taskinDataProviders?.supabase;
   if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
   try {
-    await supabase.upsertSetting('goals', agentGoals, currentUser.id);
+    await supabase.upsertSetting('goals', { ...agentGoals, poles: poleGoals }, currentUser.id);
     renderGoalInputs();
     renderOpsVisuals();
     alert('Objectifs enregistrés ✓');
-  } catch (e) { console.error('saveGoalsSup Supabase:', e); }
+  } catch (e) { console.error('saveGoalsSup Supabase:', e); alert('Les objectifs n’ont pas pu être enregistrés.'); }
 }
 
 async function saveGoals() {
@@ -196,11 +230,11 @@ async function saveGoals() {
   const supabase = window.taskinDataProviders?.supabase;
   if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
   try {
-    await supabase.upsertSetting('goals', agentGoals, currentUser.id);
+    await supabase.upsertSetting('goals', { ...agentGoals, poles: poleGoals }, currentUser.id);
     alert('Objectifs enregistrés ✓');
     renderStats([]); // force refresh des barres
     renderOpsVisuals();
-  } catch (e) { console.error('saveGoals Supabase:', e); }
+  } catch (e) { console.error('saveGoals Supabase:', e); alert('Les objectifs n’ont pas pu être enregistrés.'); }
 }
 
 function parseMinVal(str) {
@@ -235,10 +269,12 @@ function renderKpiProgressBars(totalMin, dmtMin, frtMin, countVal) {
     if (lbl) lbl.textContent = `${val}${unit} / objectif ${goal}${unit}`;
   };
 
-  setBar('pb-total', totalMin, agentGoals.total, false, 'gl-total', 'min');
-  setBar('pb-count', countVal, agentGoals.count, false, 'gl-count', '');
-  setBar('pb-dmt',   dmtMin,   agentGoals.dmt,   true,  'gl-dmt',   'min');
-  setBar('pb-frt',   frtMin,   agentGoals.frt,   true,  'gl-frt',   'min');
+  // Objectifs du pôle de l'agent (bloc C2), globaux par défaut.
+  const goals = currentAgentGoals();
+  setBar('pb-total', totalMin, goals.total, false, 'gl-total', 'min');
+  setBar('pb-count', countVal, goals.count, false, 'gl-count', '');
+  setBar('pb-dmt',   dmtMin,   goals.dmt,   true,  'gl-dmt',   'min');
+  setBar('pb-frt',   frtMin,   goals.frt,   true,  'gl-frt',   'min');
 }
 
 // ===== FEAT 8 : DONUT CHART TYPES DE TRAITEMENT =====
