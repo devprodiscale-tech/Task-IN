@@ -152,23 +152,29 @@ function svNormalizeEscalation(e, collection = 'escalations') {
   const createdAt = typeof e.createdAt === 'number' ? e.createdAt : (e.createdAt ? (Date.parse(e.createdAt) || Date.now()) : Date.now());
   return { ...e, _collection: e._collection || collection, agentId: e.agentId || e.createdBy || '', channel: e.channel || 'ticket', priority: e.priority || 'medium', status: e.status || 'nouveau', deadlineAt: e.deadlineAt || null, linkedProcedureId: e.linkedProcedureId || null, updates: Array.isArray(e.updates) ? e.updates : [], createdAt };
 }
+// Charge cas complexes, grilles d’écoute et coaching sans toucher à l’affichage.
+// Utilisé par Supervision ET par Admin › Qualité (qui ne doit pas basculer d’écran).
+async function svLoadSupervisionData() {
+  const [sharedEsc, legacyEsc, rev, coach] = await Promise.all([
+    svFetchCollection('escalations'), svFetchCollection('complexCases'), svFetchCollection('qualityReviews'), svFetchCollection('coachingSheets'),
+  ]);
+  escalations = [...sharedEsc.map(e => svNormalizeEscalation(e, 'escalations')), ...legacyEsc.map(e => svNormalizeEscalation(e, 'complexCases'))];
+  qualityReviews = rev; coachingSheets = coach;
+  svUpdateAlertBadge();
+}
 async function svInit() {
-  const initialView = currentView;
+  // Seul l’écran Supervision s’initialise ici : appelé ailleurs, on ne vole plus l’affichage.
+  if (currentView !== 'supervision') return;
   // Affichage immédiat : le cockpit ne doit pas attendre les lectures Supabase.
   if (typeof adminWorkflowRender === 'function') adminWorkflowRender('sv-workflow-panel');
   svUpdateAlertBadge();
-  svSwitchSubTab(svSubTab);
+  svSwitchSubTab(svSubTab, { keepScroll: true });
   try {
-    const [sharedEsc, legacyEsc, rev, coach] = await Promise.all([
-      svFetchCollection('escalations'), svFetchCollection('complexCases'), svFetchCollection('qualityReviews'), svFetchCollection('coachingSheets'),
-    ]);
-    if (currentView !== 'supervision' || initialView !== 'supervision') return;
-    escalations = [...sharedEsc.map(e => svNormalizeEscalation(e, 'escalations')), ...legacyEsc.map(e => svNormalizeEscalation(e, 'complexCases'))];
-    qualityReviews = rev; coachingSheets = coach;
+    await svLoadSupervisionData();
+    if (currentView !== 'supervision') return;
     renderOpsVisuals();
     if (typeof adminWorkflowRender === 'function') adminWorkflowRender('sv-workflow-panel');
-    svUpdateAlertBadge();
-    svSwitchSubTab(svSubTab);
+    svSwitchSubTab(svSubTab, { keepScroll: true });
   } catch (error) {
     console.error('Chargement Supervision impossible :', error);
   }
@@ -181,13 +187,17 @@ function svUpdateAlertBadge() {
   badge.textContent = overdue;
   badge.classList.toggle('hidden', overdue === 0);
 }
-function svSwitchSubTab(tab) {
+function svSwitchSubTab(tab, options = {}) {
   // Un clic dans le rail Supervision reprend immédiatement la main sur les vues globales.
   // Cela évite que le panneau Équipe ou ses filtres restent affichés sous une sous-vue.
+  const changed = currentView !== 'supervision' || svSubTab !== tab;
   if (typeof navigationSequence === 'number') navigationSequence += 1;
   currentView = 'supervision';
+  if (changed && !options.keepScroll) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   if (typeof rememberTaskinView === 'function') rememberTaskinView('supervision');
+  if (typeof setAdminSidebarActive === 'function' && currentUser?.role === 'admin') setAdminSidebarActive('supervision');
   ['team-live-panel','leaderboard-panel','documentation-panel','training-panel','channel-matrix-panel','admin-panel'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+  if (typeof hideAdminSubPanels === 'function') hideAdminSubPanels();
   document.querySelector('.toolbar')?.classList.add('hidden');
   document.querySelector('.entries-table-wrap')?.classList.add('hidden');
   document.getElementById('date-filter-bar')?.classList.add('hidden');

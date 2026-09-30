@@ -23,11 +23,14 @@ let searchTimeout = null;
 
 // Charge les modules lourds uniquement lors de leur première utilisation.
 const moduleCache = new Map();
+// Version des modules chargés à la demande : à incrémenter quand l’un d’eux change,
+// sinon le navigateur peut garder l’ancienne copie en cache.
+const TASKIN_MODULE_VERSION = '20260930a';
 async function loadModule(name) {
   if (moduleCache.has(name)) return moduleCache.get(name);
   const promise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = `js/${name}`;
+    script.src = `js/${name}?v=${TASKIN_MODULE_VERSION}`;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error(`Module ${name} introuvable`));
     document.head.appendChild(script);

@@ -335,3 +335,10 @@ body .topbar .topbar-logout:hover{color:var(--red);border-color:var(--red);backg
 [data-theme="dark"] body .topbar .topbar-logout:hover{color:#F87171}
 @media(max-width:760px){.topbar .topbar-logout span,.topbar .topbar-refresh-label{display:none}.topbar .topbar-refresh{min-width:0}.topbar .topbar-action{padding:0 10px}}
 @media(prefers-reduced-motion:reduce){.topbar-refresh[data-state="loading"] .topbar-icon-spin{animation-duration:2.4s}.topbar-refresh-icon svg,.topbar .theme-toggle-btn svg{transition:none}}
+
+/* Pages de détail ouvertes depuis l’Admin (Documentation, espace Formation, Supervision, Classement) :
+   même respiration en haut que les sections Admin pour ne pas coller au topbar. */
+body.admin-shell-active .content > #documentation-panel:not(.hidden),
+body.admin-shell-active .content > #training-panel:not(.hidden),
+body.admin-shell-active .content > #supervision-panel:not(.hidden),
+body.admin-shell-active .content > #leaderboard-panel:not(.hidden){padding-top:24px!important}
