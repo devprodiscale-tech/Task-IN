@@ -476,6 +476,7 @@ const ROLE_TAB_SVG = {
   reporting: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
   sessions: '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/>',
   team: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  results: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
   leaderboard: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
   documentation: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
   training: '<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
@@ -494,7 +495,7 @@ function renderRoleTabs(role) {
   if(eyebrow) eyebrow.textContent=supervisor?'SUPERVISION':'FORMATION';
   if (supervisor) {
     const subViews=[['overview','Vue d’ensemble'],['escalations','Cas complexes'],['reviews','Grille d’écoute'],['coaching','Coaching 1:1'],['reporting','Reporting'],['sessions','Connexions']];
-    const workspaceViews=[['team','Équipe'],['leaderboard','Classement'],['documentation','Documentation']];
+    const workspaceViews=[['results','Résultats'],['team','Équipe'],['leaderboard','Classement'],['documentation','Documentation']];
     const items=[...subViews,...workspaceViews];
     rail.innerHTML=items.map(([view,label])=>{
       const isSubView=subViews.some(([id])=>id===view);
@@ -535,7 +536,7 @@ function setRoleTabActive(view){
 
 // Pages de détail ouvertes depuis l’espace Admin : elles gardent leur rubrique
 // parente allumée dans la sidebar pour que l’admin sache toujours où il se trouve.
-const ADMIN_NAV_PARENT = { training: 'admin-training', documentation: 'admin-training', supervision: 'quality', leaderboard: 'team', today: 'team' };
+const ADMIN_NAV_PARENT = { results: 'stat', training: 'admin-training', documentation: 'admin-training', supervision: 'quality', leaderboard: 'team', today: 'team' };
 function setAdminSidebarActive(view) {
   const activeView = ADMIN_NAV_PARENT[view] || view;
   document.querySelectorAll('[data-admin-nav]').forEach(link => {
@@ -556,8 +557,8 @@ function getPersistedTaskinView(role = currentUser?.role) {
   try {
     const value = sessionStorage.getItem(taskinViewKey(role));
     const allowed = role === 'admin'
-      ? ['admin','workflow-kpi','stat','quality','admin-training','admin-settings','agent-sessions','team']
-      : ['home','team','today','documentation','supervision','training','leaderboard'];
+      ? ['admin','workflow-kpi','stat','results','quality','admin-training','admin-settings','agent-sessions','team']
+      : ['home','team','today','documentation','supervision','training','leaderboard','results'];
     return allowed.includes(value) ? value : null;
   } catch (_) { return null; }
 }
@@ -572,7 +573,7 @@ window.addEventListener('popstate', event => {
   if (view && currentUser) switchTab(view, document.querySelector(`[data-admin-nav="${view}"], #tab-${view}`), { history: false });
 });
 let navigationSequence = 0;
-const adminSubPanelIds = ['admin-overview-panel','admin-workflow-panel','admin-stat-panel','admin-quality-panel','admin-training-panel','admin-settings-panel','admin-agent-sessions-panel'];
+const adminSubPanelIds = ['admin-overview-panel','admin-workflow-panel','admin-stat-panel','daily-results-panel','admin-quality-panel','admin-training-panel','admin-settings-panel','admin-agent-sessions-panel'];
 
 function hideAdminSubPanels() {
   adminSubPanelIds.forEach(id => document.getElementById(id)?.classList.add('hidden'));
@@ -612,13 +613,16 @@ async function switchTab(view, btn, options = {}) {
   const adminSubViews = {
     'workflow-kpi': { panel: 'admin-workflow-panel', render: () => adminWorkflowRender() },
     'stat': { panel: 'admin-stat-panel', render: () => adminStatRender() },
+    // Résultats OSC : rechargés à chaque ouverture (saisies faites par un autre admin/superviseur).
+    'results': { panel: 'daily-results-panel', always: true, render: async () => { await loadModule('22-daily-results.js'); return renderDailyResults(); } },
     // Charge les données Supervision SANS basculer sur l’écran Supervision.
     'quality': { panel: 'admin-quality-panel', render: async () => { await loadModule('10-supervision.js'); if (typeof svLoadSupervisionData === 'function') await svLoadSupervisionData(); return adminQualityRender(); } },
     'admin-training': { panel: 'admin-training-panel', render: () => adminTrainingRender() },
     'admin-settings': { panel: 'admin-settings-panel', render: () => adminSettingsRender() },
     'agent-sessions': { panel: 'admin-agent-sessions-panel', render: () => agentSessionsAdminRender() },
   };
-  if (adminSubViews[view]) {
+  // « Résultats » existe aussi pour le superviseur (onglet métier, branche plus bas).
+  if (adminSubViews[view] && !(view === 'results' && currentUser?.role === 'supervisor')) {
     if (!currentUser || currentUser.role !== 'admin') return;
     setAdminSidebarActive(view);
     currentView = view;
@@ -633,7 +637,7 @@ async function switchTab(view, btn, options = {}) {
     document.getElementById('date-filter-bar')?.classList.add('hidden');
     const panel = document.getElementById(adminSubViews[view].panel);
     panel?.classList.remove('hidden');
-    if (panel?.dataset.adminReady !== '1') {
+    if (panel?.dataset.adminReady !== '1' || adminSubViews[view].always) {
       await adminSubViews[view].render();
       panel?.setAttribute('data-admin-ready', '1');
     }
@@ -642,6 +646,7 @@ async function switchTab(view, btn, options = {}) {
   if (currentUser.role === 'agent' && (view === 'admin' || view === 'supervision' || view === 'team' || view === 'leaderboard')) return;
   if (currentUser.role !== 'admin' && view === 'admin') return;
   if (currentUser.role === 'formateur' && (view === 'supervision' || view === 'admin')) return;
+  if (view === 'results' && currentUser.role !== 'supervisor') return;
 
   currentView = view;
   if (viewChanged) resetViewScroll();
@@ -663,9 +668,10 @@ async function switchTab(view, btn, options = {}) {
   const isDocView = view === 'documentation';
   const isSupervisionView = view === 'supervision';
   const isTrainingView = view === 'training';
+  const isResultsView = view === 'results';
   // La matrice analytique appartient à Statistiques, pas à Équipe ni au Hub.
   const isChannelView = false;
-  const showTable = !isAdminView && !isHomeView && !isLeaderboard && !isDocView && !isSupervisionView && !isTrainingView;
+  const showTable = !isAdminView && !isHomeView && !isLeaderboard && !isDocView && !isSupervisionView && !isTrainingView && !isResultsView;
 
   document.querySelector('.toolbar').classList.toggle('hidden', !showTable);
   document.querySelector('.entries-table-wrap').classList.toggle('hidden', !showTable);
@@ -682,7 +688,14 @@ async function switchTab(view, btn, options = {}) {
   if (isAdminView) document.getElementById('admin-overview-panel')?.classList.remove('hidden');
   const adminOverviewPanel = document.getElementById('admin-overview-panel');
   if (adminOverviewPanel) adminOverviewPanel.classList.toggle('hidden', !isAdminView);
-  document.getElementById('date-filter-bar').classList.toggle('hidden', isDocView || isSupervisionView || isTrainingView);
+  document.getElementById('date-filter-bar').classList.toggle('hidden', isDocView || isSupervisionView || isTrainingView || isResultsView);
+  if (isResultsView) {
+    document.getElementById('daily-results-panel')?.classList.remove('hidden');
+    await loadModule('22-daily-results.js');
+    if (sequence !== navigationSequence || currentView !== view) return;
+    await renderDailyResults();
+    return;
+  }
 
   if (isAdminView) {
     const panel = document.getElementById('admin-overview-panel');
