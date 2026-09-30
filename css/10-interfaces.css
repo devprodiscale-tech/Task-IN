@@ -1,0 +1,39 @@
+/* ===== Harmonisation des interfaces partagées (Équipe, Classement, Admin, Formation) ===== */
+
+/* Classement : titre avec icône, podium dessiné (or / argent / bronze) au lieu d'emojis */
+.lb-title{display:inline-flex;align-items:center;gap:9px;margin-right:6px;color:var(--text);font:700 16px var(--font);letter-spacing:-.01em}
+.lb-title-icon{width:30px;height:30px;padding:7px;box-sizing:border-box;border-radius:9px;background:color-mix(in srgb,#D97706 14%,var(--surface));color:#D97706}
+.lb-rank-badge{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--surface2);color:var(--text2);font:800 12px var(--font)}
+.lb-rank-badge.lb-podium-1{background:linear-gradient(145deg,#FCD34D,#D97706);color:#fff;box-shadow:0 3px 10px rgba(217,119,6,.35)}
+.lb-rank-badge.lb-podium-2{background:linear-gradient(145deg,#E2E8F0,#94A3B8);color:#fff;box-shadow:0 3px 10px rgba(100,116,139,.3)}
+.lb-rank-badge.lb-podium-3{background:linear-gradient(145deg,#FDBA74,#B45309);color:#fff;box-shadow:0 3px 10px rgba(180,83,9,.3)}
+
+/* Équipe : bloc « Agents de l'équipe » aligné sur les autres cartes, compteur à côté du titre */
+#team-live-accordion{margin:0 0 16px}
+#team-live-accordion .team-summary{justify-content:flex-start;gap:8px}
+#team-live-accordion .team-summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--text2);border-bottom:2px solid var(--text2);transform:rotate(45deg) translateY(-2px);transition:transform .2s ease}
+#team-live-accordion[open] .team-summary::after{transform:rotate(-135deg) translateY(-2px)}
+
+/* Admin : icônes SVG des accès rapides, pastilles de canal dans « Canaux » */
+.admin-overview-module-icon svg{width:16px;height:16px}
+.admin-stat-sources>div[style*="--c"] .admin-stat-dot{display:inline-block;width:7px;height:7px;margin-right:7px;border-radius:50%;background:var(--c);vertical-align:1px}
+
+/* Formation : la barre d'onglets défile sans casser la mise en page sur mobile */
+@media(max-width:760px){.training-tabs{scrollbar-width:none;-webkit-overflow-scrolling:touch}.training-tabs::-webkit-scrollbar{display:none}}
+
+/* Statistiques admin : colonnes qui ne s'élargissent jamais à cause d'un texte long (mobile) */
+.admin-stat-kpis>div,.admin-stat-metric-strip>div{min-width:0}
+@media(max-width:680px){.admin-stat-kpis,.admin-stat-metric-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Ancien marqueur de rôle (bordure gauche colorée) : remplacé par la barre latérale et les badges */
+body.ops-dashboard #app[class*="role-"]{border-left:0}
+
+/* Documentation : état vide dessiné */
+.doc-empty-state{grid-column:1/-1;display:grid;justify-items:center;gap:6px;margin-top:8px;padding:40px 16px;border:1px dashed var(--border2);border-radius:14px;background:var(--surface);text-align:center}
+.doc-empty-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,#16A34A 12%,var(--surface));color:#16A34A}
+.doc-empty-icon svg{width:21px;height:21px}
+.doc-empty-state strong{color:var(--text);font-size:13.5px}
+.doc-empty-state p{margin:0;color:var(--text2);font-size:12.5px}
+
+/* Formation (espace formateur) : barre d'action alignée à droite au-dessus des onglets */
+.training-actions-bar{display:flex;justify-content:flex-end;margin:0 0 12px}

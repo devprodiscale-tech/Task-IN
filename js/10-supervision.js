@@ -548,32 +548,14 @@ function svRenderReporting() {
   const casesPrev = svResolvedCasesInWindow(lastWeek);
   const casesDelta = svDeltaBadge(casesNow, casesPrev, '', false);
 
-  document.getElementById('sv-rep-kpis').innerHTML = `
-    <div class="sv-card" style="cursor:default">
-      <div class="sv-card-meta">DMT moyen</div>
-      <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px">
-        <span style="font-family:var(--display);font-weight:700;font-size:21px">${dmtNow !== null ? Math.round(dmtNow) + 'min' : '—'}</span>
-        <span style="font-size:11.5px;color:var(--text2);text-decoration:line-through">${dmtPrev !== null ? Math.round(dmtPrev) + 'min' : ''}</span>
-      </div>
-      <div style="font-size:12px;color:${dmtDelta.color};margin-top:4px">${dmtDelta.text}</div>
-    </div>
-    <div class="sv-card" style="cursor:default">
-      <div class="sv-card-meta">Score qualité</div>
-      <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px">
-        <span style="font-family:var(--display);font-weight:700;font-size:21px">${scoreNow !== null ? scoreNow + '%' : '—'}</span>
-        <span style="font-size:11.5px;color:var(--text2);text-decoration:line-through">${scorePrev !== null ? scorePrev + '%' : ''}</span>
-      </div>
-      <div style="font-size:12px;color:${scoreDelta.color};margin-top:4px">${scoreDelta.text}</div>
-    </div>
-    <div class="sv-card" style="cursor:default">
-      <div class="sv-card-meta">Cas résolus</div>
-      <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px">
-        <span style="font-family:var(--display);font-weight:700;font-size:21px">${casesNow}</span>
-        <span style="font-size:11.5px;color:var(--text2);text-decoration:line-through">${casesPrev}</span>
-      </div>
-      <div style="font-size:12px;color:${casesDelta.color}">${casesDelta.text}</div>
-    </div>
-  `;
+  // Même style d'indicateurs que la vue d'ensemble ; la valeur barrée = semaine dernière.
+  const prev = v => v === null || v === '' ? '' : `<em class="sv-kpi-prev">${v}</em>`;
+  const delta = d => d.text && d.text !== '—' ? `<span style="color:${d.color}">${d.text}</span> vs semaine dernière` : 'Pas de comparaison possible';
+  document.getElementById('sv-rep-kpis').innerHTML = [
+    svKpi('clock', 'DMT moyen', `${dmtNow !== null ? Math.round(dmtNow) + 'min' : '—'}${prev(dmtPrev !== null ? Math.round(dmtPrev) + 'min' : '')}`, delta(dmtDelta), '#2563EB'),
+    svKpi('star', 'Score qualité', `${scoreNow !== null ? scoreNow + '%' : '—'}${prev(scorePrev !== null ? scorePrev + '%' : '')}`, delta(scoreDelta), '#7C3AED'),
+    svKpi('check', 'Cas résolus', `${casesNow}${prev(casesPrev)}`, delta(casesDelta), '#16A34A'),
+  ].join('');
 
   const agents = agentsOnly();
   const heatEl = document.getElementById('sv-rep-heatmap');
@@ -602,7 +584,7 @@ function svRenderReporting() {
       </div>
       <span style="font-size:11.5px;color:${pos ? 'var(--green)' : 'var(--red)'};width:44px;text-align:right">${pos ? '+' : ''}${dev}%</span>
     </div>`;
-  }).join('') : '<div class="sv-empty" style="padding:14px">Pas assez de données de grille d\'écoute.</div>';
+  }).join('') : svEmptyState('headset', 'Pas encore de grille d’écoute', 'L’écart à la moyenne apparaîtra dès les premières évaluations.', '#0EA5E9');
 
   svRenderTimeline(agents);
 }
@@ -621,23 +603,24 @@ function svRenderTimeline(agents) {
       <span style="font-size:12px">${escHtml(a.name)}</span>
       <div style="position:relative;height:16px;background:var(--surface2);border-radius:6px"></div>
     </div>`;
+    // Chaque segment est borné à la plage 8h–18h : rien ne déborde sur le nom de l'agent.
+    const segment = (from, to, style, title = '') => {
+      const a = Math.max(from, dayStartMin), b = Math.min(to, dayStartMin + totalMin);
+      if (b <= a) return '';
+      const left = (a - dayStartMin) / totalMin * 100, width = Math.max(0.5, (b - a) / totalMin * 100);
+      return `<div style="position:absolute;left:${left}%;width:${width}%;height:100%;${style};border-radius:4px"${title ? ` title="${title}"` : ''}></div>`;
+    };
     let blocks = '';
     todays.forEach((t, i) => {
-      const left = Math.max(0, ((t.startMin - dayStartMin) / totalMin) * 100);
-      const width = Math.max(0.5, ((t.endMin - t.startMin) / totalMin) * 100);
-      blocks += `<div style="position:absolute;left:${left}%;width:${width}%;height:100%;background:var(--ocean);border-radius:4px"></div>`;
+      blocks += segment(t.startMin, t.endMin, 'background:var(--ocean)');
       if (i < todays.length - 1) {
         const gapMin = todays[i + 1].startMin - t.endMin;
-        if (gapMin > 15) {
-          const gapLeft = ((t.endMin - dayStartMin) / totalMin) * 100;
-          const gapWidth = (gapMin / totalMin) * 100;
-          blocks += `<div style="position:absolute;left:${gapLeft}%;width:${gapWidth}%;height:100%;background:var(--red);border-radius:4px" title="Trou de ${Math.round(gapMin)} min"></div>`;
-        }
+        if (gapMin > 15) blocks += segment(t.endMin, todays[i + 1].startMin, 'background:var(--red)', `Trou de ${Math.round(gapMin)} min`);
       }
     });
     return `<div style="display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin-bottom:6px">
       <span style="font-size:12px">${escHtml(a.name)}</span>
-      <div style="position:relative;height:16px;background:var(--surface2);border-radius:6px">${blocks}</div>
+      <div style="position:relative;height:16px;background:var(--surface2);border-radius:6px;overflow:hidden">${blocks}</div>
     </div>`;
   }).join('');
   const scale = `<div style="display:grid;grid-template-columns:90px 1fr;gap:8px;font-size:10px;color:var(--text2);margin-bottom:6px">

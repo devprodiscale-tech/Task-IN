@@ -99,10 +99,10 @@ async function renderLeaderboard() {
   if (!body) return;
   if (!rows.length) { body.innerHTML = '<tr><td colspan="6"><div class="empty">Aucun agent.</div></td></tr>'; return; }
 
-  const medals = ['🥇','🥈','🥉'];
+  // Podium : pastilles or / argent / bronze dessinées en CSS (plus d'emojis).
   body.innerHTML = rows.map((r, i) => {
     const rank = i + 1;
-    const rankDisplay = rank <= 3 ? `<span class="lb-medal">${medals[rank-1]}</span>` : `<span class="lb-rank">${rank}</span>`;
+    const rankDisplay = `<span class="lb-rank-badge${rank <= 3 ? ' lb-podium-' + rank : ''}">${rank}</span>`;
     const dmtClass = r.dmt === 0 ? '' : r.dmt <= avgDmt * 0.9 ? 'good' : r.dmt > avgDmt * 1.2 ? 'bad' : 'warn';
     const qualityClass = r.quality === null ? '' : r.quality >= 75 ? 'good' : r.quality >= 55 ? 'warn' : 'bad';
     return `<tr>

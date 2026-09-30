@@ -31,6 +31,10 @@ function safePhoto(value) {
   return '';
 }
 
+// Palette unique des canaux (même code couleur partout : agent, extension, supervision, admin).
+const TASKIN_SOURCE_COLORS = { inbound: '#E5484D', ringover: '#E5484D', outbound: '#D97706', chat: '#0EA5E9', crisp: '#0EA5E9', email: '#6366F1', ticket: '#16A34A', manual: '#16A34A' };
+function taskinSourceColor(source) { return TASKIN_SOURCE_COLORS[source] || '#64748B'; }
+
 let currentUser = null;
 let entries = [];
 let activeTimer = null;
@@ -43,7 +47,7 @@ let searchTimeout = null;
 const moduleCache = new Map();
 // Version des modules chargés à la demande : à incrémenter quand l’un d’eux change,
 // sinon le navigateur peut garder l’ancienne copie en cache.
-const TASKIN_MODULE_VERSION = '20260930sup';
+const TASKIN_MODULE_VERSION = '20260930ui3';
 async function loadModule(name) {
   if (moduleCache.has(name)) return moduleCache.get(name);
   const promise = new Promise((resolve, reject) => {

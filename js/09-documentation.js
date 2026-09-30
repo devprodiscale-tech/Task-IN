@@ -60,7 +60,11 @@ async function docRenderList() {
   });
   document.getElementById('doc-count-badge').textContent = `${filtered.length} procédure(s)`;
   const grid = document.getElementById('doc-card-grid');
-  if (filtered.length === 0) { grid.innerHTML = `<div class="doc-empty">Aucune procédure trouvée.</div>`; return; }
+  if (filtered.length === 0) {
+    const icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>';
+    grid.innerHTML = `<div class="doc-empty-state"><span class="doc-empty-icon">${icon}</span><strong>Aucune procédure trouvée</strong><p>${docProcedures.length ? 'Essaie un autre mot-clé ou un autre format.' : 'Les procédures publiées apparaîtront ici.'}</p></div>`;
+    return;
+  }
   grid.innerHTML = filtered.map(p => `
     <div class="doc-card" onclick="docCardClick('${p.id}')">
       <div class="doc-card-title">${docEsc(p.title || 'Sans titre')}</div>

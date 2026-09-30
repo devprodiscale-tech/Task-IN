@@ -20,7 +20,8 @@
 <link rel="stylesheet" href="css/06-admin-overview.css?v=20260930c">
 <link rel="stylesheet" href="css/07-landing.css?v=20260930d">
 <link rel="stylesheet" href="css/08-agent.css?v=20260930b">
-<link rel="stylesheet" href="css/09-supervisor.css?v=20260930b">
+<link rel="stylesheet" href="css/09-supervisor.css?v=20260930c">
+<link rel="stylesheet" href="css/10-interfaces.css?v=20260930c">
 </head>
 <body>
 
@@ -296,7 +297,7 @@
     <button class="tab hidden" id="tab-home" onclick="switchTab('home',this)">Vue d'ensemble</button>
     <button class="tab hidden" id="tab-week-role" onclick="switchTab('week',this)">Cette semaine</button>
     <button class="tab" id="tab-team" onclick="switchTab('team',this)">Équipe</button>
-    <button class="tab hidden" id="tab-leaderboard" onclick="switchTab('leaderboard',this)">🏆 Classement</button>
+    <button class="tab hidden" id="tab-leaderboard" onclick="switchTab('leaderboard',this)">Classement</button>
     <button class="tab hidden" id="tab-supervision" onclick="switchTab('supervision',this)">🎯 Supervision<span id="sv-alert-count" class="hidden" style="background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;font-weight:700"></span></button>
     <button class="tab hidden" id="tab-training" onclick="switchTab('training',this)">🎓 Formation</button>
     <button class="tab" id="tab-documentation" onclick="switchTab('documentation',this)">📄 Documentation</button>
@@ -638,11 +639,11 @@
     <div id="leaderboard-panel" class="hidden" style="padding:0">
       <div id="lb-print-zone">
         <div class="lb-print-header" style="display:none" id="lb-print-header">
-          <div class="lb-print-title">🏆 Task'in — Classement des agents</div>
+          <div class="lb-print-title">Task'in — Classement des agents</div>
           <div class="lb-print-sub" id="lb-print-sub"></div>
         </div>
       <div class="lb-header">
-        <span style="font-family:var(--display);font-size:16px;font-weight:600;color:var(--text)">🏆 Classement des agents</span>
+        <span class="lb-title"><svg class="lb-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Classement des agents</span>
         <button class="lb-period-btn active" data-lbp="day" onclick="setLbPeriod('day',this)">Aujourd'hui</button>
         <button class="lb-period-btn" data-lbp="week" onclick="setLbPeriod('week',this)">Cette semaine</button>
         <button class="lb-period-btn" data-lbp="month" onclick="setLbPeriod('month',this)">Ce mois</button>
@@ -1302,21 +1303,21 @@
 
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260930blocb" defer></script>
-<script src="js/00-core-init.js?v=20260930sup" defer></script>
-<script src="js/01-core-auth-network.js?v=20260930sup" defer></script>
+<script src="js/00-core-init.js?v=20260930ui3" defer></script>
+<script src="js/01-core-auth-network.js?v=20260930ui" defer></script>
 <script src="js/02-time-data.js?v=20260930sup" defer></script>
 <script src="js/03-dashboard-render.js?v=20260930sup" defer></script>
 <script src="js/04-admin.js?v=20260930sup" defer></script>
-<script src="js/11-admin-overview.js?v=20260930a" defer></script>
+<script src="js/11-admin-overview.js?v=20260930ui" defer></script>
 <script src="js/12-admin-workflow.js?v=20260930sup" defer></script>
-<script src="js/13-admin-stat.js?v=20260918" defer></script>
+<script src="js/13-admin-stat.js?v=20260930ui" defer></script>
 <script src="js/14-admin-quality.js?v=20260918" defer></script>
 <script src="js/15-admin-training.js?v=20260918" defer></script>
 <script src="js/16-admin-settings.js?v=20260930t" defer></script>
 <script src="js/17-admin-local-features.js?v=20260930sec" defer></script>
 <script src="js/06-ui-modals.js?v=20260930t" defer></script>
 <script src="js/07-analytics.js?v=20260930sec" defer></script>
-<script src="js/08-analytics-advanced.js?v=20260930blocb" defer></script>
+<script src="js/08-analytics-advanced.js?v=20260930ui" defer></script>
 <script src="js/18-agent-sessions.js?v=20260930" defer></script>
 <script src="js/19-extension-bridge.js?v=20260930u" defer></script>
 <script src="js/20-agent-pole.js?v=20260930b" defer></script>

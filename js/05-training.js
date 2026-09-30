@@ -84,10 +84,16 @@ async function renderTrainingHub() {
   const header = document.getElementById('training-header');
   const trainingTitle = currentUser.role === 'agent' ? 'Mon espace formation' : 'Espace Formation';
   const trainingSubtitle = currentUser.role === 'agent' ? 'Retrouve tes parcours, les quiz et les dernières évolutions de procédure.' : 'Centralise les parcours, les quiz, les procédures et le suivi de montée en compétence de l’équipe.';
-  header.innerHTML = `<div class="training-card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+  // Les espaces métier (formateur) ont déjà le titre en en-tête de page : on n'affiche ici que l'action.
+  const pageHasHeading = document.body.classList.contains('role-workspace-active');
+  const createBtn = trainingCanManage() ? '<button class="btn btn-primary" onclick="trainingCreateModule()">+ Nouvelle formation</button>' : '';
+  const intro = pageHasHeading
+    ? (createBtn ? `<div class="training-actions-bar">${createBtn}</div>` : '')
+    : `<div class="training-card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
     <div style="flex:1;min-width:220px"><div style="font:600 24px var(--display);color:var(--ocean)">${trainingTitle}</div><div class="training-meta">${trainingSubtitle}</div></div>
-    ${trainingCanManage() ? '<button class="btn btn-primary" onclick="trainingCreateModule()">+ Nouvelle formation</button>' : ''}
-  </div>
+    ${createBtn}
+  </div>`;
+  header.innerHTML = `${intro}
   <div class="training-tabs">
     ${[['dashboard','Vue d’ensemble'],['sources','Sources documentaires'],['modules','Parcours'],['quizzes','Quiz'],['skills','Compétences'],['updates','Évolutions']].map(([id,label]) => `<button class="training-tab ${trainingSubTab === id ? 'active' : ''}" data-training-tab="${id}" onclick="trainingSwitchSubTab('${id}')">${label}</button>`).join('')}
   </div>`;
