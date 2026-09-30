@@ -379,5 +379,5 @@ body.admin-shell-active .content > #leaderboard-panel:not(.hidden){padding-top:2
 .sessions-day em{font-style:normal;font-size:11px;font-weight:700}
 .sessions-day em.on{color:var(--green)}.sessions-day em.warn{color:var(--amber)}
 .sessions-empty{margin:0;color:var(--text3);font-size:12.5px}
-@media(max-width:720px){.sessions-toolbar{flex-direction:column;align-items:stretch}.sessions-search{width:100%}.sessions-account summary{grid-template-columns:38px minmax(0,1fr) 18px;gap:10px}.sessions-status{grid-column:2;justify-self:start}.sessions-count{display:none}.sessions-chevron{grid-row:1;grid-column:3}.sessions-detail{padding-left:16px}}
+@media(max-width:720px){.sessions-toolbar{flex-direction:column;align-items:stretch}.sessions-search{width:100%}.sessions-account summary{grid-template-columns:38px minmax(0,1fr) 18px;gap:10px}.sessions-status{grid-column:2;justify-self:start;max-width:100%;white-space:normal}.sessions-count{display:none}.sessions-chevron{grid-row:1;grid-column:3}.sessions-detail{padding-left:16px}}
 @media(prefers-reduced-motion:reduce){.sessions-detail{animation:none}.sessions-chevron{transition:none}}
