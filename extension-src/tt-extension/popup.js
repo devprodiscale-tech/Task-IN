@@ -392,6 +392,9 @@ async function finishWizard() {
 
 const WIZARD_STEPS = ['step-source', 'step-treatment', 'step-time', 'step-ref'];
 function showWizardStep(step) {
+  // En s'affichant, les roues de l'heure sont aimantées sur 00 par Chrome, ce qui déclenche un
+  // défilement : on le bloque jusqu'au placement sur l'heure locale (syncPickerScroll libère).
+  if (step === 3) isScrolling = true;
   currentWizardStep = step;
   setStepIndicator(step);
   hideAllWizardSteps();
@@ -624,16 +627,32 @@ function handleTimeScroll(col, type) {
   }
 }
 
+// Place les roues sur pickerHour:pickerMin (heure locale par défaut).
+// L'aimantation (scroll-snap) est coupée pendant le placement : sinon Chrome ramène la roue
+// sur son ancien cran (00) juste après l'animation d'apparition de l'étape.
+let pickerSyncTimer = null;
 function syncPickerScroll() {
   isScrolling = true;
   const hCol = document.getElementById('col-hours'); const mCol = document.getElementById('col-mins');
-  hCol.querySelectorAll('.time-opt').forEach(o => o.classList.remove('active'));
-  mCol.querySelectorAll('.time-opt').forEach(o => o.classList.remove('active'));
-
-  const hTarget = hCol.querySelector(`[data-val="${pickerHour}"]`); const mTarget = mCol.querySelector(`[data-val="${pickerMin}"]`);
-  if (hTarget) { hTarget.classList.add('active'); hCol.scrollTop = hTarget.offsetTop - hCol.clientHeight/2 + hTarget.offsetHeight/2; }
-  if (mTarget) { mTarget.classList.add('active'); mCol.scrollTop = mTarget.offsetTop - mCol.clientHeight/2 + mTarget.offsetHeight/2; }
-  setTimeout(() => isScrolling = false, 50);
+  const place = (col, value) => {
+    col.querySelectorAll('.time-opt').forEach(o => o.classList.remove('active'));
+    const target = col.querySelector(`[data-val="${value}"]`);
+    if (!target) return;
+    target.classList.add('active');
+    col.style.scrollSnapType = 'none';
+    col.scrollTop = target.offsetTop - col.clientHeight / 2 + target.offsetHeight / 2;
+  };
+  place(hCol, pickerHour);
+  place(mCol, pickerMin);
+  clearTimeout(pickerSyncTimer);
+  pickerSyncTimer = setTimeout(() => {
+    // Re-place une fois l'animation terminée, puis réactive l'aimantation.
+    place(hCol, pickerHour);
+    place(mCol, pickerMin);
+    hCol.style.scrollSnapType = '';
+    mCol.style.scrollSnapType = '';
+    setTimeout(() => { isScrolling = false; }, 80);
+  }, 380);
 }
 
 function clickTimeOpt(colId, index) { const col = document.getElementById(colId); const target = col.querySelectorAll('.time-opt')[index]; col.scrollTo({ top: target.offsetTop - col.clientHeight/2 + target.offsetHeight/2, behavior: 'smooth' }); }
