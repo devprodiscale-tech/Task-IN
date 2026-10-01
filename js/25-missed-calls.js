@@ -127,7 +127,7 @@ function mcPaint() {
     <div class="dr-head">
       <div>${mcSwitchHtml()}<span class="admin-overview-section-label">${manager ? 'Stat · appels manqués' : 'Équipe · en temps réel'}</span><h2>Appels manqués</h2>
         <p>Un appel manqué = une ligne, saisie en temps réel. Le journal est partagé : vérifie « À rappeler » avant de rappeler, et clique sur « Je rappelle » pour éviter les doublons.</p></div>
-      <div class="dr-head-actions">${mcState.view === 'stats' ? '<button type="button" class="btn btn-ghost" onclick="mcExportCsv()">Exporter CSV</button>' : ''}<button type="button" class="btn btn-primary" onclick="mcOpenEdit(null)">+ Appel manqué</button></div>
+      <div class="dr-head-actions">${mcState.view === 'stats' ? '<button type="button" class="btn btn-ghost" onclick="taskinSlides(\'missed\', this)">Générer les slides</button><button type="button" class="btn btn-ghost" onclick="mcExportCsv()">Exporter CSV</button>' : ''}<button type="button" class="btn btn-primary" onclick="mcOpenEdit(null)">+ Appel manqué</button></div>
     </div>
     <div class="dr-toolbar">${tabs}${mcFiltersHtml()}</div>
     ${body}

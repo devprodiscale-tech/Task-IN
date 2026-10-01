@@ -1128,7 +1128,7 @@ function drPaintWeek() {
     <div class="dr-head">
       <div>${drSwitchHtml()}<span class="admin-overview-section-label">Stat · reporting hebdomadaire</span><h2>Bilan de la semaine</h2>
         <p>Résultats OSC saisis du lundi au dimanche. L’évolution compare la moyenne par jour saisi avec la semaine précédente, pour ne pas pénaliser les absences.</p></div>
-      <div class="dr-head-actions"><button type="button" class="btn btn-ghost" onclick="drExportWeekCsv()">Exporter CSV</button><button type="button" class="btn btn-ghost" onclick="window.print()">Imprimer / PDF</button></div>
+      <div class="dr-head-actions"><button type="button" class="btn btn-primary" onclick="taskinSlides('week', this)">Générer les slides</button><button type="button" class="btn btn-ghost" onclick="drExportWeekCsv()">Exporter CSV</button><button type="button" class="btn btn-ghost" onclick="window.print()">Imprimer / PDF</button></div>
     </div>
     <div class="dr-toolbar">
       <div class="dr-daynav"><button type="button" class="dr-icon-btn" onclick="drGoWeek(-1)" aria-label="Semaine précédente">‹</button>

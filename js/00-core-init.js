@@ -47,7 +47,7 @@ let searchTimeout = null;
 const moduleCache = new Map();
 // Version des modules chargés à la demande : à incrémenter quand l’un d’eux change,
 // sinon le navigateur peut garder l’ancienne copie en cache.
-const TASKIN_MODULE_VERSION = '20261001i1';
+const TASKIN_MODULE_VERSION = '20261001k1';
 async function loadModule(name) {
   if (moduleCache.has(name)) return moduleCache.get(name);
   const promise = new Promise((resolve, reject) => {
@@ -59,6 +59,12 @@ async function loadModule(name) {
   });
   moduleCache.set(name, promise);
   return promise;
+}
+
+// Slides de reporting : module et bibliothèque chargés seulement au clic.
+async function taskinSlides(kind, button) {
+  await loadModule('26-report-slides.js');
+  return window.taskinGenerateSlides(kind, button);
 }
 
 function preloadRoleModules(role = currentUser?.role) {
