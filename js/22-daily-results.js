@@ -203,6 +203,10 @@ function drPolesHtml() {
   const poles = [['all', 'Tous'], ['fo', 'FO'], ['bo', 'BO'], ['reconf', 'Reconf']];
   return `<div class="dr-poles">${poles.map(([k, l]) => `<button type="button" class="${drState.pole === k ? 'active' : ''}" onclick="drSetPole('${k}')">${l}</button>`).join('')}</div>`;
 }
+// Accès direct aux objectifs fixes par pôle (admin et superviseur), visible dans toutes les vues Résultats.
+function drPoleGoalsBtn() {
+  return drCanWrite() && typeof adminSettingsGoalsSection === 'function' ? '<button type="button" class="btn btn-ghost" onclick="drOpenPoleGoals()">🎯 Objectifs par pôle</button>' : '';
+}
 function drModesHtml() {
   if (!drCanWrite()) return '';
   return `<div class="dr-modes" role="tablist"><button type="button" class="${drState.mode === 'entry' ? 'active' : ''}" onclick="drSetMode('entry')">Saisie OSC</button><button type="button" class="${drState.mode === 'goals' ? 'active' : ''}" onclick="drSetMode('goals')">Objectifs &amp; tendance</button><button type="button" class="${drState.mode === 'week' ? 'active' : ''}" onclick="drSetMode('week')">Semaine</button></div>`;
@@ -239,7 +243,7 @@ function drPaint() {
     <div class="dr-head">
       <div>${drSwitchHtml()}<span class="admin-overview-section-label">Stat · résultats OSC saisis</span><h2>Résultats du jour</h2>
         <p>Chiffres « Activité agents » d’OSC, Ringover et Crisp, saisis ${write ? 'par toi ou importés en CSV' : 'par l’admin ou le superviseur'}, preuve à l’appui.</p></div>
-      ${write ? '<div class="dr-head-actions"><button type="button" class="btn btn-ghost" onclick="drOpenImport()">Importer un CSV</button></div>' : ''}
+      ${write ? `<div class="dr-head-actions">${drPoleGoalsBtn()}<button type="button" class="btn btn-ghost" onclick="drOpenImport()">Importer un CSV</button></div>` : ''}
     </div>
     <div class="dr-toolbar">
       ${drDaynavHtml()}
@@ -862,6 +866,7 @@ function drPaintGoals() {
     <div class="dr-head">
       <div>${drSwitchHtml()}<span class="admin-overview-section-label">${write ? 'Stat · objectifs dynamiques' : 'Mes résultats'}</span><h2>${write ? 'Objectifs & tendance' : 'Objectif du jour'}</h2>
         <p>L’objectif du jour reprend le dernier résultat OSC de chaque agent, plus la progression demandée. Le réalisé est comparé au flux réel de l’équipe.</p></div>
+      ${write ? `<div class="dr-head-actions">${drPoleGoalsBtn()}</div>` : ''}
     </div>
     ${me && !drState.loading ? drMyGoalHtml(me) : ''}
     <div class="dr-toolbar">${drDaynavHtml()}${drModesHtml()}${drPolesHtml()}</div>
@@ -1128,7 +1133,7 @@ function drPaintWeek() {
     <div class="dr-head">
       <div>${drSwitchHtml()}<span class="admin-overview-section-label">Stat · reporting hebdomadaire</span><h2>Bilan de la semaine</h2>
         <p>Résultats OSC saisis du lundi au dimanche. L’évolution compare la moyenne par jour saisi avec la semaine précédente, pour ne pas pénaliser les absences.</p></div>
-      <div class="dr-head-actions"><button type="button" class="btn btn-primary" onclick="taskinSlides('week', this)">Générer les slides</button><button type="button" class="btn btn-ghost" onclick="drExportWeekCsv()">Exporter CSV</button><button type="button" class="btn btn-ghost" onclick="window.print()">Imprimer / PDF</button></div>
+      <div class="dr-head-actions">${drPoleGoalsBtn()}<button type="button" class="btn btn-primary" onclick="taskinSlides('week', this)">Générer les slides</button><button type="button" class="btn btn-ghost" onclick="drExportWeekCsv()">Exporter CSV</button><button type="button" class="btn btn-ghost" onclick="window.print()">Imprimer / PDF</button></div>
     </div>
     <div class="dr-toolbar">
       <div class="dr-daynav"><button type="button" class="dr-icon-btn" onclick="drGoWeek(-1)" aria-label="Semaine précédente">‹</button>

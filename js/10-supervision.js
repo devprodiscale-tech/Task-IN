@@ -608,6 +608,7 @@ function svRenderReporting() {
     svKpi('check', 'Cas résolus', `${casesNow}${prev(casesPrev)}`, delta(casesDelta), '#16A34A'),
   ].join('');
 
+  if (typeof taskinHeatmapRender === 'function') taskinHeatmapRender('sv-rep-activity-heatmap', { id: 'reporting', preset: { period: '28d' } });
   const agents = agentsOnly();
   const heatEl = document.getElementById('sv-rep-heatmap');
   heatEl.innerHTML = agents.map(a => {
