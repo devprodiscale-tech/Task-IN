@@ -220,6 +220,7 @@ function applyRoleUI() {
   document.getElementById('tab-home').classList.toggle('hidden', role !== 'admin' && role !== 'agent');
   document.getElementById('tab-week-role').classList.toggle('hidden', role !== 'admin' && role !== 'agent');
   document.getElementById('tab-results')?.classList.toggle('hidden', role !== 'agent');
+  document.getElementById('tab-missed')?.classList.toggle('hidden', role !== 'agent');
   document.getElementById('tab-leaderboard').classList.toggle('hidden', role !== 'admin' && role !== 'supervisor');
   document.getElementById('tab-supervision').classList.toggle('hidden', role !== 'admin' && role !== 'supervisor');
   document.getElementById('tab-training').classList.toggle('hidden', role !== 'admin' && role !== 'formateur' && role !== 'agent');

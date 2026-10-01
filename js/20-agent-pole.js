@@ -19,6 +19,7 @@ const AGENT_SVG = {
   training: '<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0z"/><path d="M22 10v6M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
   documentation: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
   results: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  missed: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/><path d="m16 2 6 6M22 2l-6 6"/>',
   dispatch: '<path d="M4 6h16M4 12h10M4 18h6"/><circle cx="18" cy="15" r="3"/><path d="m20.1 17.1 1.9 1.9"/>',
 };
 const agentIcon = (name, cls = '') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${AGENT_SVG[name] || ''}</svg>`;
@@ -120,7 +121,7 @@ function agentRenderPoleShell() {
   }
 
   // Onglets : icônes cohérentes, et pas de « Vue d'ensemble » d'équipe pour un agent.
-  const tabIcons = [['.tabs .tab.agent-only', 'today'], ['#tab-week-role', 'week'], ['#tab-results', 'results'], ['#tab-training', 'training'], ['#tab-documentation', 'documentation']];
+  const tabIcons = [['.tabs .tab.agent-only', 'today'], ['#tab-week-role', 'week'], ['#tab-results', 'results'], ['#tab-missed', 'missed'], ['#tab-training', 'training'], ['#tab-documentation', 'documentation']];
   tabIcons.forEach(([sel, icon]) => {
     const tab = document.querySelector(sel);
     if (!tab || tab.dataset.iconReady) return;
