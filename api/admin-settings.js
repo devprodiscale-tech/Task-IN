@@ -169,7 +169,10 @@ module.exports = async (req, res) => {
       const uid = str(payload.uid, 80), role = str(payload.role, 30);
       if (!uid || !ROLES.includes(role)) return fail(res, 400, 'Rôle invalide.');
       if (uid === admin.id && role !== 'admin') return fail(res, 400, 'Impossible de retirer son propre accès Admin.');
-      await saveProfile(uid, { role });
+      // Pôle (FO / BO / Reconf) : seulement pour un agent ; vidé pour les autres rôles.
+      const pole = str(payload.pole, 10).toLowerCase();
+      if (pole && !['fo', 'bo', 'reconf'].includes(pole)) return fail(res, 400, 'Pôle invalide.');
+      await saveProfile(uid, payload.pole === undefined ? { role } : { role, pole: role === 'agent' ? (pole || null) : null });
       return json(res, { message: 'Accès du compte enregistré.' });
     }
     if (action === 'importProcedureFile') {

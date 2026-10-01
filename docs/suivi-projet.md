@@ -61,7 +61,7 @@ Ensuite seulement : injection des données fictives (5 FO, 3 BO, 3 Reconf) pour 
 | S3 | Heatmap : vert très pâle (faible) → rouge intense (fort) | ✅ fait |
 | S4 | Graphique « Performance opérationnelle » : in SLA / out SLA au survol (admin, superviseur, agent) | ✅ fait (4 graphiques) |
 | S5 | Classement agents : KPI au choix et tri | ✅ fait (+ correctif : classement ouvert avant le module Supervision) |
-| S6 | Admin › Paramètres › Comptes : changer le pôle FO / BO / Reconf | à faire |
+| S6 | Admin › Paramètres › Comptes : changer le pôle FO / BO / Reconf | ✅ fait |
 | S7 | Extension : synchro plus rapide, avis de mise à jour, installation simplifiée | à faire |
 | S8 | Visuel métier et organisation des onglets superviseur | à faire |
 | S9 | Push sur `main` puis injection des données fictives | à faire |
