@@ -126,3 +126,27 @@ async function initDispatch() {
 
 dispatchEl('dispatch-save').addEventListener('click', saveDispatch);
 initDispatch();
+
+// ---------- Avis de mise à jour ----------
+const UPDATE_KEY = 'taskin_extension_update';
+function renderUpdate(update) {
+  const banner = document.getElementById('update-banner');
+  if (!update?.version) { banner.hidden = true; return; }
+  banner.href = 'https://task-in-rho.vercel.app/#installer-extension';
+  banner.textContent = '';
+  const title = document.createElement('b'); title.textContent = `Nouvelle version ${update.version} disponible`;
+  const notes = document.createElement('div'); notes.textContent = (update.notes || []).slice(0, 2).join(' · ');
+  const cta = document.createElement('span'); cta.textContent = 'Mettre à jour (2 min) →';
+  banner.append(title, notes, cta);
+  banner.hidden = false;
+}
+chrome.storage.local.get([UPDATE_KEY], res => {
+  renderUpdate(res[UPDATE_KEY]);
+  // Vérification au plus une fois par heure à l'ouverture du pop-up.
+  if (!res[UPDATE_KEY]?.checkedAt || Date.now() - res[UPDATE_KEY].checkedAt > 3600000) {
+    chrome.runtime.sendMessage({ type: 'taskin:checkUpdate' }, () => {
+      void chrome.runtime.lastError;
+      chrome.storage.local.get([UPDATE_KEY], r => renderUpdate(r[UPDATE_KEY]));
+    });
+  }
+});

@@ -139,6 +139,9 @@ function taskinResetWorkspace() {
 function enterApp(user) {
   taskinResetWorkspace();
   currentUser = user;
+  window.__taskinEnteredAt = Date.now();
+  // Bandeau extension (mise à jour disponible / extension absente pour un agent) une fois la détection faite.
+  setTimeout(() => typeof taskinExtensionBanner === 'function' && taskinExtensionBanner(), 4500);
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   applyUserTheme();

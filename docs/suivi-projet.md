@@ -45,7 +45,7 @@ Chaque ligne est cochée dès qu’elle est terminée, testée et poussée.
 | R3 | Statut « attente flux » hors shift et courbe d’évolution (reste du sprint « revue globale ») | ✅ fait |
 | R4 | Mettre `main` à jour avec G1 → G6 | ✅ fait (main = 2baab9a) |
 | R5 | Supabase : activer la protection contre les mots de passe divulgués (Authentication › Policies) ; Vercel : `SUPABASE_URL` sans `/rest/v1`, `GEMINI_API_KEY`, `TASKIN_ALLOWED_ORIGIN` | toi |
-| R6 | Agents : réinstaller l’extension v1.11.0 (dispatch dans le pop-up) | toi / agents |
+| R6 | Agents : installer l’extension v1.12.0 (installation guidée dans la web app) | toi / agents |
 | R7 | Test réel : une déclaration agent, une reprise superviseur, une grille partagée, un export | toi |
 
 Tous les points « code » (R1 → R3) sont faits ; restent les points R5 → R7 de ton côté.
@@ -62,7 +62,7 @@ Ensuite seulement : injection des données fictives (5 FO, 3 BO, 3 Reconf) pour 
 | S4 | Graphique « Performance opérationnelle » : in SLA / out SLA au survol (admin, superviseur, agent) | ✅ fait (4 graphiques) |
 | S5 | Classement agents : KPI au choix et tri | ✅ fait (+ correctif : classement ouvert avant le module Supervision) |
 | S6 | Admin › Paramètres › Comptes : changer le pôle FO / BO / Reconf | ✅ fait |
-| S7 | Extension : synchro plus rapide, avis de mise à jour, installation simplifiée | à faire |
+| S7 | Extension : synchro plus rapide, avis de mise à jour, installation simplifiée | ✅ fait (v1.12.0 ; installation en 1 clic = Chrome Web Store, voir `docs/extension-chrome-web-store.md`) |
 | S8 | Visuel métier et organisation des onglets superviseur | à faire |
 | S9 | Push sur `main` puis injection des données fictives | à faire |
 

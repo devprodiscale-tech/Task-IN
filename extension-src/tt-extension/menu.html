@@ -51,6 +51,11 @@
   /* Mon dispatch client (agent connecté) */
   .dispatch{margin:4px 0 6px; padding:10px; border:1px solid var(--border); border-radius:10px; background:var(--surface2);}
   .dispatch[hidden]{display:none;}
+  /* Avis de mise à jour */
+  .update{display:block;margin:4px 0 8px;padding:9px 10px;border-radius:10px;border:1px solid #F5B38F;background:#FFF1E8;color:#7A2E0E;font-size:11.5px;line-height:1.35;text-decoration:none}
+  .update[hidden]{display:none;}
+  .update b{display:block;font-size:12.5px;color:#9A3412}
+  .update span{display:block;margin-top:3px;font-weight:700;color:#C2410C}
   .dispatch-title{display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700;}
   .dispatch-state{font-size:10.5px; color:var(--text2); margin:3px 0 8px; line-height:1.35;}
   .dispatch-chips{display:flex; flex-wrap:wrap; gap:5px;}
@@ -77,6 +82,7 @@
 <body>
   <div class="menu-header"><img src="icons/icon48.png" alt="">Task'in</div>
   <div class="menu-body">
+    <a class="update" id="update-banner" hidden target="_blank" rel="noopener"></a>
     <section class="dispatch" id="dispatch" hidden aria-label="Mon dispatch client">
       <div class="dispatch-title"><div class="menu-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h12M3 18h7"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.8-1.8"/></svg></div>Mon dispatch client</div>
       <div class="dispatch-state" id="dispatch-state">Chargement…</div>

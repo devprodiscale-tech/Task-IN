@@ -2,7 +2,7 @@ importScripts('supabase-client.js');
 
 const FLOAT_ENABLED_KEY = 'onspotFloatEnabled';
 const FLOAT_OWNER_TAB_KEY = 'onspotFloatOwnerTabId';
-const CONTENT_VERSION = '1.11.0';
+const CONTENT_VERSION = '1.12.0';
 
 // Domaines de la web app autorisés à transmettre la connexion à l'extension.
 // À garder aligné avec content_scripts[bridge.js].matches dans manifest.json.
@@ -172,3 +172,41 @@ async function removeOldNativeArtifacts() {
   }));
   await chrome.storage.local.remove(keys);
 }
+
+// ---------- Reconnaissance immédiate de la web app ----------
+// Après installation / mise à jour / redémarrage de Chrome, les onglets Task'in déjà ouverts n'ont pas
+// le « bridge » : on l'injecte pour que la connexion faite sur la web app soit reconnue sans recharger.
+async function injectBridgeInOpenAppTabs() {
+  const tabs = await chrome.tabs.query({ url: ['https://task-in-rho.vercel.app/*', 'http://localhost/*', 'http://127.0.0.1/*'] }).catch(() => []);
+  await Promise.all(tabs.map(tab => chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['bridge.js'] }).catch(() => null)));
+}
+
+// ---------- Avis de mise à jour ----------
+// La web app publie la dernière version (downloads/extension-latest.json). Si elle est plus récente,
+// l'icône affiche « MAJ » et le pop-up propose la mise à jour.
+const TASKIN_LATEST_URL = 'https://task-in-rho.vercel.app/downloads/extension-latest.json';
+const UPDATE_KEY = 'taskin_extension_update';
+function versionNewer(a, b) {
+  const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
+  for (let i = 0; i < 3; i++) { if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0); }
+  return false;
+}
+async function checkExtensionUpdate() {
+  try {
+    const res = await fetch(`${TASKIN_LATEST_URL}?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const latest = await res.json();
+    const current = chrome.runtime.getManifest().version;
+    const available = latest?.version && versionNewer(latest.version, current) ? latest : null;
+    await chrome.storage.local.set({ [UPDATE_KEY]: available ? { ...available, checkedAt: Date.now() } : { checkedAt: Date.now() } });
+    await chrome.action.setBadgeText({ text: available ? 'MAJ' : '' });
+    if (available) await chrome.action.setBadgeBackgroundColor({ color: '#EB6834' });
+  } catch (_) { /* hors ligne : on réessaiera */ }
+}
+
+chrome.runtime.onInstalled.addListener(() => { injectBridgeInOpenAppTabs(); checkExtensionUpdate(); });
+chrome.runtime.onStartup.addListener(() => { injectBridgeInOpenAppTabs(); checkExtensionUpdate(); });
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === 'taskin:checkUpdate') { checkExtensionUpdate().then(() => sendResponse({ ok: true })); return true; }
+  return undefined;
+});

@@ -1,0 +1,9 @@
+{
+  "version": "1.12.0",
+  "zip": "downloads/taskin-extension-v1.12.0.zip",
+  "notes": [
+    "Connexion reconnue tout de suite, même sur un onglet Task'in déjà ouvert",
+    "« Remonter un ticket » remplace « Cas complexes »",
+    "Avis automatique à chaque nouvelle version"
+  ]
+}

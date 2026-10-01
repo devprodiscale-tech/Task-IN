@@ -664,3 +664,22 @@ a.sv-ticket-link:hover{background:var(--ocean-dim)}
 .lb-score i{display:block;height:6px;border-radius:3px;background:var(--ocean);max-width:80px}
 .lb-table th{cursor:pointer;user-select:none}
 @media print{.lb-config{display:none!important}}
+
+/* Extension : bandeau (mise à jour / non détectée) et installation guidée */
+.ext-banner{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:10px 24px 0;padding:10px 14px;border:1px solid var(--amber);border-radius:12px;background:var(--amber-dim);color:var(--text);font-size:13px}
+.ext-banner>span{flex:1 1 320px}
+.ext-banner .btn{padding:6px 12px;font-size:12.5px}
+.ext-banner-x{border:0;background:none;font-size:18px;line-height:1;color:var(--text2);cursor:pointer;padding:2px 6px}
+.ext-install{max-width:620px}
+.ext-install .modal-title small{font-weight:600;color:var(--text2);font-size:12px;margin-left:6px}
+.ext-install-status{margin-bottom:10px}
+.ext-status{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text2)}
+.ext-status.ok{background:var(--green-dim);border-color:var(--green);color:var(--text)}
+.ext-status.warn{background:var(--amber-dim);border-color:var(--amber);color:var(--text)}
+.ext-install-notes{margin:0 0 12px 18px;padding:0;font-size:12.5px;color:var(--text2)}
+.ext-install-steps{margin:0;padding-left:20px;display:grid;gap:10px;font-size:13.5px;line-height:1.5}
+.ext-install-steps .btn{margin-left:6px;padding:5px 12px;font-size:12.5px;text-decoration:none}
+.ext-copy{display:inline-flex;align-items:center;gap:6px;margin:0 2px}
+.ext-copy code{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:12px}
+.ext-install-store{margin:14px 0 0;padding:10px 12px;border-radius:10px;background:var(--ocean-dim);color:var(--text);font-size:12.5px}
+@media (max-width:640px){.ext-banner{margin:10px 12px 0}}
