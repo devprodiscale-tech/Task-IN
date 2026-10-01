@@ -180,3 +180,47 @@ body:not(.admin-shell-active) #daily-results-panel .dr-shell{margin:0}
 .dispatch-save:disabled{opacity:.45;cursor:default}
 .dispatch-error{grid-column:1/-1;color:var(--clay);font-size:12px}
 @media(max-width:900px){.agent-dispatch{grid-template-columns:1fr}.dispatch-actions{justify-content:space-between}}
+
+/* Signaler une difficulté (agent) */
+.dispatch-report{padding:7px 12px;font-size:12px;white-space:nowrap}
+.agent-difficulty-modal{max-width:600px}
+.agent-difficulty-label{margin:4px 0 8px;color:var(--text2);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.agent-difficulty-types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.agent-difficulty-type{display:flex;align-items:flex-start;gap:9px;padding:10px 11px;border:1px solid var(--border);border-radius:11px;background:var(--surface);cursor:pointer}
+.agent-difficulty-type:has(input:checked){border-color:var(--ocean);background:var(--ocean-dim)}
+.agent-difficulty-type input{margin-top:3px;accent-color:var(--ocean)}
+.agent-difficulty-type strong{display:block;color:var(--text);font-size:12.5px}
+.agent-difficulty-type small{display:block;margin-top:2px;color:var(--text3);font-size:11px;line-height:1.35}
+.agent-difficulty-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.agent-difficulty-status{min-height:18px;margin:4px 0 12px;color:var(--clay);font-size:12px}
+.agent-difficulty-status.is-ok{color:var(--green)}
+.agent-difficulty-history{display:grid;gap:6px}
+.agent-difficulty-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:var(--surface2)}
+.agent-difficulty-item strong{display:block;color:var(--text);font-size:12px}
+.agent-difficulty-item small{color:var(--text3);font-size:10.5px}
+.agent-difficulty-item em{flex-shrink:0;padding:2px 8px;border-radius:10px;background:var(--surface);color:var(--text2);font-size:10.5px;font-style:normal;font-weight:800}
+.agent-difficulty-item em.is-resolu{color:var(--green)}
+.agent-difficulty-item em.is-en_cours{color:var(--ocean)}
+.agent-difficulty-empty{color:var(--text3);font-size:12px}
+@media(max-width:560px){.agent-difficulty-types,.agent-difficulty-grid{grid-template-columns:1fr}}
+
+/* Cas complexes : typologie et synthèse (superviseur / admin) */
+.sv-esc-summary{margin:4px 0 14px}
+.sv-esc-types{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.sv-esc-type{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:11px 12px;border:1px solid var(--border);border-top:3px solid var(--t,var(--ocean));border-radius:11px;background:var(--surface);color:var(--text2);cursor:pointer;text-align:left;font-family:var(--font)}
+.sv-esc-type:hover,.sv-esc-type.active{background:color-mix(in srgb,var(--t,var(--ocean)) 8%,var(--surface));border-color:var(--t,var(--ocean))}
+.sv-esc-type span{font-size:11px;font-weight:800}
+.sv-esc-type b{color:var(--text);font-size:22px;line-height:1.1}
+.sv-esc-type small{color:var(--text3);font-size:10.5px}
+.sv-esc-type-process{--t:#2563EB}
+.sv-esc-type-situational{--t:#D97706}
+.sv-esc-type-collaboration{--t:#7C3AED}
+.sv-esc-type-unhandled_escalation{--t:#DC2626}
+.sv-esc-type-other{--t:#64748B}
+.sv-esc-agents{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:10px;color:var(--text2);font-size:12px}
+.sv-esc-agents button{padding:4px 10px;border:1px solid var(--border2);border-radius:14px;background:var(--surface);color:var(--text);cursor:pointer;font:600 11.5px var(--font)}
+.sv-esc-agents button b{color:var(--clay)}
+.sv-esc-new{padding:4px 10px;border-radius:14px;background:color-mix(in srgb,var(--clay) 13%,var(--surface));color:var(--clay);font-weight:800}
+.sv-pill.sv-pill-type{background:color-mix(in srgb,var(--t) 13%,var(--surface));color:var(--t)}
+.sv-pill.sv-pill-reported{background:color-mix(in srgb,var(--clay) 13%,var(--surface));color:var(--clay)}
+@media(max-width:900px){.sv-esc-types{grid-template-columns:repeat(2,minmax(0,1fr))}}

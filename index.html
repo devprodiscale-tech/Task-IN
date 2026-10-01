@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="css/09-supervisor.css?v=20260930c">
 <link rel="stylesheet" href="css/10-interfaces.css?v=20260930purge2">
 <link rel="stylesheet" href="css/11-form-controls.css?v=20260930a">
-<link rel="stylesheet" href="css/12-daily-results.css?v=20260930d">
+<link rel="stylesheet" href="css/12-daily-results.css?v=20261001a">
 </head>
 <body>
 
@@ -752,9 +752,19 @@
             <option value="medium">Moyenne</option>
             <option value="low">Basse</option>
           </select>
+          <select class="filter-select" id="sv-esc-type-filter" onchange="svRenderEscalations()">
+            <option value="__all">Tous les types</option>
+            <option value="process">Difficulté process</option>
+            <option value="situational">Blocage situationnel</option>
+            <option value="collaboration">Collaboration</option>
+            <option value="unhandled_escalation">Escalade manager non traitée</option>
+            <option value="other">Autre / non classé</option>
+          </select>
+          <select class="filter-select" id="sv-esc-agent-filter" onchange="svRenderEscalations()"><option value="__all">Tous les agents</option></select>
           <span class="count-badge" id="sv-esc-count-badge" style="margin-left:auto">…</span>
           <button class="btn btn-primary" onclick="svOpenEscalationModal(null)">+ Nouveau cas</button>
         </div>
+        <div id="sv-esc-summary" class="sv-esc-summary"></div>
         <div id="sv-escalations-list"></div>
       </div>
 
@@ -850,6 +860,15 @@
     </div>
     <div class="modal-body" style="max-height:65vh;overflow-y:auto">
       <div class="form-row"><label class="form-label">Titre</label><input class="form-input" id="sv-esc-title"></div>
+      <div class="form-row"><label class="form-label">Type de difficulté</label>
+        <select class="form-input" id="sv-esc-difficulty">
+          <option value="process">Difficulté process</option>
+          <option value="situational">Blocage situationnel</option>
+          <option value="collaboration">Collaboration</option>
+          <option value="unhandled_escalation">Escalade manager non traitée</option>
+          <option value="other">Autre</option>
+        </select>
+      </div>
       <div class="form-row"><label class="form-label">Description</label><textarea class="form-input" id="sv-esc-description" rows="4"></textarea></div>
       <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label class="form-label">Agent concerné</label><select class="form-input" id="sv-esc-agent"></select></div>
@@ -1310,7 +1329,7 @@
 
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260930blocb" defer></script>
-<script src="js/00-core-init.js?v=20260930disp" defer></script>
+<script src="js/00-core-init.js?v=20261001d" defer></script>
 <script src="js/01-core-auth-network.js?v=20260930res" defer></script>
 <script src="js/02-time-data.js?v=20260930sup" defer></script>
 <script src="js/03-dashboard-render.js?v=20260930goal" defer></script>
@@ -1329,7 +1348,8 @@
 <script src="js/19-extension-bridge.js?v=20260930u" defer></script>
 <script src="js/20-agent-pole.js?v=20260930disp" defer></script>
 <script src="js/21-agent-purge.js?v=20260930a" defer></script>
-<script src="js/23-agent-dispatch.js?v=20260930a" defer></script>
+<script src="js/23-agent-dispatch.js?v=20261001a" defer></script>
+<script src="js/24-agent-difficulty.js?v=20261001a" defer></script>
 <script src="js/00-landing.js?v=20260930d" defer></script>
 <script src="js/99-init.js?v=20260827" defer></script>
 </body>

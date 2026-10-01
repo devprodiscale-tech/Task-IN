@@ -84,6 +84,7 @@ function renderAgentDispatch() {
     <div class="dispatch-actions">
       ${DISPATCH_HINT[pole] ? `<small>${DISPATCH_HINT[pole]}</small>` : ''}
       <button type="button" class="btn btn-primary dispatch-save" ${changed && !agentDispatch.busy ? '' : 'disabled'} onclick="saveAgentDispatch()">${agentDispatch.busy ? 'Enregistrement…' : 'Mettre à jour'}</button>
+      ${typeof openAgentDifficulty === 'function' ? '<button type="button" class="btn btn-ghost dispatch-report" onclick="openAgentDifficulty()">Signaler une difficulté</button>' : ''}
     </div>
     ${agentDispatch.error ? `<div class="dispatch-error" role="status">${escHtml(agentDispatch.error)}</div>` : ''}`;
 }

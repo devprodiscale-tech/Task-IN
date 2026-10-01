@@ -155,11 +155,13 @@ function svNormalizeEscalation(e, collection = 'escalations') {
 // Charge cas complexes, grilles d’écoute et coaching sans toucher à l’affichage.
 // Utilisé par Supervision ET par Admin › Qualité (qui ne doit pas basculer d’écran).
 async function svLoadSupervisionData() {
-  const [sharedEsc, legacyEsc, rev, coach] = await Promise.all([
-    svFetchCollection('escalations'), svFetchCollection('complexCases'), svFetchCollection('qualityReviews'), svFetchCollection('coachingSheets'),
+  // « escalations » et « complexCases » pointent vers la même table complex_cases :
+  // la lire deux fois affichait chaque cas en double. Une seule lecture.
+  const [cases, rev, coach] = await Promise.all([
+    svFetchCollection('escalations'), svFetchCollection('qualityReviews'), svFetchCollection('coachingSheets'),
     typeof loadActiveTimers === 'function' ? loadActiveTimers() : null,
   ]);
-  escalations = [...sharedEsc.map(e => svNormalizeEscalation(e, 'escalations')), ...legacyEsc.map(e => svNormalizeEscalation(e, 'complexCases'))];
+  escalations = cases.map(e => svNormalizeEscalation(e, 'escalations'));
   qualityReviews = rev; coachingSheets = coach;
   svUpdateAlertBadge();
 }
@@ -225,11 +227,54 @@ function svSwitchSubTab(tab, options = {}) {
 // ---- CAS COMPLEXES ----
 const SV_STATUS_LABEL = { nouveau: 'Nouveau', en_cours: 'En cours', attente_client: 'Attente client', resolu: 'Résolu' };
 const SV_PRIORITY_LABEL = { low: 'Basse', medium: 'Moyenne', high: 'Haute', urgent: 'Urgent' };
+// Typologie des difficultés suivies (plan d'action agents) ; les anciens cas sans type = « Autre ».
+const SV_DIFFICULTY_LABEL = { process: 'Difficulté process', situational: 'Blocage situationnel', collaboration: 'Collaboration', unhandled_escalation: 'Escalade manager non traitée', other: 'Autre' };
+function svDifficulty(e) { return SV_DIFFICULTY_LABEL[e.difficulty] ? e.difficulty : 'other'; }
+
+// Synthèse : cas ouverts / total par type, et agents les plus concernés (cas ouverts).
+function svRenderEscalationSummary(list) {
+  const box = document.getElementById('sv-esc-summary');
+  if (!box) return;
+  if (!escalations.length) { box.innerHTML = ''; return; }
+  const open = e => e.status !== 'resolu';
+  const types = Object.keys(SV_DIFFICULTY_LABEL).map(key => {
+    const all = list.filter(e => svDifficulty(e) === key);
+    return { key, label: SV_DIFFICULTY_LABEL[key], open: all.filter(open).length, total: all.length };
+  });
+  const byAgent = {};
+  list.filter(open).forEach(e => { if (e.agentId) byAgent[e.agentId] = (byAgent[e.agentId] || 0) + 1; });
+  const topAgents = Object.entries(byAgent).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const reported = list.filter(e => e.reportedBy && e.status === 'nouveau').length;
+  box.innerHTML = `<div class="sv-esc-types">${types.map(t => `<button type="button" class="sv-esc-type sv-esc-type-${t.key} ${document.getElementById('sv-esc-type-filter')?.value === t.key ? 'active' : ''}" onclick="svFilterEscalationType('${t.key}')"><span>${t.label}</span><b>${t.open}</b><small>ouvert${t.open > 1 ? 's' : ''} · ${t.total} au total</small></button>`).join('')}</div>
+    <div class="sv-esc-agents">${reported ? `<span class="sv-esc-new">${reported} signalement${reported > 1 ? 's' : ''} d’agent à traiter</span>` : ''}${topAgents.length ? `<span>Cas ouverts par agent :</span>${topAgents.map(([id, n]) => `<button type="button" onclick="svFilterEscalationAgent('${id}')">${svAgentName(id)} <b>${n}</b></button>`).join('')}` : '<span>Aucun cas ouvert.</span>'}</div>`;
+}
+function svFilterEscalationType(key) {
+  const select = document.getElementById('sv-esc-type-filter');
+  if (select) select.value = select.value === key ? '__all' : key;
+  svRenderEscalations();
+}
+function svFilterEscalationAgent(id) {
+  const select = document.getElementById('sv-esc-agent-filter');
+  if (select) select.value = select.value === id ? '__all' : id;
+  svRenderEscalations();
+}
 
 function svRenderEscalations() {
   const statusF = document.getElementById('sv-esc-status-filter').value;
   const prioF = document.getElementById('sv-esc-priority-filter').value;
+  const typeF = document.getElementById('sv-esc-type-filter')?.value || '__all';
+  const agentSelect = document.getElementById('sv-esc-agent-filter');
+  if (agentSelect) {
+    const current = agentSelect.value || '__all';
+    const ids = [...new Set(escalations.map(e => e.agentId).filter(Boolean))];
+    agentSelect.innerHTML = '<option value="__all">Tous les agents</option>' + ids.map(id => `<option value="${id}" ${id === current ? 'selected' : ''}>${svAgentName(id)}</option>`).join('');
+  }
+  const agentF = agentSelect?.value || '__all';
   let list = [...escalations];
+  if (agentF !== '__all') list = list.filter(e => e.agentId === agentF);
+  if (typeF !== '__all') list = list.filter(e => svDifficulty(e) === typeF);
+  // La synthèse suit le filtre agent mais montre tous les types (pour comparer).
+  svRenderEscalationSummary(agentF !== '__all' ? escalations.filter(e => e.agentId === agentF) : escalations);
   if (statusF !== '__all') list = list.filter(e => e.status === statusF);
   if (prioF !== '__all') list = list.filter(e => e.priority === prioF);
   list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -248,6 +293,8 @@ function svRenderEscalations() {
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
           ${overdue ? '<span class="sv-pill sv-pill-overdue">⏰ En retard</span>' : ''}
+          ${e.reportedBy ? '<span class="sv-pill sv-pill-reported">Signalé par l’agent</span>' : ''}
+          <span class="sv-pill sv-pill-type sv-esc-type-${svDifficulty(e)}">${SV_DIFFICULTY_LABEL[svDifficulty(e)]}</span>
           <span class="sv-pill sv-pill-${e.priority}">${SV_PRIORITY_LABEL[e.priority] || e.priority}</span>
           <span class="sv-pill sv-pill-${e.status}">${SV_STATUS_LABEL[e.status] || e.status}</span>
         </div>
@@ -266,6 +313,7 @@ function svOpenEscalationModal(id) {
   document.getElementById('sv-esc-description').value = e?.description || '';
   document.getElementById('sv-esc-agent').innerHTML = svAgentOptions(e?.agentId);
   document.getElementById('sv-esc-channel').value = e?.channel || 'ticket';
+  document.getElementById('sv-esc-difficulty').value = e ? svDifficulty(e) : 'process';
   document.getElementById('sv-esc-priority').value = e?.priority || 'medium';
   document.getElementById('sv-esc-status').value = e?.status || 'nouveau';
   document.getElementById('sv-esc-deadline').value = e?.deadlineAt ? svToDatetimeLocal(e.deadlineAt) : '';
@@ -309,6 +357,9 @@ async function svSaveEscalation() {
     title, description: document.getElementById('sv-esc-description').value.trim(),
     agentId: document.getElementById('sv-esc-agent').value,
     channel: document.getElementById('sv-esc-channel').value,
+    difficulty: document.getElementById('sv-esc-difficulty').value,
+    reportedBy: existing?.reportedBy || null,
+    ref: existing?.ref || '',
     priority: document.getElementById('sv-esc-priority').value,
     status,
     deadlineAt: deadlineInput ? new Date(deadlineInput).getTime() : null,
