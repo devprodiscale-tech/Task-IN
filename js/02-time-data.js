@@ -289,21 +289,65 @@ async function syncRingover() {
   alert('Synchronisation désactivée pour cette version de démonstration.');
 }
 
+// Volumétrie : l'app ne charge que les TASKIN_ENTRIES_WINDOW_DAYS derniers jours (≈ 2 mois : jour, semaine,
+// mois, mois précédent, tendances courtes). Un filtre qui remonte plus loin charge le complément à la
+// demande (taskinEnsureEntriesFrom) ; les courbes longues lisent des agrégats serveur (taskin_entries_daily).
+const TASKIN_ENTRIES_WINDOW_DAYS = 62;
+let entriesLoadedFrom = null;
+function taskinEntriesDefaultFrom() {
+  const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - TASKIN_ENTRIES_WINDOW_DAYS);
+  return d;
+}
+function taskinEntryFromRow(row) {
+  return {
+    id: row.id,
+    rawId: row.raw_id || '', source: /^[a-z_-]{1,24}$/.test(row.source || '') ? row.source : 'ticket', desc: row.description || '',
+    treatment: row.treatment || '', agent: row.agent_id, inboundTime: /^(\d{2}:\d{2}|--:--)$/.test(row.inbound_time || '') ? row.inbound_time : '--:--',
+    startTimeStr: row.started_at, durationSec: Number(row.duration_seconds || 0)
+  };
+}
+function taskinValidEntry(e) { return e.startTimeStr && /^[A-Za-z0-9_.:-]{1,80}$/.test(String(e.id)); }
+
 async function loadEntries(shouldRender = true) {
   const supabase = window.taskinDataProviders?.supabase;
   if (!supabase?.enabled()) return;
   try {
-    const rows = await supabase.listTimeEntries();
-    entries = (rows || []).map(row => ({
-      id: row.id,
-      rawId: row.raw_id || '', source: /^[a-z_-]{1,24}$/.test(row.source || '') ? row.source : 'ticket', desc: row.description || '',
-      treatment: row.treatment || '', agent: row.agent_id, inboundTime: /^(\d{2}:\d{2}|--:--)$/.test(row.inbound_time || '') ? row.inbound_time : '--:--',
-      startTimeStr: row.started_at, durationSec: Number(row.duration_seconds || 0)
-    })).filter(e => e.startTimeStr && /^[A-Za-z0-9_.:-]{1,80}$/.test(String(e.id))).sort((a,b)=> getEntryDate(b.startTimeStr)-getEntryDate(a.startTimeStr));
+    const from = entriesLoadedFrom && entriesLoadedFrom < taskinEntriesDefaultFrom() ? entriesLoadedFrom : taskinEntriesDefaultFrom();
+    const rows = await supabase.listTimeEntries({ since: from.toISOString() });
+    entries = (rows || []).map(taskinEntryFromRow).filter(taskinValidEntry).sort((a,b)=> getEntryDate(b.startTimeStr)-getEntryDate(a.startTimeStr));
+    entriesLoadedFrom = from;
     if (typeof invalidateFilterCache === 'function') invalidateFilterCache();
     if (shouldRender) renderCurrentView();
   } catch (e) { window.taskinLastLoadError = e; console.error('Lecture entrées Supabase impossible:', e); }
 }
+
+// Complète l'historique chargé jusqu'à `from` (Date ou « AAAA-MM-JJ »). Renvoie true si des lignes ont été ajoutées.
+const taskinEntriesExtending = new Map();
+async function taskinEnsureEntriesFrom(from) {
+  const supabase = window.taskinDataProviders?.supabase;
+  if (!from || !supabase?.enabled() || !entriesLoadedFrom) return false;
+  const target = from instanceof Date ? new Date(from) : (() => { const [y, m, d] = String(from).slice(0, 10).split('-').map(Number); return new Date(y, (m || 1) - 1, d || 1); })();
+  if (Number.isNaN(target.getTime())) return false;
+  target.setHours(0, 0, 0, 0);
+  if (target >= entriesLoadedFrom) return false;
+  const key = target.getTime();
+  if (taskinEntriesExtending.has(key)) return taskinEntriesExtending.get(key);
+  const job = (async () => {
+    try {
+      const rows = await supabase.listTimeEntries({ since: target.toISOString(), until: entriesLoadedFrom.toISOString() });
+      const known = new Set(entries.map(e => e.id));
+      const extra = (rows || []).map(taskinEntryFromRow).filter(e => taskinValidEntry(e) && !known.has(e.id));
+      entries = entries.concat(extra).sort((a, b) => getEntryDate(b.startTimeStr) - getEntryDate(a.startTimeStr));
+      entriesLoadedFrom = target;
+      if (typeof invalidateFilterCache === 'function') invalidateFilterCache();
+      return extra.length > 0;
+    } catch (e) { console.error('Historique ancien indisponible:', e); return false; }
+    finally { taskinEntriesExtending.delete(key); }
+  })();
+  taskinEntriesExtending.set(key, job);
+  return job;
+}
+window.taskinEnsureEntriesFrom = taskinEnsureEntriesFrom;
 
 async function saveTimeEntry(entry) {
   const supabase = window.taskinDataProviders?.supabase;

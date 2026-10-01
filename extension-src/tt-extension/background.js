@@ -2,7 +2,7 @@ importScripts('supabase-client.js');
 
 const FLOAT_ENABLED_KEY = 'onspotFloatEnabled';
 const FLOAT_OWNER_TAB_KEY = 'onspotFloatOwnerTabId';
-const CONTENT_VERSION = '1.12.0';
+const CONTENT_VERSION = '1.12.1';
 
 // Domaines de la web app autorisés à transmettre la connexion à l'extension.
 // À garder aligné avec content_scripts[bridge.js].matches dans manifest.json.

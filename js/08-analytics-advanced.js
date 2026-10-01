@@ -16,6 +16,13 @@ const LB_DEFAULT = ['volume', 'dmt', 'sla', 'quality'];
 let lbSortKey = 'score';
 let lbSortAsc = false;
 let lbOscCache = { key: '', rows: [] };
+// Filtre par type d'agent (pôle) : les notes 0–100 sont recalculées entre agents du même périmètre.
+let lbPole = (() => { try { return localStorage.getItem('taskin_lb_pole') || 'all'; } catch (_) { return 'all'; } })();
+function lbSetPole(pole) {
+  lbPole = ['fo', 'bo', 'reconf'].includes(pole) ? pole : 'all';
+  try { localStorage.setItem('taskin_lb_pole', lbPole); } catch (_) {}
+  renderLeaderboard();
+}
 
 function lbPrefsKey() { return `taskin_lb_kpis_${currentUser?.id || 'x'}`; }
 function lbSelected() {
@@ -62,7 +69,7 @@ function lbRange() {
   if (typeof dateFilterApplied !== 'undefined' && dateFilterApplied && (fromVal || toVal)) return { from: fromVal || '2000-01-01', to: toVal || day(now) };
   if (lbPeriod === 'week') from.setDate(now.getDate() - (now.getDay() + 6) % 7);
   else if (lbPeriod === 'month') from.setDate(1);
-  else if (lbPeriod === 'all') return { from: '2000-01-01', to: day(now) };
+  else if (lbPeriod === 'all') { const f = new Date(now); f.setDate(f.getDate() - 62); return { from: day(f), to: day(now) }; }
   return { from: day(from), to: day(now) };
 }
 
@@ -93,6 +100,8 @@ function getLbEntries() {
 
 let qualityReviewsLoadedForLb = false;
 async function renderLeaderboard() {
+  // Calculé seulement quand l'onglet Classement est affiché (les filtres de date l'appellent aussi).
+  if (document.getElementById('leaderboard-panel')?.classList.contains('hidden')) return;
   // Le classement peut s'ouvrir avant le module Supervision (scores qualité) : on le charge au besoin.
   if (typeof svFetchCollection !== 'function' && typeof loadModule === 'function') await loadModule('10-supervision.js');
   if (!qualityReviewsLoadedForLb) {
@@ -109,7 +118,7 @@ async function renderLeaderboard() {
     }
   }
   const pool = getLbEntries();
-  const agents = agentsOnly();
+  const agents = agentsOnly().filter(a => lbPole === 'all' || a.pole === lbPole);
   const rows = agents.map(a => {
     const ae = pool.filter(e => e.agent === a.id);
     const frt = ae.reduce((acc, e) => {
@@ -162,9 +171,11 @@ async function renderLeaderboard() {
   const cfg = document.getElementById('lb-config');
   if (cfg) {
     const sortOptions = [['score', 'Score global'], ...kpis.map(k => [k.key, k.label]), ['name', 'Nom']];
-    cfg.innerHTML = `<div class="lb-config-kpis"><b>KPI du classement</b>${LB_KPIS.map(k => `<button type="button" class="lb-kpi ${sel.includes(k.key) ? 'active' : ''}" aria-pressed="${sel.includes(k.key)}" onclick="lbToggleKpi('${k.key}')">${k.label}<small>${k.better === 'high' ? '↑ mieux' : '↓ mieux'}</small></button>`).join('')}</div>
+    const poles = [['all', 'Tous les agents'], ['fo', 'FO'], ['bo', 'BO'], ['reconf', 'Reconf']];
+    cfg.innerHTML = `<div class="lb-config-kpis lb-config-poles"><b>Type d'agent</b>${poles.map(([k, l]) => `<button type="button" class="lb-kpi ${lbPole === k ? 'active' : ''}" aria-pressed="${lbPole === k}" onclick="lbSetPole('${k}')">${l}<small>${(n => `${n} agent${n > 1 ? 's' : ''}`)(k === 'all' ? agentsOnly().length : agentsOnly().filter(a => a.pole === k).length)}</small></button>`).join('')}</div>
+      <div class="lb-config-kpis"><b>KPI du classement</b>${LB_KPIS.map(k => `<button type="button" class="lb-kpi ${sel.includes(k.key) ? 'active' : ''}" aria-pressed="${sel.includes(k.key)}" onclick="lbToggleKpi('${k.key}')">${k.label}<small>${k.better === 'high' ? '↑ mieux' : '↓ mieux'}</small></button>`).join('')}</div>
       <label class="lb-config-sort">Trier par <select class="form-input" onchange="lbSetSort(this.value)">${sortOptions.flatMap(([k, l]) => [[`${k}:desc`, `${l} · décroissant`], [`${k}:asc`, `${l} · croissant`]]).map(([v, l]) => `<option value="${v}" ${v === `${lbSortKey}:${lbSortAsc ? 'asc' : 'desc'}` ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <small class="lb-config-help">Score global : moyenne des notes 0–100 obtenues sur chaque KPI coché (100 = meilleur agent de la période).</small>`;
+      <small class="lb-config-help">Score global : moyenne des notes 0–100 obtenues sur chaque KPI coché (100 = meilleur agent de la période${lbPole === 'all' ? '' : ' dans ce pôle'}). Seuls les comptes agents sont classés.</small>`;
   }
   const head = document.getElementById('lb-head');
   const arrow = key => lbSortKey === key ? (lbSortAsc ? '↑' : '↓') : '↕';
@@ -172,7 +183,7 @@ async function renderLeaderboard() {
 
   const body = document.getElementById('leaderboard-body');
   if (!body) return;
-  if (!rows.length) { body.innerHTML = `<tr><td colspan="${kpis.length + 3}"><div class="empty">Aucun agent.</div></td></tr>`; return; }
+  if (!rows.length) { body.innerHTML = `<tr><td colspan="${kpis.length + 3}"><div class="empty">${lbPole === 'all' ? 'Aucun agent.' : 'Aucun agent dans ce pôle.'}</div></td></tr>`; return; }
   const tone = note => note === null || note === undefined ? '' : note >= 67 ? 'good' : note >= 34 ? 'warn' : 'bad';
   // Podium : pastilles or / argent / bronze dessinées en CSS (plus d'emojis).
   body.innerHTML = rows.map((r, i) => {
@@ -180,7 +191,7 @@ async function renderLeaderboard() {
     const rankDisplay = `<span class="lb-rank-badge${rank <= 3 ? ' lb-podium-' + rank : ''}">${rank}</span>`;
     return `<tr>
       <td>${rankDisplay}</td>
-      <td><div class="agent-cell"><div class="mini-avatar" style="background:${r.agent.color}20;color:${r.agent.color}">${escHtml(r.agent.initials)}</div>${escHtml(r.agent.name)}</div></td>
+      <td><div class="agent-cell"><div class="mini-avatar" style="background:${r.agent.color}20;color:${r.agent.color}">${escHtml(r.agent.initials)}</div>${escHtml(r.agent.name)}${lbPole === 'all' && r.agent.pole && typeof poleLabel === 'function' ? ` <em class="dr-pole dr-pole-${escHtml(r.agent.pole)}">${poleLabel(r.agent.pole)}</em>` : ''}</div></td>
       <td><span class="lb-score"><b>${r.score ?? '—'}</b>${r.score !== null ? `<i style="width:${r.score}%"></i>` : ''}</span></td>
       ${kpis.map(k => { const v = r.values[k.key]; return `<td><span class="lb-val ${tone(r.notes?.[k.key])}" title="Note ${r.notes?.[k.key] ?? '—'}/100">${v === null || v === undefined ? '—' : k.fmt(v)}</span></td>`; }).join('')}
     </tr>`;

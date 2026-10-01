@@ -1,6 +1,6 @@
 # Task’in — suivi du projet
 
-Dernière mise à jour : 1er octobre 2026.
+Dernière mise à jour : 1er octobre 2026 (soir).
 
 ## Où en est le code
 
@@ -8,7 +8,7 @@ Dernière mise à jour : 1er octobre 2026.
 |---|---|---|
 | Contrôles de formulaire harmonisés (extension v1.10.6) | **main** (en ligne) | — |
 | A · Résultats OSC (saisie quotidienne, captures, import CSV) | **main** | migration 011 appliquée |
-| B · Objectifs du jour (J-1 + progression) et « Mes résultats » agent | **main** | migration 012 appliquée |
+| B · Objectifs du jour (moyenne du pôle la veille + progression) et « Mes résultats » agent | **main** | migrations 012 + 024 appliquées |
 | C · Dispatch déclaré par l’agent | **main** | migration 012 appliquée |
 | D · Cas complexes : type de difficulté, synthèse, signalement agent, correctif des doublons | **main** | migration 013 appliquée |
 | E · Reporting hebdomadaire (bilan, points d’attention, message équipe, CSV, impression) | **main** | — |
@@ -45,7 +45,7 @@ Chaque ligne est cochée dès qu’elle est terminée, testée et poussée.
 | R3 | Statut « attente flux » hors shift et courbe d’évolution (reste du sprint « revue globale ») | ✅ fait |
 | R4 | Mettre `main` à jour avec G1 → G6 | ✅ fait (main = 2baab9a) |
 | R5 | Supabase : activer la protection contre les mots de passe divulgués (Authentication › Policies) ; Vercel : `SUPABASE_URL` sans `/rest/v1`, `GEMINI_API_KEY`, `TASKIN_ALLOWED_ORIGIN` | toi |
-| R6 | Agents : installer l’extension v1.12.0 (installation guidée dans la web app) | toi / agents |
+| R6 | Agents : installer l’extension v1.12.1 (installation guidée dans la web app ; les 1.12.0 voient « MAJ ») | toi / agents |
 | R7 | Test réel : une déclaration agent, une reprise superviseur, une grille partagée, un export | toi |
 
 Tous les points « code » (R1 → R3) sont faits ; restent les points R5 → R7 de ton côté.
@@ -65,6 +65,23 @@ Ensuite seulement : injection des données fictives (5 FO, 3 BO, 3 Reconf) pour 
 | S7 | Extension : synchro plus rapide, avis de mise à jour, installation simplifiée | ✅ fait (v1.12.0 ; installation en 1 clic = Chrome Web Store, voir `docs/extension-chrome-web-store.md`) |
 | S8 | Visuel métier et organisation des onglets superviseur | ✅ fait (5 familles ; fusions possibles proposées dans `docs/organisation-interface.md`) |
 | S9 | Push sur `main` puis injection des données fictives | ✅ 12 comptes `@demo-taskin.invalid` (11 agents + 1 superviseur), 3 semaines d’activité — scripts `migration/demo/` |
+
+### Lot T (demandé le 1er octobre au soir)
+
+| # | Point | Statut |
+|---|---|---|
+| T1 | Agent · Mes résultats : objectivé par la **moyenne de son pôle**, objectif = moyenne du pôle la veille + progression | ✅ fait (migration 024 : moyennes seules, ≥ 2 agents ; même calcul côté encadrement) |
+| T2 | Classement retiré de l’onglet Équipe (superviseur et admin) | ✅ fait (lien « Ouvrir le classement » à la place) |
+| T3 | Classement : agents uniquement + filtre par type d’agent FO / BO / Reconf | ✅ fait (notes recalculées dans le pôle choisi) |
+| T4 | Latence après injection des données, capacité sur plusieurs mois, stockage local + Supabase Pro | ✅ correctifs faits (migrations 023 + 024, fenêtre 62 jours, agrégats) — analyse et mail : `docs/capacite-volumetrie.md` |
+| T5 | Extension : « Tickets & cas » ouvrait un nouvel onglet au lieu du formulaire | ✅ corrigé (extension v1.12.1 : onglet Task’in réutilisé, formulaire ouvert directement) |
+
+### Reste à faire (hors ce qui est déjà annoncé)
+
+- Côté toi : R5 (Supabase / Vercel), R6 (extension 1.12.1), R7 (test réel), décision Supabase Pro.
+- Optionnel, sur décision : fusion d’onglets (`docs/organisation-interface.md`), publication Chrome Web Store.
+- Phase 2 (après la mise en production) : purge automatique des captures > 90 jours, cache local
+  (IndexedDB) de l’historique, module Planning, Reconf.
 
 Après la mise en production : module Planning (puis présence vs planning), Reconf, documentation management.
 

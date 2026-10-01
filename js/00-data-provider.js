@@ -264,20 +264,30 @@
     },
     // Lecture paginée : Supabase plafonne chaque réponse, on enchaîne les pages pour ne
     // jamais tronquer l'historique (stats et moyennes justes quel que soit le volume).
-    async listTimeEntries({ pageSize = 1000, maxRows = 50000 } = {}) {
-      // On avance du nombre de lignes réellement reçues et on s'arrête sur une page vide :
-      // robuste même si le plafond serveur (max-rows) est inférieur à pageSize.
-      const all = [];
-      let previousFirstId = null;
-      while (all.length < maxRows) {
-        const page = await request('time_entries', {}, { select: '*', order: 'started_at.desc,id.desc', limit: String(pageSize), offset: String(all.length) });
-        if (!Array.isArray(page) || !page.length) break;
-        // Garde-fou : si le serveur ignore le décalage, la même page revient en boucle.
-        if (previousFirstId !== null && page[0]?.id === previousFirstId) break;
-        previousFirstId = page[0]?.id ?? null;
-        all.push(...page);
+    // Période bornée (since / until, ISO) : l'app ne charge que la fenêtre utile (voir TASKIN_ENTRIES_WINDOW_DAYS),
+    // colonnes utiles seulement, pages lues 3 par 3 en parallèle.
+    async listTimeEntries({ since = '', until = '', pageSize = 1000, maxRows = 200000 } = {}) {
+      const params = { select: 'id,raw_id,source,description,treatment,agent_id,inbound_time,started_at,duration_seconds', order: 'started_at.desc,id.desc', limit: String(pageSize) };
+      const range = [since && `started_at.gte.${since}`, until && `started_at.lt.${until}`].filter(Boolean);
+      if (range.length) params.and = `(${range.join(',')})`;
+      // Pas = taille réelle de la 1re page : robuste si le plafond serveur (max-rows) est inférieur à pageSize.
+      const first = await request('time_entries', {}, { ...params, offset: '0' });
+      const all = Array.isArray(first) ? [...first] : [];
+      const step = all.length;
+      let offset = step;
+      // 1re page incomplète = tout est lu (sauf plafond serveur « rond » inférieur à pageSize).
+      while (step && (step === pageSize || step % 250 === 0) && all.length < maxRows) {
+        const pages = await Promise.all([0, 1, 2].map(i => request('time_entries', {}, { ...params, offset: String(offset + i * step) })));
+        let done = false;
+        for (const page of pages) {
+          if (!Array.isArray(page) || !page.length) { done = true; break; }
+          all.push(...page);
+          if (page.length < step) { done = true; break; }
+        }
+        if (done) break;
+        offset += 3 * step;
       }
-      if (all.length >= maxRows) console.warn(`time_entries : limite de ${maxRows} lignes atteinte, historique plus ancien non chargé.`);
+      if (all.length >= maxRows) console.warn(`time_entries : limite de ${maxRows} lignes atteinte.`);
       return all;
     },
     async listActiveTimers(limit = 100) {

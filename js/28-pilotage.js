@@ -65,6 +65,7 @@ async function pilFetch(path) { return typeof dispatchRest === 'function' ? disp
 
 // Lecture de toutes les sources sur [prevFrom, to] : réutilisée par les exports (29-exports.js).
 async function pilFetchData(r) {
+  if (typeof taskinEnsureEntriesFrom === 'function') await taskinEnsureEntriesFrom(r.prevFrom);
   const startIso = pilParse(r.prevFrom).toISOString(), endIso = pilParse(pilShift(r.to, 1)).toISOString();
   const [osc, goals, missed, cases, sessions, policy] = await Promise.all([
     pilFetch(`agent_daily_stats?select=*&day=gte.${pilShift(r.prevFrom, -7)}&day=lte.${r.to}&limit=10000`),

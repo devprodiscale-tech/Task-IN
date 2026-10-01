@@ -683,3 +683,13 @@ a.sv-ticket-link:hover{background:var(--ocean-dim)}
 .ext-copy code{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:12px}
 .ext-install-store{margin:14px 0 0;padding:10px 12px;border-radius:10px;background:var(--ocean-dim);color:var(--text);font-size:12.5px}
 @media (max-width:640px){.ext-banner{margin:10px 12px 0}}
+
+/* Mes résultats : comparaison à la moyenne du pôle (veille) */
+.dr-me-tile small { display: block; }
+.dr-me-tile small em { font-style: normal; font-weight: 600; margin-left: 2px; }
+.dr-me-tile small em.dr-up { color: var(--sla-in, #15803d); }
+.dr-me-tile small em.dr-down { color: var(--sla-out, #b91c1c); }
+.dr-me-note { margin: 10px 0 0; font-size: 12px; color: var(--text3, #64748b); }
+.dr-basis { display: block; font-size: 11px; }
+.team-lb-link{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 14px;padding:10px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-size:13px;color:var(--text2)}
+.team-lb-link.hidden{display:none}

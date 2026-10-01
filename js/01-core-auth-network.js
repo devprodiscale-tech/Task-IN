@@ -365,7 +365,7 @@ async function logout() {
   if (typeof agentSessionsLog === 'function') await Promise.race([agentSessionsLog('logout'), new Promise(resolve => setTimeout(resolve, 3000))]);
   if (typeof taskinExtensionSignOut === 'function') taskinExtensionSignOut();
   if (window.taskinDataProviders?.supabase?.enabled()) window.taskinDataProviders.supabase.signOut();
-  currentUser = null; entries = [];
+  currentUser = null; entries = []; entriesLoadedFrom = null;
   taskinResetWorkspace();
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
@@ -395,13 +395,26 @@ function populateFilters() {
 
 // Point 2 : refreshApp entièrement séquentiel avec await
 // Lien direct depuis l'extension (« Remonter un ticket ») : …/#ticket.
-function taskinHandleDeepLink() {
+// #ticket (bouton « Remonter un ticket » / « Tickets & cas » de l'extension) : ouvre directement le formulaire.
+// Agent : signalement ; encadrement : « Nouveau cas » dans Tickets & cas. Aussi sur un onglet déjà ouvert (hashchange).
+async function taskinHandleDeepLink() {
   if (location.hash !== '#ticket' || !currentUser) return;
   history.replaceState(null, '', location.pathname + location.search);
-  if (currentUser.role === 'agent' && typeof openAgentDifficulty === 'function') openAgentDifficulty();
-  else if (currentUser.role === 'supervisor') document.querySelector('[data-role-tab="escalations"]')?.click();
-  else if (currentUser.role === 'admin') switchTab('quality', document.querySelector('[data-admin-nav="quality"]'));
+  if (currentUser.role === 'agent') {
+    if (typeof openAgentDifficulty !== 'function' && typeof loadModule === 'function') await loadModule('24-agent-difficulty.js').catch(() => {});
+    if (typeof openAgentDifficulty === 'function') openAgentDifficulty();
+    return;
+  }
+  if (!['supervisor', 'admin', 'formateur'].includes(currentUser.role)) return;
+  if (typeof loadModule === 'function') {
+    if (typeof docProcedures === 'undefined') await loadModule('09-documentation.js').catch(() => {});
+    if (typeof svSwitchSubTab !== 'function') await loadModule('10-supervision.js').catch(() => {});
+  }
+  if (typeof svSwitchSubTab !== 'function') return;
+  svSwitchSubTab('escalations');
+  if (currentUser.role !== 'formateur' && typeof svOpenEscalationModal === 'function') setTimeout(() => svOpenEscalationModal(null), 60);
 }
+window.addEventListener('hashchange', () => { void taskinHandleDeepLink(); });
 
 async function refreshApp() {
   // Toutes les ressources indépendantes partent ensemble. On attend ensuite
@@ -419,7 +432,7 @@ async function refreshApp() {
   if (typeof mergeTaskinLocalAccounts === 'function') mergeTaskinLocalAccounts();
   populateFilters();
   await renderCurrentView();
-  taskinHandleDeepLink();
+  void taskinHandleDeepLink();
   if (currentUser?.role === 'admin') preloadAdminInterfaces().catch(error => console.warn('Préchargement Admin partiel:', error));
   if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor')) {
     startLiveRefresh();

@@ -92,6 +92,13 @@ async function drLoadGoals(day) {
   const response = await drFetch(`/rest/v1/agent_daily_goals?select=*&day=eq.${day}`, { headers: { Accept: 'application/json' } });
   return response.json();
 }
+// Moyennes du pôle de l'agent (veille + jour) : agrégats seulement, calculés côté serveur.
+async function drLoadBench(day) {
+  const response = await drFetch('/rest/v1/rpc/taskin_pole_benchmark', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ p_day: day }),
+  });
+  return response.json();
+}
 async function drLoadPolicy() {
   try {
     const setting = await window.taskinDataProviders?.active?.().getSetting('daily_goal_policy');
@@ -180,10 +187,11 @@ async function renderDailyResults() {
   drState.loading = true; drState.error = '';
   drPaint();
   try {
-    const [rows, goals, policy, dispatch, subs] = await Promise.all([
+    const [rows, goals, policy, dispatch, subs, bench] = await Promise.all([
       drLoadRange(drShiftDay(day, -14), day), drLoadGoals(day), drLoadPolicy(),
       typeof loadDispatchLog === 'function' ? loadDispatchLog(day).catch(() => []) : [],
       drLoadSubmissions(day).catch(() => []),
+      currentUser.role === 'agent' ? drLoadBench(day).catch(() => null) : null,
     ]);
     if (day !== drState.day) return; // un autre jour a été choisi entre-temps
     drState.byDay = new Map();
@@ -192,6 +200,7 @@ async function renderDailyResults() {
     drState.rows = drState.byDay.get(day);
     drState.goals = new Map(goals.map(g => [g.agent_id, g]));
     drState.policy = policy;
+    drState.bench = bench || null;
     drState.subs = new Map(subs.map(x => [x.agent_id, x]));
     if (currentUser.role === 'agent') drState.mySub = day === drLocalDay() ? drState.subs.get(currentUser.id) || null : drState.mySub;
     drState.dispatch = new Map();
@@ -874,20 +883,55 @@ function drTeamTrend(metric) {
   return agents && before ? { refDay, pct: (now - before) / before * 100, agents } : null;
 }
 
+// Moyenne du pôle (agents du même pôle) : la veille = dernier jour (7 j max) avec au moins 2 agents saisis.
+// Encadrement : calculée ici sur les chiffres de l'équipe ; agent : reçue du serveur (moyennes seules,
+// jamais les chiffres individuels des autres — fonction taskin_pole_benchmark).
+function drPoleBench(pole) {
+  if (currentUser?.role === 'agent') return drState.bench || null;
+  if (!pole) return null;
+  const ids = new Set((TEAM || []).filter(u => u.role === 'agent' && u.pole === pole).map(u => u.id));
+  const avgsFor = day => {
+    const rows = [...(drState.byDay.get(day)?.entries() || [])].filter(([id, r]) => ids.has(id) && drHasData(r)).map(([, r]) => r);
+    if (rows.length < 2) return null;
+    const out = { agents: rows.length };
+    DR_GOAL_METRICS.forEach(m => {
+      const vals = rows.map(r => drMetricValue(m, r)).filter(v => v !== null);
+      out[m.key] = vals.length >= 2 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+    });
+    return out;
+  };
+  let refDay = null;
+  for (let i = 1; i <= 7 && !refDay; i++) { const day = drShiftDay(drState.day, -i); if (avgsFor(day)) refDay = day; }
+  const days = {};
+  if (refDay) days[refDay] = avgsFor(refDay);
+  const today = avgsFor(drState.day);
+  if (today) days[drState.day] = today;
+  return { pole, refDay, days };
+}
+
 function drAgentGoals(agent) {
-  const refDay = drRefDay(agent.id);
-  const ref = refDay ? drState.byDay.get(refDay).get(agent.id) : null;
+  // Référence = moyenne du pôle la veille ; à défaut (pôle non renseigné, moins de 2 agents saisis),
+  // le dernier résultat de l'agent lui-même.
+  const bench = drPoleBench(agent.pole);
+  const benchRef = bench?.refDay ? bench.days?.[bench.refDay] : null;
+  const ownRefDay = drRefDay(agent.id);
+  const ownRef = ownRefDay ? drState.byDay.get(ownRefDay)?.get(agent.id) : null;
+  const basis = benchRef ? 'pole' : 'own';
+  const refDay = basis === 'pole' ? bench.refDay : ownRefDay;
+  const poleToday = bench?.days?.[drState.day] || null;
   const today = drState.rows.get(agent.id) || null;
   const override = drState.goals.get(agent.id) || null;
   const progress = drState.policy.progress;
   const metrics = DR_GOAL_METRICS.map(m => {
-    const refV = drMetricValue(m, ref), done = drMetricValue(m, today);
+    const own = drMetricValue(m, ownRef);
+    const refV = basis === 'pole' ? (benchRef[m.key] ?? null) : own;
+    const done = drMetricValue(m, today);
     // Arrondi au supérieur sans piège des flottants (100 × 1,10 = 110,00000000000001 → 111).
     const auto = refV > 0 ? Math.ceil(Math.round(refV * (100 + progress)) / 100) : null;
     const raw = override?.goals?.[m.key];
     const set = raw === null || raw === undefined || raw === '' || !Number.isFinite(Number(raw)) ? null : Number(raw);
     const goal = set ?? auto;
-    return { ...m, refV, done, auto, set, goal, pct: goal && done !== null ? done / goal * 100 : null };
+    return { ...m, refV, own, poleToday: poleToday?.[m.key] ?? null, done, auto, set, goal, pct: goal && done !== null ? done / goal * 100 : null };
   });
   const main = metrics.find(m => m.goal) || null;
   let status = 'none', agentVar = null, team = null;
@@ -895,7 +939,8 @@ function drAgentGoals(agent) {
     team = drTeamTrend(main);
     if (main.done === null) status = 'waiting';
     else {
-      agentVar = main.refV ? (main.done - main.refV) / main.refV * 100 : null;
+      // Progression de l'agent par rapport à SON dernier résultat.
+      agentVar = main.own ? (main.done - main.own) / main.own * 100 : null;
       if (main.done >= main.goal) status = 'reached';
       else if (team && agentVar !== null && agentVar < team.pct - DR_TREND_GAP) status = 'below-trend';
       else status = 'below-goal';
@@ -903,7 +948,12 @@ function drAgentGoals(agent) {
   }
   const trendMetric = main || DR_GOAL_METRICS[0];
   const trend = Array.from({ length: 7 }, (_, i) => drMetricValue(trendMetric, drState.byDay.get(drShiftDay(drState.day, i - 6))?.get(agent.id)));
-  return { agent, refDay, metrics, main, status, agentVar, team, trend, trendLabel: trendMetric.label, focus: override?.focus || '', override };
+  return { agent, refDay, ownRefDay, basis, poleAgents: benchRef?.agents || 0, metrics, main, status, agentVar, team, trend, trendLabel: trendMetric.label, focus: override?.focus || '', override };
+}
+function drBasisLabel(g) {
+  const code = g.agent.pole || (g.agent.id === currentUser?.id ? drState.bench?.pole : '') || '';
+  const pole = typeof poleLabel === 'function' && code ? poleLabel(code) : String(code).toUpperCase();
+  return g.basis === 'pole' ? `moyenne ${pole} du ${drShortDay(g.refDay)} (${g.poleAgents} agents)` : g.refDay ? `résultat perso du ${drShortDay(g.refDay)}` : 'aucune référence';
 }
 
 function drSpark(values) {
@@ -915,11 +965,11 @@ function drSpark(values) {
   return `<svg class="dr-spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true"><polyline points="${points.map(p => xy(p).join(',')).join(' ')}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="currentColor"/></svg>`;
 }
 
-function drGoalCell(m, refDay) {
+function drGoalCell(m, refDay, basis = 'own') {
   if (!m.goal) return `<td>${m.done === null ? '—' : m.done}</td>`;
   const pct = m.pct === null ? 0 : Math.min(100, m.pct);
   const cls = m.pct === null ? '' : m.pct >= 100 ? 'is-good' : m.pct >= 85 ? 'is-warn' : 'is-alert';
-  const title = m.set !== null ? `Objectif ajusté à ${m.set}${m.auto ? ` (calcul auto : ${m.auto})` : ''}` : `Réf. ${m.refV} le ${refDay ? drShortDay(refDay) : '—'} + ${drState.policy.progress} % = ${m.auto}`;
+  const title = m.set !== null ? `Objectif ajusté à ${m.set}${m.auto ? ` (calcul auto : ${m.auto})` : ''}` : `${basis === 'pole' ? 'Moy. pôle' : 'Réf.'} ${m.refV} le ${refDay ? drShortDay(refDay) : '—'} + ${drState.policy.progress} % = ${m.auto}${basis === 'pole' && m.own !== null ? ` · perso : ${m.own}` : ''}`;
   return `<td><div class="dr-goal ${cls}" title="${escHtml(title)}"><span><b>${m.done === null ? '—' : m.done}</b> / ${m.goal}${m.set !== null ? '<em>ajusté</em>' : ''}</span><i><u style="width:${pct}%"></u></i></div></td>`;
 }
 
@@ -939,7 +989,7 @@ function drPaintMine() {
       </div>`;
   panel.innerHTML = `<section class="dr-shell dr-mine">
     <div class="dr-head"><div><span class="admin-overview-section-label">Mes résultats</span><h2>Mon objectif du jour</h2>
-      <p>Ton objectif reprend ton dernier résultat OSC, plus la progression demandée. En fin de shift, déclare tes chiffres du jour.</p></div></div>
+      <p>Ton objectif reprend la moyenne de ton pôle la veille, plus la progression demandée. En fin de shift, déclare tes chiffres du jour.</p></div></div>
     ${body}
     <div id="dr-my-reviews" class="dr-my-reviews"></div>
   </section>`;
@@ -965,14 +1015,14 @@ function drPaintGoals() {
       ? `<div class="dr-empty dr-error">Impossible de charger les résultats : ${escHtml(drState.error)}</div>`
       : !list.length ? '<div class="dr-empty">Aucun agent dans ce pôle.</div>'
       : `<div class="dr-table-wrap"><table class="dr-table dr-goals-table">
-        <thead><tr><th>Agent</th><th>Référence</th>${DR_GOAL_METRICS.map(m => `<th>${m.label}<small>réalisé / objectif</small></th>`).join('')}<th>Évolution<small>agent · équipe</small></th><th>7 jours</th><th>Statut</th>${write ? '<th></th>' : ''}</tr></thead>
+        <thead><tr><th>Agent</th><th>Référence<small>veille</small></th>${DR_GOAL_METRICS.map(m => `<th>${m.label}<small>réalisé / objectif</small></th>`).join('')}<th>Évolution<small>agent · équipe</small></th><th>7 jours</th><th>Statut</th>${write ? '<th></th>' : ''}</tr></thead>
         <tbody>${list.map(g => {
           const [label, cls] = DR_STATUS[g.status];
           const pole = typeof poleLabel === 'function' ? poleLabel(g.agent.pole) : '';
           return `<tr class="${g.agent.id === currentUser?.id ? 'is-me' : ''}">
             <td><div class="dr-agent"><span class="dr-avatar" style="--c:${safeColor(g.agent.color)}">${escHtml(g.agent.initials || '??')}</span><div><strong>${escHtml(g.agent.name)}</strong>${pole ? `<em class="dr-pole dr-pole-${escHtml(g.agent.pole)}">${pole}</em>` : ''}${drState.dispatch.get(g.agent.id)?.length && typeof dispatchSummary === 'function' ? `<small class="dr-dispatch-mini" title="${escHtml(dispatchTimeline(drState.dispatch.get(g.agent.id)))}">${escHtml(dispatchSummary(drState.dispatch.get(g.agent.id).at(-1).channels))}</small>` : ''}</div></div></td>
-            <td>${g.refDay ? escHtml(drShortDay(g.refDay)) : '<span class="dr-muted">aucune</span>'}</td>
-            ${g.metrics.map(m => drGoalCell(m, g.refDay)).join('')}
+            <td>${g.refDay ? `${escHtml(drShortDay(g.refDay))}<small class="dr-muted dr-basis">${g.basis === 'pole' ? 'moy. pôle' : 'perso'}</small>` : '<span class="dr-muted">aucune</span>'}</td>
+            ${g.metrics.map(m => drGoalCell(m, g.refDay, g.basis)).join('')}
             <td>${g.agentVar !== null ? `<b class="${g.agentVar >= 0 ? 'dr-up' : 'dr-down'}">${drPct(g.agentVar)}</b>` : '—'}${g.team ? ` · <span class="dr-muted">${drPct(g.team.pct)}</span>` : ''}</td>
             <td class="dr-spark-cell" title="${escHtml(g.trendLabel)} sur 7 jours">${drSpark(g.trend)}</td>
             <td><span class="dr-status ${cls}">${label}</span>${g.focus && (write || g.agent.id === currentUser?.id) ? `<small class="dr-focus-mini" title="${escHtml(g.focus)}">Consigne : ${escHtml(g.focus)}</small>` : ''}</td>
@@ -982,7 +1032,7 @@ function drPaintGoals() {
   panel.innerHTML = `<section class="dr-shell">
     <div class="dr-head">
       <div>${drSwitchHtml()}<span class="admin-overview-section-label">${write ? 'Stat · objectifs dynamiques' : 'Mes résultats'}</span><h2>${write ? 'Objectifs & tendance' : 'Objectif du jour'}</h2>
-        <p>L’objectif du jour reprend le dernier résultat OSC de chaque agent, plus la progression demandée. Le réalisé est comparé au flux réel de l’équipe.</p></div>
+        <p>L’objectif du jour reprend la moyenne du pôle de l’agent la veille (FO, BO ou Reconf), plus la progression demandée. Le réalisé est comparé au flux réel de l’équipe.</p></div>
       ${write ? `<div class="dr-head-actions">${drPoleGoalsBtn()}</div>` : ''}
     </div>
     ${me && !drState.loading ? drMyGoalHtml(me) : ''}
@@ -1129,10 +1179,15 @@ async function drSubmitDeclare() {
 
 function drMyGoalHtml(g) {
   const tiles = g.metrics.filter(m => m.goal);
-  if (!tiles.length) return `<div class="dr-me"><strong>Ton objectif du jour</strong><p>Pas encore de référence : ton objectif apparaîtra dès que ton premier résultat OSC sera saisi.</p></div>`;
+  if (!tiles.length) return `<div class="dr-me"><strong>Ton objectif du jour</strong><p>Pas encore de référence : ton objectif apparaîtra dès que les résultats OSC de ton pôle de la veille seront saisis.</p></div>`;
+  const adjusted = g.metrics.some(m => m.set !== null);
+  const vs = (mine, avg) => mine === null || avg === null || !avg ? '' : `<em class="${mine >= avg ? 'dr-up' : 'dr-down'}">${mine >= avg ? '▲' : '▼'} ${drPct((mine - avg) / avg * 100)} vs moy.</em>`;
   return `<div class="dr-me">
-    <div class="dr-me-head"><strong>Ton objectif du jour</strong><span>Base : ton résultat du ${escHtml(drShortDay(g.refDay || drState.day))}${g.metrics.some(m => m.set !== null) ? ', ajusté par ton superviseur' : ` + ${drState.policy.progress} %`}</span></div>
-    <div class="dr-me-tiles">${tiles.map(m => `<div class="dr-me-tile"><span>${m.label}</span><b>${m.goal}</b><small>${m.refV !== null ? `réf. ${m.refV}` : ''}${m.done !== null ? ` · réalisé ${m.done}` : ''}</small></div>`).join('')}</div>
+    <div class="dr-me-head"><strong>Ton objectif du jour</strong><span>Base : ${escHtml(drBasisLabel(g))}${adjusted ? ', ajusté par ton superviseur' : ` + ${drState.policy.progress} %`}</span></div>
+    <div class="dr-me-tiles">${tiles.map(m => `<div class="dr-me-tile"><span>${m.label}</span><b>${m.goal}</b>
+      <small>${g.basis === 'pole' && m.refV !== null ? `moy. pôle veille ${String(m.refV).replace('.', ',')}` : m.refV !== null ? `réf. ${m.refV}` : ''}${g.basis === 'pole' && m.own !== null ? ` · toi ${m.own}` : ''}</small>
+      ${m.done !== null ? `<small>réalisé <strong>${m.done}</strong>${m.poleToday !== null ? ` · moy. pôle ${String(m.poleToday).replace('.', ',')} ${vs(m.done, m.poleToday)}` : ''}</small>` : ''}</div>`).join('')}</div>
+    <p class="dr-me-note">Tu es comparé·e à la moyenne de ton pôle, jamais aux chiffres individuels de tes collègues.</p>
     ${g.focus ? `<div class="dr-me-focus"><b>Sur quoi travailler :</b> ${escHtml(g.focus)}</div>` : ''}
   </div>`;
 }
@@ -1164,7 +1219,7 @@ function drOpenGoalEdit(agentId) {
     <div class="modal-header"><div class="modal-title" id="dr-goal-title">Objectif de ${escHtml(agent.name)} — ${escHtml(drDayLabel(drState.day))}</div>
     <button class="modal-close" type="button" onclick="drCloseGoalEdit()" aria-label="Fermer">×</button></div>
     <div class="modal-body">
-      <p class="dr-goal-intro">Laisse une case vide pour garder le calcul automatique (${g.refDay ? `résultat du ${escHtml(drShortDay(g.refDay))}` : 'aucune référence'} + ${drState.policy.progress} %).</p>
+      <p class="dr-goal-intro">Laisse une case vide pour garder le calcul automatique (${escHtml(drBasisLabel(g))} + ${drState.policy.progress} %).</p>
       <div class="dr-form-grid">${g.metrics.map(m => `<label class="dr-field"><span>${m.label}</span>
         <input class="form-input" data-dr-goal="${m.key}" inputmode="numeric" autocomplete="off" placeholder="${m.auto ?? '—'}" value="${m.set ?? ''}">
         <small>${m.auto !== null ? `Auto : ${m.auto} (réf. ${m.refV})` : 'Pas de référence'}</small></label>`).join('')}</div>

@@ -228,8 +228,21 @@ function focusPortablePopup() {
 }
 
 // Cas complexe = ticket de retour agent : même système, géré dans la web app (« Remonter un ticket »).
+// L'onglet Task'in déjà ouvert est réutilisé (pas de nouvel onglet) : le changement d'ancre #ticket
+// ouvre directement le formulaire (agent : signalement ; encadrement : « Nouveau cas »).
 function openTicket() {
-  chrome.tabs.create({ url: `${TASKIN_APP_URL}#ticket` });
+  const target = `${TASKIN_APP_URL}#ticket`;
+  const done = () => { if (window.parent === window) window.close(); };
+  chrome.tabs.query({ url: `${TASKIN_APP_URL}*` }, tabs => {
+    void chrome.runtime.lastError;
+    const tab = (tabs || []).sort((a, b) => (b.active - a.active) || ((b.lastAccessed || 0) - (a.lastAccessed || 0)))[0];
+    if (!tab) { chrome.tabs.create({ url: target }, done); return; }
+    chrome.tabs.update(tab.id, { url: target, active: true }, () => {
+      void chrome.runtime.lastError;
+      if (tab.windowId !== undefined) chrome.windows.update(tab.windowId, { focused: true }, () => { void chrome.runtime.lastError; done(); });
+      else done();
+    });
+  });
 }
 
 let teamLiveCache = null;

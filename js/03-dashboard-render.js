@@ -96,8 +96,11 @@ function onDateActionBtn() {
   }
 }
 
-function applyDateFilter() {
+async function applyDateFilter() {
   updateDateRangeLabel();
+  // Plage antérieure à la fenêtre chargée (≈ 2 mois) : on charge le complément avant de calculer.
+  const from = document.getElementById('filter-date-from')?.value;
+  if (from && typeof taskinEnsureEntriesFrom === 'function') await taskinEnsureEntriesFrom(from);
   renderAll();
   // Recalculer leaderboard et vue globale sur la plage sélectionnée
   if (currentUser && (currentUser.role === 'supervisor' || currentUser.role === 'admin')) {
@@ -710,7 +713,9 @@ async function switchTab(view, btn, options = {}) {
   document.querySelector('.entries-table-wrap').classList.toggle('hidden', !showTable);
   document.getElementById('admin-panel')?.classList.add('hidden');
   document.getElementById('team-live-panel').classList.toggle('hidden', !isHomeView && !isTeamView);
-  document.getElementById('leaderboard-panel').classList.toggle('hidden', !isLeaderboard && !isTeamView);
+  // Le classement n'a qu'une place : son onglet dédié (retiré de l'onglet Équipe).
+  document.getElementById('leaderboard-panel').classList.toggle('hidden', !isLeaderboard);
+  document.getElementById('team-lb-link')?.classList.toggle('hidden', !(isTeamView && ['admin', 'supervisor'].includes(currentUser.role)));
   document.getElementById('documentation-panel').classList.toggle('hidden', !isDocView);
   document.getElementById('supervision-panel').classList.toggle('hidden', !isSupervisionView);
   document.getElementById('training-panel').classList.toggle('hidden', !isTrainingView);
@@ -742,7 +747,6 @@ async function switchTab(view, btn, options = {}) {
   if (isHomeView || isTeamView) {
     await renderRoleHome(sequence);
     if (sequence !== navigationSequence || currentView !== view) return;
-    if (isTeamView && (currentUser.role === 'admin' || currentUser.role === 'supervisor')) renderLeaderboard();
     return;
   }
   if (isLeaderboard) { renderLeaderboard(); return; }

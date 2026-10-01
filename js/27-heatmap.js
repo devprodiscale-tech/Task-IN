@@ -105,6 +105,7 @@ function taskinHeatmapRender(container, opts = {}) {
     st[input.dataset.hm] = input.value;
     if (input.dataset.hm === 'pole') st.agent = 'all';
     if (input.dataset.hm === 'period' && st.period === 'custom' && !st.from) { const t = new Date(); st.to = hmLocalDay(t); t.setDate(t.getDate() - 6); st.from = hmLocalDay(t); }
+    if (st.period === 'custom' && st.from && typeof taskinEnsureEntriesFrom === 'function') taskinEnsureEntriesFrom(st.from).then(added => { if (added) taskinHeatmapRender(el, opts); });
     taskinHeatmapRender(el, opts);
   }));
 }
@@ -136,24 +137,51 @@ function trLabel(d, gran, long = false) {
   return d.toLocaleDateString('fr-FR', long ? { weekday: 'long', day: 'numeric', month: 'long' } : { day: 'numeric', month: 'short' }).replace('.', '');
 }
 
+// Agrégats journaliers serveur (agent × jour) : la courbe couvre 12 mois / tout l'historique sans
+// télécharger chaque traitement. Tant qu'ils ne sont pas arrivés, on calcule sur les traitements chargés.
+const trDaily = { rows: null, at: 0, loading: null };
+async function trLoadDaily() {
+  if (trDaily.loading) return trDaily.loading;
+  if (trDaily.rows && Date.now() - trDaily.at < 5 * 60000) return trDaily.rows;
+  if (typeof dispatchRest !== 'function') return null;
+  trDaily.loading = (async () => {
+    const all = [];
+    for (let offset = 0; offset < 200000; ) {
+      const page = await dispatchRest(`rpc/taskin_entries_daily?order=day.asc,agent_id.asc&limit=1000&offset=${offset}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+      });
+      if (!Array.isArray(page) || !page.length) break;
+      all.push(...page);
+      if (page.length < 1000) break;
+      offset += page.length;
+    }
+    trDaily.rows = all; trDaily.at = Date.now();
+    return all;
+  })().catch(e => { console.warn('Agrégats journaliers indisponibles:', e); return null; }).finally(() => { trDaily.loading = null; });
+  return trDaily.loading;
+}
+function trPoints() {
+  if (trDaily.rows?.length) return trDaily.rows.map(r => { const [y, m, d] = String(r.day).split('-').map(Number); return { agent: r.agent_id, d: new Date(y, m - 1, d), n: Number(r.n) || 0, secs: Number(r.seconds) || 0 }; });
+  return (typeof entries !== 'undefined' ? entries : []).map(e => ({ agent: e.agent, d: typeof getEntryDate === 'function' ? getEntryDate(e.startTimeStr) : new Date(e.startTimeStr), n: 1, secs: Number(e.durationSec || 0) })).filter(x => x.d && !Number.isNaN(x.d.getTime()));
+}
+
 function trCompute(st) {
-  const list = (typeof entries !== 'undefined' ? entries : []).map(e => ({ e, d: typeof getEntryDate === 'function' ? getEntryDate(e.startTimeStr) : new Date(e.startTimeStr) })).filter(x => x.d && !Number.isNaN(x.d.getTime()));
   const poleOf = Object.fromEntries(hmAgents().map(a => [a.id, a.pole || '']));
-  const scoped = list.filter(x => poleOf[x.e.agent] !== undefined && (st.pole === 'all' || poleOf[x.e.agent] === st.pole));
+  const scoped = trPoints().filter(x => poleOf[x.agent] !== undefined && (st.pole === 'all' || poleOf[x.agent] === st.pole));
   const now = new Date();
   let start = new Date(now);
-  if (st.span === 'all') start = scoped.length ? new Date(Math.min(...scoped.map(x => x.d.getTime()))) : new Date(now.getFullYear(), now.getMonth(), 1);
+  if (st.span === 'all') start = scoped.length ? new Date(scoped.reduce((m, x) => Math.min(m, x.d.getTime()), Infinity)) : new Date(now.getFullYear(), now.getMonth(), 1);
   else start.setMonth(start.getMonth() - Number(st.span.replace('m', '')) + 1, 1);
   if (st.span !== 'all') start.setDate(1);
   const buckets = [];
   for (let b = trBucketStart(start, st.gran); b <= now && buckets.length < 800; b = trNext(b, st.gran)) buckets.push({ start: b, team: 0, agents: new Set(), agent: 0 });
   const index = new Map(buckets.map((b, i) => [b.start.getTime(), i]));
-  scoped.forEach(({ e, d }) => {
+  scoped.forEach(({ agent, d, n, secs }) => {
     const i = index.get(trBucketStart(d, st.gran).getTime());
     if (i === undefined) return;
-    const v = st.measure === 'time' ? Number(e.durationSec || 0) / 3600 : 1;
-    buckets[i].team += v; buckets[i].agents.add(e.agent);
-    if (e.agent === st.agent) buckets[i].agent += v;
+    const v = st.measure === 'time' ? secs / 3600 : n;
+    buckets[i].team += v; buckets[i].agents.add(agent);
+    if (agent === st.agent) buckets[i].agent += v;
   });
   const solo = st.agent !== 'all';
   const series = solo
@@ -169,6 +197,7 @@ function taskinTrendRender(container, opts = {}) {
   if (!el) return;
   const id = opts.id || el.id || 'trend';
   const st = trDefaults(id, opts.preset);
+  if (!trDaily.rows || Date.now() - trDaily.at >= 5 * 60000) trLoadDaily().then(rows => { if (rows && el.isConnected) taskinTrendRender(el, opts); });
   if (st.agent !== 'all' && !hmAgents().some(a => a.id === st.agent && (st.pole === 'all' || a.pole === st.pole))) st.agent = 'all';
   const { buckets, series, solo } = trCompute(st);
   const agents = hmAgents().filter(a => st.pole === 'all' || a.pole === st.pole);
