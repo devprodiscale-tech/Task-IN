@@ -25,12 +25,6 @@
   header .sub{font-size:9.5px; font-weight:700; background:var(--ocean-dim); color:var(--ocean); padding:2px 8px; border-radius:20px; margin-left:auto;}
 
   button,input,select,textarea{font-family:inherit;}
-  .tabs{display:flex; gap:4px; padding:8px 12px 0; background:var(--surface2); flex-shrink:0;}
-  .tab-btn{
-    border:none; background:transparent; padding:8px 12px; font-size:12px; font-weight:600;
-    color:var(--text2); cursor:pointer; border-bottom:2px solid transparent;
-  }
-  .tab-btn.active{color:var(--ocean); border-bottom-color:var(--ocean);}
 
   .search-bar{padding:10px 14px; border-bottom:1px solid var(--border); flex-shrink:0;}
   .search-bar input{
@@ -72,36 +66,10 @@
 
   .doc-empty{text-align:center; color:var(--text3); font-size:12px; padding:24px;}
 
-  .add-case-btn{
-    width:100%; padding:9px; border-radius:10px; border:1.5px dashed var(--ocean);
-    background:var(--surface2); color:var(--ocean); font-size:12px; font-weight:700;
-    cursor:pointer; margin-bottom:10px;
-  }
-  .add-case-btn:hover{background:var(--ocean-dim);}
-
-  .case-form{background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px;}
-  .case-form-title{font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:13.5px; margin-bottom:10px; color:var(--text);}
-  .case-form label{display:block; font-size:10px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--text3); margin:8px 0 3px;}
-  .case-form input, .case-form textarea{
-    width:100%; border:1px solid var(--border); border-radius:8px; padding:7px 10px;
-    font-size:12px; font-family:inherit; resize:vertical;
-  }
-  .case-form-actions{display:flex; gap:8px; margin-top:12px;}
-  .case-form-cancel, .case-form-save{flex:1; padding:8px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; border:none;}
-  .case-form-cancel{background:var(--surface); border:1px solid var(--border) !important; color:var(--text2);}
-  .case-form-save{background:var(--ocean); color:#fff;}
-  .case-form-error{font-size:10.5px; color:#B0392E; margin-top:6px;}
-
-  .doc-item-assist{font-size:9.5px; color:var(--text3); margin-top:2px;}
 </style>
 </head>
 <body>
   <header><img src="icons/icon32.png" alt=""><span class="title">Task'in</span><span class="sub">Documentation</span></header>
-
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="docs">Documentation</button>
-    <button class="tab-btn" data-tab="cases">Cas complexes</button>
-  </div>
 
   <div class="search-bar"><input type="text" id="search-input" placeholder="Rechercher..."></div>
 
@@ -109,26 +77,6 @@
     <div class="view" id="docs-view">
       <div id="docs-list"></div>
       <div id="docs-detail" class="hidden"></div>
-    </div>
-    <div class="view hidden" id="cases-view">
-      <button class="add-case-btn" id="add-case-btn">+ Ajouter un cas</button>
-      <div id="cases-form" class="case-form hidden">
-        <div class="case-form-title">Nouveau cas complexe</div>
-        <label>Titre</label>
-        <input type="text" id="case-title" placeholder="Ex: Annulation groupe avec DMC injoignable">
-        <label>Catégorie</label>
-        <input type="text" id="case-category" placeholder="Ex: Transport, Hébergement...">
-        <label>Assisté par</label>
-        <input type="text" id="case-assisted-by" placeholder="Nom de la personne">
-        <label>Description</label>
-        <textarea id="case-description" rows="4" placeholder="Détail du cas et de la résolution..."></textarea>
-        <div class="case-form-actions">
-          <button class="case-form-cancel" id="case-form-cancel">Annuler</button>
-          <button class="case-form-save" id="case-form-save">Enregistrer</button>
-        </div>
-      </div>
-      <div id="cases-list"></div>
-      <div id="cases-detail" class="hidden"></div>
     </div>
   </main>
 

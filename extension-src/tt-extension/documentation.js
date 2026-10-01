@@ -1,22 +1,20 @@
 window.addEventListener('error', (e) => {
-  const target = document.getElementById(activeTab === 'cases' ? 'cases-list' : 'docs-list');
+  const target = document.getElementById('docs-list');
   if (target) {
     target.innerHTML = `<div class="doc-empty">Erreur JavaScript.<br><span style="font-size:10px;color:#B0392E;">${String(e.message || e).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span></div>`;
   }
   console.error("[Task'in Documentation] uncaught error:", e.error || e.message);
 });
 
-let activeTab = 'docs';
+// Les cas complexes ne sont plus dans l'extension : c'est le même système que « Remonter un ticket »
+// de la web app (le pop-up y mène directement). Cette fenêtre ne garde que la documentation.
+const activeTab = 'docs';
 let docsCache = null;
-let casesCache = null;
 
 const searchInput = document.getElementById('search-input');
 const docsView = document.getElementById('docs-view');
-const casesView = document.getElementById('cases-view');
 const docsList = document.getElementById('docs-list');
 const docsDetail = document.getElementById('docs-detail');
-const casesList = document.getElementById('cases-list');
-const casesDetail = document.getElementById('cases-detail');
 
 // --- Palette par catégorie (icône + famille de couleur) -------------------
 const COLOR_FAMILIES = {
@@ -49,113 +47,14 @@ function isUrgentRow(r) {
   return URGENT_KEYWORDS.some(k => hay.includes(k));
 }
 
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeTab = btn.dataset.tab;
-    docsView.classList.toggle('hidden', activeTab !== 'docs');
-    casesView.classList.toggle('hidden', activeTab !== 'cases');
-    searchInput.value = '';
-    showList();
-    loadActiveTab();
-  });
-});
-
 searchInput.addEventListener('input', () => renderCurrentList());
 
-// --- Ajout d'un cas complexe --------------------------------------------
-const addCaseBtn = document.getElementById('add-case-btn');
-const caseForm = document.getElementById('cases-form');
-const caseFormCancel = document.getElementById('case-form-cancel');
-const caseFormSave = document.getElementById('case-form-save');
-
-addCaseBtn.addEventListener('click', () => {
-  caseForm.classList.remove('hidden');
-  casesList.classList.add('hidden');
-  addCaseBtn.classList.add('hidden');
-});
-
-function closeCaseForm() {
-  caseForm.classList.add('hidden');
-  casesList.classList.remove('hidden');
-  addCaseBtn.classList.remove('hidden');
-  document.getElementById('case-title').value = '';
-  document.getElementById('case-category').value = '';
-  document.getElementById('case-assisted-by').value = '';
-  document.getElementById('case-description').value = '';
-  const err = caseForm.querySelector('.case-form-error');
-  if (err) err.remove();
-}
-caseFormCancel.addEventListener('click', closeCaseForm);
-
-caseFormSave.addEventListener('click', async () => {
-  const title = document.getElementById('case-title').value.trim();
-  const category = document.getElementById('case-category').value.trim();
-  const assistedBy = document.getElementById('case-assisted-by').value.trim();
-  const description = document.getElementById('case-description').value.trim();
-
-  const oldErr = caseForm.querySelector('.case-form-error');
-  if (oldErr) oldErr.remove();
-
-  if (!title) {
-    const err = document.createElement('div');
-    err.className = 'case-form-error';
-    err.textContent = 'Le titre est obligatoire.';
-    caseForm.appendChild(err);
-    return;
-  }
-
-  const data = {
-    title,
-    category,
-    assistedBy,
-    description,
-    createdAt: new Date().toISOString()
-  };
-
-  caseFormSave.disabled = true;
-  caseFormSave.textContent = 'Enregistrement…';
-  try {
-    await supabaseClient.request('/rest/v1/complex_cases', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify({
-        title: data.title,
-        description: data.description,
-        status: 'open',
-        priority: 'normal',
-        data
-      })
-    });
-    casesCache = null;
-    closeCaseForm();
-    await loadCases();
-  } catch (e) {
-    const err = document.createElement('div');
-    err.className = 'case-form-error';
-    err.textContent = "Erreur d'enregistrement : " + e.message;
-    caseForm.appendChild(err);
-  } finally {
-    caseFormSave.disabled = false;
-    caseFormSave.textContent = 'Enregistrer';
-  }
-});
-
 function showList() {
-  if (activeTab === 'docs') {
-    docsList.classList.remove('hidden');
-    docsDetail.classList.add('hidden');
-  } else {
-    casesList.classList.remove('hidden');
-    casesDetail.classList.add('hidden');
-  }
+  docsList.classList.remove('hidden');
+  docsDetail.classList.add('hidden');
 }
 
-function loadActiveTab() {
-  if (activeTab === 'docs') loadDocs();
-  else loadCases();
-}
+function loadActiveTab() { loadDocs(); }
 
 async function loadDocs() {
   if (docsCache) { renderCurrentList(); return; }
@@ -177,29 +76,9 @@ async function loadDocs() {
   }
 }
 
-async function loadCases() {
-  if (casesCache) { renderCurrentList(); return; }
-  casesList.innerHTML = '<div class="doc-empty">Chargement…</div>';
-  try {
-    const rows = await supabaseClient.request('/rest/v1/complex_cases?select=*&limit=300');
-    casesCache = (rows || []).map(row => ({
-      id: row.id,
-      title: row.title || row.data?.title || '',
-      category: row.data?.category || '',
-      description: row.description || row.data?.description || '',
-      ...(row.data || {})
-    })).sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    renderCurrentList();
-  } catch (e) {
-    console.error("[Task'in Documentation] loadCases error:", e);
-    casesCache = [];
-    renderCurrentList();
-  }
-}
-
 function renderCurrentList() {
-  const source = activeTab === 'docs' ? docsCache : casesCache;
-  const listEl = activeTab === 'docs' ? docsList : casesList;
+  const source = docsCache;
+  const listEl = docsList;
   if (!source) return;
 
   const q = searchInput.value.trim().toLowerCase();
@@ -208,9 +87,7 @@ function renderCurrentList() {
     : source;
 
   if (filtered.length === 0) {
-    listEl.innerHTML = activeTab === 'cases'
-      ? '<div class="doc-empty">Aucun cas complexe documenté pour le moment.<br>Ce raccourci s\'activera dès que votre équipe formatrice en ajoutera.</div>'
-      : '<div class="doc-empty">Aucune procédure trouvée.</div>';
+    listEl.innerHTML = '<div class="doc-empty">Aucune procédure trouvée.</div>';
     return;
   }
 
@@ -222,8 +99,7 @@ function renderCurrentList() {
       <div class="doc-item-icon" style="background:${s.bg};color:${s.accent};">${s.icon}</div>
       <div>
         <div class="doc-item-title">${esc(p.title || 'Sans titre')}</div>
-        <div class="doc-item-cat" style="color:${s.text};">${esc((p.category || (activeTab === 'cases' ? 'Cas documenté' : '')).toUpperCase())}</div>
-        ${activeTab === 'cases' && p.assistedBy ? `<div class="doc-item-assist">Assisté par ${esc(p.assistedBy)}</div>` : ''}
+        <div class="doc-item-cat" style="color:${s.text};">${esc((p.category || '').toUpperCase())}</div>
       </div>
     </div>`;
   }).join('');
@@ -234,9 +110,9 @@ function renderCurrentList() {
 }
 
 function openDetail(id) {
-  const source = activeTab === 'docs' ? docsCache : casesCache;
-  const listEl = activeTab === 'docs' ? docsList : casesList;
-  const detailEl = activeTab === 'docs' ? docsDetail : casesDetail;
+  const source = docsCache;
+  const listEl = docsList;
+  const detailEl = docsDetail;
   const p = (source || []).find(x => x.id === id);
   if (!p) return;
 
@@ -254,14 +130,11 @@ function openDetail(id) {
     <div id="detail-body"></div>
   `;
   const body = detailEl.querySelector('#detail-body');
-  if (activeTab === 'cases' && p.assistedBy) {
-    body.innerHTML += `<div class="doc-block-callout" style="background:${s.bg};border-color:${s.accent}66;color:${s.text};">👤 Assisté par <b>${esc(p.assistedBy)}</b></div>`;
-  }
   if (p.sections && p.sections.length) {
     body.innerHTML += p.sections.map(b => renderBlock(b, s)).join('');
   } else if (p.description) {
     body.innerHTML += `<div class="doc-block-text">${formatBold(p.description)}</div>`;
-  } else if (!p.assistedBy) {
+  } else {
     body.innerHTML += '<div class="doc-empty">Contenu vide.</div>';
   }
   detailEl.querySelector('#detail-back-btn').addEventListener('click', showList);
@@ -298,8 +171,4 @@ function renderBlock(b, s) {
 function esc(s) { if (!s) return ''; return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function formatBold(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>'); }
 
-if (location.hash === '#cases') {
-  document.querySelector('.tab-btn[data-tab="cases"]').click();
-} else {
-  loadActiveTab();
-}
+loadActiveTab();

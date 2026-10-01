@@ -57,7 +57,7 @@ Ensuite seulement : injection des données fictives (5 FO, 3 BO, 3 Reconf) pour 
 | # | Point | Statut |
 |---|---|---|
 | S1 | Agent : pas d’onglet « Cette semaine » ; « Mes résultats » sans les chiffres OSC des autres | ✅ fait (migration 022) |
-| S2 | Extension : retirer « Cas complexe » (même système que « Remonter un ticket ») | à faire |
+| S2 | Extension : retirer « Cas complexe » (même système que « Remonter un ticket ») | ✅ fait (dans l’extension 1.12.0) |
 | S3 | Heatmap : vert très pâle (faible) → rouge intense (fort) | à faire |
 | S4 | Graphique « Performance opérationnelle » : in SLA / out SLA au survol (admin, superviseur, agent) | à faire |
 | S5 | Classement agents : KPI au choix et tri | à faire |

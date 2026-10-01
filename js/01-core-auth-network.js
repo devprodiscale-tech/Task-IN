@@ -391,6 +391,15 @@ function populateFilters() {
 }
 
 // Point 2 : refreshApp entièrement séquentiel avec await
+// Lien direct depuis l'extension (« Remonter un ticket ») : …/#ticket.
+function taskinHandleDeepLink() {
+  if (location.hash !== '#ticket' || !currentUser) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  if (currentUser.role === 'agent' && typeof openAgentDifficulty === 'function') openAgentDifficulty();
+  else if (currentUser.role === 'supervisor') document.querySelector('[data-role-tab="escalations"]')?.click();
+  else if (currentUser.role === 'admin') switchTab('quality', document.querySelector('[data-admin-nav="quality"]'));
+}
+
 async function refreshApp() {
   // Toutes les ressources indépendantes partent ensemble. On attend ensuite
   // leur arrivée avant le premier rendu pour éviter les écrans qui se repeignent
@@ -407,6 +416,7 @@ async function refreshApp() {
   if (typeof mergeTaskinLocalAccounts === 'function') mergeTaskinLocalAccounts();
   populateFilters();
   await renderCurrentView();
+  taskinHandleDeepLink();
   if (currentUser?.role === 'admin') preloadAdminInterfaces().catch(error => console.warn('Préchargement Admin partiel:', error));
   if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor')) {
     startLiveRefresh();

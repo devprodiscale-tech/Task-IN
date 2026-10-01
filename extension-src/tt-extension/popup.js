@@ -106,7 +106,7 @@ document.addEventListener('click', (e) => {
   else if (action === 'stopTimer') stopTimer();
   else if (action === 'clickTimeOpt') clickTimeOpt(el.dataset.col, el.dataset.index);
   else if (action === 'openWebDashboard') openWebDashboard();
-  else if (action === 'openComplexCases') openComplexCases();
+  else if (action === 'openTicket') openTicket();
   else if (action === 'focusPortable') focusPortablePopup();
 });
 
@@ -195,6 +195,9 @@ function updateTopbarUI() {
   const pole = currentUser.role === 'agent' && POLE_LABELS[currentUser.pole] ? currentUser.pole : '';
   if (pole) document.body.dataset.pole = pole; else delete document.body.dataset.pole;
   document.getElementById('tb-pole').textContent = pole ? POLE_LABELS[pole] : '';
+  // Agent : remonter un ticket ; encadrant : ouvrir la liste des tickets / cas complexes.
+  const ticketBtn = document.querySelector('[data-action="openTicket"]');
+  if (ticketBtn) ticketBtn.lastChild.textContent = currentUser.role === 'agent' ? 'Remonter un ticket' : 'Tickets & cas complexes';
 }
 
 // ==========================================
@@ -224,13 +227,9 @@ function focusPortablePopup() {
   });
 }
 
-function openComplexCases() {
-  chrome.windows.create({
-    url: chrome.runtime.getURL('documentation.html#cases'),
-    type: 'popup',
-    width: 500,
-    height: 680
-  });
+// Cas complexe = ticket de retour agent : même système, géré dans la web app (« Remonter un ticket »).
+function openTicket() {
+  chrome.tabs.create({ url: `${TASKIN_APP_URL}#ticket` });
 }
 
 let teamLiveCache = null;
