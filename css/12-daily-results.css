@@ -300,3 +300,4 @@ body:not(.admin-shell-active) #missed-calls-panel .dr-shell{margin:0}
 @media(max-width:760px){body:not(.admin-shell-active) #missed-calls-panel{padding:4px 12px 20px}.mc-pending{padding:12px 16px}}
 .dr-pole-goals-modal{max-width:820px}
 .dr-pole-goals-modal .admin-settings-card{border:0;box-shadow:none;padding:0;background:transparent}
+.mc-src{margin-left:6px;padding:1px 6px;border-radius:5px;background:var(--surface2);color:var(--text3);font-size:9.5px;font-style:normal;font-weight:800;vertical-align:1px}

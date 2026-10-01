@@ -38,6 +38,9 @@ function mcName(id) { return (TEAM || []).find(u => u.id === id)?.name || ''; }
 function mcAgents() { return typeof agentsOnly === 'function' ? agentsOnly() : (TEAM || []).filter(u => u.role === 'agent'); }
 function mcDayLabel(day) { const [y, m, d] = day.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }); }
 function mcCalledBy(r) { return r.callback_by ? mcName(r.callback_by) : r.callback_by_other || ''; }
+// Agent d'une ligne : compte Task'in, sinon prénom repris du Google Sheet (agents sans compte).
+function mcAgentLabel(r) { return mcName(r.agent_id) || r.agent_name || '—'; }
+function mcAgentKey(r) { return r.agent_id || (r.agent_name ? 'name:' + r.agent_name : ''); }
 function mcIsDone(r) { return ['5', '10', '10+'].includes(r.callback); }
 // Un agent ne modifie que SES lignes (auteur ou agent concerné) ; la base applique la même règle.
 function mcCanEdit(r) { return mcIsManager() || r.created_by === currentUser?.id || r.agent_id === currentUser?.id; }
@@ -81,7 +84,7 @@ async function renderMissedCalls() {
 function mcFiltered() {
   const [from, to] = mcPeriod();
   return mcState.rows.filter(r => r.call_date >= from && r.call_date <= to
-    && (mcState.agent === '__all' || r.agent_id === mcState.agent)
+    && (mcState.agent === '__all' || mcAgentKey(r) === mcState.agent)
     && (mcState.cause === '__all' || r.cause === mcState.cause));
 }
 
@@ -95,7 +98,7 @@ function mcFiltersHtml() {
   return `<div class="mc-filters">
     <div class="dr-poles">${ranges.map(([k, l]) => `<button type="button" class="${mcState.range === k ? 'active' : ''}" onclick="mcSetRange('${k}')">${l}</button>`).join('')}</div>
     ${mcState.range === 'custom' ? `<span class="mc-custom"><input type="date" class="form-input" id="mc-from" value="${mcState.from}" max="${mcToday()}" onchange="mcSetCustom()"> → <input type="date" class="form-input" id="mc-to" value="${mcState.to}" max="${mcToday()}" onchange="mcSetCustom()"></span>` : ''}
-    <select class="form-input mc-select" onchange="mcState.agent=this.value;mcPaint()"><option value="__all">Tous les agents</option>${mcAgents().map(a => `<option value="${a.id}" ${mcState.agent === a.id ? 'selected' : ''}>${escHtml(a.name)}</option>`).join('')}</select>
+    <select class="form-input mc-select" onchange="mcState.agent=this.value;mcPaint()"><option value="__all">Tous les agents</option>${mcAgents().map(a => `<option value="${a.id}" ${mcState.agent === a.id ? 'selected' : ''}>${escHtml(a.name)}</option>`).join('')}${[...new Set(mcState.rows.filter(r => !r.agent_id && r.agent_name).map(r => r.agent_name))].sort().map(n => `<option value="name:${escHtml(n)}" ${mcState.agent === 'name:' + n ? 'selected' : ''}>${escHtml(n)} (Sheet)</option>`).join('')}</select>
     <select class="form-input mc-select" onchange="mcState.cause=this.value;mcPaint()"><option value="__all">Toutes les causes</option>${MC_CAUSES.map(c => `<option ${mcState.cause === c ? 'selected' : ''}>${escHtml(c)}</option>`).join('')}</select>
   </div>`;
 }
@@ -146,7 +149,7 @@ function mcJournalHtml() {
         const claimedByMe = r.claimed_by === currentUser.id;
         const claimed = r.claimed_by && !claimedByMe;
         return `<div class="mc-pending-row ${claimed ? 'is-claimed' : ''} ${claimedByMe ? 'is-mine' : ''}">
-          <div><strong>${mcHm(r.call_time)}</strong><span>${r.call_date !== today ? escHtml(mcDayLabel(r.call_date)) + ' · ' : ''}${escHtml(mcName(r.agent_id) || '—')} · ${escHtml(r.cause)}${r.call_ref ? ` · ID ${escHtml(r.call_ref)}` : ''}</span>${r.notes ? `<small>${escHtml(r.notes)}</small>` : ''}</div>
+          <div><strong>${mcHm(r.call_time)}</strong><span>${r.call_date !== today ? escHtml(mcDayLabel(r.call_date)) + ' · ' : ''}${escHtml(mcAgentLabel(r))} · ${escHtml(r.cause)}${r.call_ref ? ` · ID ${escHtml(r.call_ref)}` : ''}</span>${r.notes ? `<small>${escHtml(r.notes)}</small>` : ''}</div>
           ${claimed ? `<em>Pris en charge par ${escHtml(mcName(r.claimed_by))} à ${new Date(r.claimed_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</em>`
             : claimedByMe ? `<span class="mc-actions"><button type="button" class="btn btn-primary" onclick="mcOpenCallback('${r.id}')">Marquer rappelé</button><button type="button" class="dr-edit-btn" onclick="mcClaim('${r.id}', false)">Libérer</button></span>`
             : `<button type="button" class="btn btn-primary" onclick="mcClaim('${r.id}', true)">Je rappelle</button>`}
@@ -156,7 +159,7 @@ function mcJournalHtml() {
     ${!list.length ? '<div class="dr-empty">Aucun appel manqué sur cette période.</div>' : `<div class="dr-table-wrap"><table class="dr-table mc-table">
       <thead><tr><th>Date</th><th>Heure</th><th>Agent</th><th>Cause</th><th>Rappelé ?</th><th>Rappelé par</th><th>ID call</th><th>Heure de rappel</th><th>Notes / action</th><th></th></tr></thead>
       <tbody>${list.map(r => `<tr>
-        <td>${escHtml(mcDayLabel(r.call_date))}</td><td>${mcHm(r.call_time)}</td><td>${escHtml(mcName(r.agent_id) || '—')}</td><td>${escHtml(r.cause)}</td>
+        <td>${escHtml(mcDayLabel(r.call_date))}${r.source === 'sheet' ? '<em class="mc-src" title="Importé du Google Sheet">Sheet</em>' : ''}</td><td>${mcHm(r.call_time) === '00:00' && r.source === 'sheet' ? '—' : mcHm(r.call_time)}</td><td>${escHtml(mcAgentLabel(r))}</td><td>${escHtml(r.cause)}</td>
         <td><span class="dr-status ${mcIsDone(r) ? 'is-good' : r.callback === 'none' ? 'is-alert' : 'is-warn'}">${MC_CALLBACK[r.callback] || r.callback}</span></td>
         <td>${escHtml(mcCalledBy(r)) || '—'}</td><td>${escHtml(r.call_ref || '—')}</td><td>${mcHm(r.callback_time) || '—'}</td>
         <td class="mc-notes">${escHtml(r.notes || '')}</td>
@@ -193,7 +196,7 @@ function mcOpenCallback(id) {
     document.body.appendChild(overlay);
   }
   overlay.innerHTML = `<div class="modal dr-modal mc-callback-modal" role="dialog" aria-modal="true" aria-labelledby="mc-title">
-    <div class="modal-header"><div class="modal-title" id="mc-title">Rappel de l’appel de ${mcHm(row.call_time)} (${escHtml(mcName(row.agent_id) || '—')})</div><button class="modal-close" type="button" onclick="mcCloseEdit()" aria-label="Fermer">×</button></div>
+    <div class="modal-header"><div class="modal-title" id="mc-title">Rappel de l’appel de ${mcHm(row.call_time)} (${escHtml(mcAgentLabel(row))})</div><button class="modal-close" type="button" onclick="mcCloseEdit()" aria-label="Fermer">×</button></div>
     <div class="modal-body">
       <p class="dr-goal-intro">${escHtml(row.cause)}${row.call_ref ? ` · ID ${escHtml(row.call_ref)}` : ''}${row.notes ? ` — ${escHtml(row.notes)}` : ''}</p>
       <div class="dr-form-grid">
@@ -282,7 +285,7 @@ function mcCloseEdit() { mcEdit = null; mcEl('mc-overlay')?.classList.add('hidde
 function mcCheckDuplicate() {
   const ref = mcEl('mc-ref')?.value.trim();
   const dup = ref ? mcState.rows.find(r => r.call_ref === ref && r.id !== mcEdit?.row?.id) : null;
-  mcEl('mc-ref-warn').textContent = dup ? `Déjà saisi : ${mcName(dup.agent_id)} à ${mcHm(dup.call_time)} (${MC_CALLBACK[dup.callback]})` : '';
+  mcEl('mc-ref-warn').textContent = dup ? `Déjà saisi : ${mcAgentLabel(dup)} à ${mcHm(dup.call_time)} (${MC_CALLBACK[dup.callback]})` : '';
   return dup;
 }
 
@@ -300,9 +303,9 @@ async function mcSave() {
   mcEl('mc-save').disabled = true;
   try {
     if (ref) {
-      const same = await mcRest(`missed_calls?select=id,agent_id,call_time&call_ref=eq.${encodeURIComponent(ref)}&limit=5`);
+      const same = await mcRest(`missed_calls?select=id,agent_id,agent_name,call_time&call_ref=eq.${encodeURIComponent(ref)}&limit=5`);
       const dup = same.find(r => r.id !== state.row?.id);
-      if (dup && !confirm(`Cet ID call est déjà dans le journal (${mcName(dup.agent_id)} à ${mcHm(dup.call_time)}). L’enregistrer quand même ?`)) throw new Error('Doublon non enregistré.');
+      if (dup && !confirm(`Cet ID call est déjà dans le journal (${mcAgentLabel(dup)} à ${mcHm(dup.call_time)}). L’enregistrer quand même ?`)) throw new Error('Doublon non enregistré.');
     }
     const payload = {
       call_date: date, call_time: time, agent_id: mcEl('mc-agent').value || null, cause, callback,
@@ -346,11 +349,12 @@ function mcStats(list) {
   const pct = n => total ? String(Math.round(n / total * 1000) / 10).replace('.', ',') : null;
   const shifts = MC_SHIFTS.map(([label, from, to]) => ({ label: `${label} (${from.slice(0, 2)}–${to.slice(0, 2)}h)`, count: list.filter(r => mcHm(r.call_time) >= from && mcHm(r.call_time) < to).length }));
   const causes = MC_CAUSES.map(c => ({ cause: c, count: list.filter(r => r.cause === c).length })).filter(c => c.count).sort((a, b) => b.count - a.count);
-  const agents = mcAgents().map(a => {
-    const mine = list.filter(r => r.agent_id === a.id);
+  const people = [...mcAgents().map(a => ({ key: a.id, name: a.name, by: r => r.callback_by === a.id })),
+    ...[...new Set(list.filter(r => !r.agent_id && r.agent_name).map(r => r.agent_name))].map(n => ({ key: 'name:' + n, name: n + ' (Sheet)', by: r => !r.callback_by && r.callback_by_other === n }))];
+  const agents = people.map(a => {
+    const mine = list.filter(r => mcAgentKey(r) === a.key);
     const ok = mine.filter(mcIsDone).length;
-    const byMe = list.filter(r => r.callback_by === a.id).length;
-    return { agent: a, missed: mine.length, recalled: ok, lost: mine.filter(r => r.callback === 'none').length, rate: mine.length ? Math.round(ok / mine.length * 100) : null, callbacks: byMe };
+    return { agent: { name: a.name }, missed: mine.length, recalled: ok, lost: mine.filter(r => r.callback === 'none').length, rate: mine.length ? Math.round(ok / mine.length * 100) : null, callbacks: list.filter(a.by).length };
   }).filter(x => x.missed || x.callbacks).sort((a, b) => b.missed - a.missed);
   const hours = Array.from({ length: 16 }, (_, i) => { const h = 7 + i; return { h, count: list.filter(r => Number(mcHm(r.call_time).slice(0, 2)) === h).length }; });
   return { total, done, lost, pending, fast, rate: pct(done), fastRate: pct(fast), shifts, causes, agents, hours };
@@ -399,7 +403,7 @@ function mcExportCsv() {
   const list = mcFiltered();
   const esc = v => { const t = String(v ?? ''); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   const head = ['Date', 'Heure', 'Agent', 'Cause', 'Rappelé ?', 'Rappelé par', 'ID call', 'Heure de rappel', 'Notes / Action'];
-  const rows = list.map(r => [r.call_date, mcHm(r.call_time), mcName(r.agent_id), r.cause, MC_CALLBACK[r.callback], mcCalledBy(r), r.call_ref || '', mcHm(r.callback_time), r.notes || '']);
+  const rows = list.map(r => [r.call_date, mcHm(r.call_time), mcAgentLabel(r), r.cause, MC_CALLBACK[r.callback], mcCalledBy(r), r.call_ref || '', mcHm(r.callback_time), r.notes || '']);
   const [from, to] = mcPeriod();
   const link = document.createElement('a');
   link.href = URL.createObjectURL(new Blob(['﻿' + [head, ...rows].map(r => r.map(esc).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' }));
