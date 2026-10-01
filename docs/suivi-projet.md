@@ -14,13 +14,11 @@ Dernière mise à jour : 1er octobre 2026 (fin de journée).
 | E · Reporting hebdomadaire (bilan, points d’attention, message équipe, CSV, impression) | **main** | — |
 | F · Appels manqués (journal partagé, « Je rappelle », statistiques, message client, CSV) | **main** | migration 014 appliquée |
 | Appels manqués : l’agent ne modifie que ses lignes (rappel d’un collègue via fonction serveur) | **main** | migration 015 appliquée |
-| Objectifs fixes par pôle modifiables par le superviseur | branche, **pas poussé** | — |
-| Import de l’historique du Google Sheet (262 appels, juin–septembre) | branche, **pas poussé** | migration 016 + données importées |
-| Slides de reporting automatiques (.pptx / Google Slides) | branche, **pas poussé** | — |
+| Objectifs fixes par pôle modifiables par le superviseur | **main** | — |
+| Import de l’historique du Google Sheet (262 appels, juin–septembre) | **main** | migration 016 + données importées |
+| Slides de reporting automatiques (.pptx / Google Slides) | **main** | — |
 
-Branche de travail : `claude/happy-tesla-dgja39`. Les lignes « pas poussé » sont des commits locaux
-en attente du prochain push groupé. Les migrations sont déjà en base et compatibles avec la version en ligne
-(seul effet visible avant le push : les lignes importées du Sheet affichent « — » au lieu du prénom).
+Branche de travail : `claude/happy-tesla-dgja39`, mise sur `main` le 1er octobre (tout est en ligne).
 
 ## Où trouver chaque fonction
 
@@ -53,7 +51,7 @@ en attente du prochain push groupé. Les migrations sont déjà en base et compa
 
 ## À faire ensuite
 
-1. Reconnecter GitHub, pousser la branche, puis « push » sur `main` après validation.
+1. Tester en réel les fonctions mises en ligne le 1er octobre (voir point 3).
 2. Reconf : à la fin, après la mise en production (voir décisions).
 3. Tester en réel : saisir deux jours de résultats OSC, un appel manqué, un signalement de difficulté.
 4. Relier les lignes importées du Sheet aux comptes de Crystella, Gaëlle, Patrick, Yannis et Tina dès leur création (requête dans `migration/016_missed_calls_sheet_import.sql`).
