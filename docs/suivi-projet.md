@@ -31,7 +31,7 @@ Chaque ligne est cochée dès qu’elle est terminée, testée et poussée.
 | G1 | Vues enregistrées du Pilotage 360° (filtres + KPI sous un nom) | ✅ fait (migration 017) |
 | G2 | Notes de coaching : sur la grille d’écoute (visible par l’agent) et sur le reporting / fiche 360° (préparation du 1:1) | ✅ fait (migration 018) |
 | G3 | Connexions : choix des dates à la main (comparaison au planning après le module Planning, post-prod) | ✅ fait (+ écart au shift, export CSV) |
-| G4 | Exports : stats à cocher, période, agents (multi-sélection) → Google Sheet + Google Slides. Superviseur : en bas de Reporting ; admin : en bas de Supervision | à faire |
+| G4 | Exports : stats à cocher, période, agents (multi-sélection) → Google Sheet + Google Slides. Superviseur : en bas de Reporting ; admin : en bas de Supervision | ✅ fait (.xlsx 8 onglets + .pptx, modèles enregistrables) |
 | G5 | Agent : saisie de ses stats OSC en fin de shift, heure de saisie signalée, capture avec l’heure visible et filtre OSC « Aujourd’hui » | à faire |
 | G6 | Dispatch client dans le pop-up de l’extension (pas dans le reste de l’extension) | à faire |
 | G7 | Bilan avant déploiement ; s’il ne reste rien : injection des données fictives pour la vidéo | à faire |

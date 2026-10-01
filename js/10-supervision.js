@@ -641,6 +641,8 @@ function svRenderReporting() {
 
   svRenderOneOnOnePrep();
   svRenderTimeline(agents);
+  // Exports pour le management : tout en bas du Reporting.
+  if (typeof loadModule === 'function') loadModule('29-exports.js').then(() => window.taskinExportsMount?.('sv-rep-exports')).catch(e => console.warn('Exports indisponibles :', e.message));
 }
 function svRenderTimeline(agents) {
   const dayStartH = 8, dayEndH = 18;

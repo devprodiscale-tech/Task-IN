@@ -63,25 +63,31 @@ function pilRange() {
 
 async function pilFetch(path) { return typeof dispatchRest === 'function' ? dispatchRest(path) : []; }
 
+// Lecture de toutes les sources sur [prevFrom, to] : réutilisée par les exports (29-exports.js).
+async function pilFetchData(r) {
+  const startIso = pilParse(r.prevFrom).toISOString(), endIso = pilParse(pilShift(r.to, 1)).toISOString();
+  const [osc, goals, missed, cases, sessions, policy] = await Promise.all([
+    pilFetch(`agent_daily_stats?select=*&day=gte.${pilShift(r.prevFrom, -7)}&day=lte.${r.to}&limit=10000`),
+    pilFetch(`agent_daily_goals?select=*&day=gte.${r.prevFrom}&day=lte.${r.to}&limit=10000`),
+    pilFetch(`missed_calls?select=*&call_date=gte.${r.prevFrom}&call_date=lte.${r.to}&limit=10000`),
+    pilFetch('complex_cases?select=id,agent_id,status,priority,title,data,created_at&limit=2000'),
+    pilFetch(`agent_sessions?select=agent_id,event,created_at&created_at=gte.${encodeURIComponent(startIso)}&created_at=lt.${encodeURIComponent(endIso)}&order=created_at.asc&limit=20000`),
+    window.taskinDataProviders?.active?.().getSetting('daily_goal_policy').catch(() => null),
+  ]);
+  if (typeof loadModule === 'function' && typeof svLoadSupervisionData !== 'function') await loadModule('10-supervision.js');
+  if (typeof svLoadSupervisionData === 'function' && !(typeof qualityReviews !== 'undefined' && qualityReviews.length)) await svLoadSupervisionData().catch(() => {});
+  return { range: r, osc, goals, missed, cases, sessions, progress: Number(policy?.value?.progress ?? 5) };
+}
+
 async function pilLoad() {
   const r = pilRange();
   const key = `${r.prevFrom}|${r.to}`;
   pilState.loading = true; pilState.error = ''; pilState.key = key;
   pilPaint();
   try {
-    const startIso = pilParse(r.prevFrom).toISOString(), endIso = pilParse(pilShift(r.to, 1)).toISOString();
-    const [osc, goals, missed, cases, sessions, policy] = await Promise.all([
-      pilFetch(`agent_daily_stats?select=*&day=gte.${pilShift(r.prevFrom, -7)}&day=lte.${r.to}&limit=10000`),
-      pilFetch(`agent_daily_goals?select=*&day=gte.${r.prevFrom}&day=lte.${r.to}&limit=10000`),
-      pilFetch(`missed_calls?select=call_date,agent_id,callback&call_date=gte.${r.prevFrom}&call_date=lte.${r.to}&limit=10000`),
-      pilFetch('complex_cases?select=id,agent_id,status,data,created_at&limit=2000'),
-      pilFetch(`agent_sessions?select=agent_id,event,created_at&created_at=gte.${encodeURIComponent(startIso)}&created_at=lt.${encodeURIComponent(endIso)}&order=created_at.asc&limit=20000`),
-      window.taskinDataProviders?.active?.().getSetting('daily_goal_policy').catch(() => null),
-    ]);
-    if (typeof loadModule === 'function' && typeof svLoadSupervisionData !== 'function') await loadModule('10-supervision.js');
-    if (typeof svLoadSupervisionData === 'function' && !(typeof qualityReviews !== 'undefined' && qualityReviews.length)) await svLoadSupervisionData().catch(() => {});
+    const data = await pilFetchData(r);
     if (pilState.key !== key) return;
-    pilState.data = { range: r, osc, goals, missed, cases, sessions, progress: Number(policy?.value?.progress ?? 5) };
+    pilState.data = data;
   } catch (e) {
     if (pilState.key !== key) return;
     pilState.error = e.message;
@@ -159,20 +165,25 @@ function pilRaw(d, agentId, from, to) {
 }
 function pilValue(raw) { if (!raw) return null; return 'n' in raw ? raw.n : raw.den ? raw.num / raw.den : null; }
 
-function pilCompute() {
-  const d = pilState.data;
-  if (!d) return null;
-  const { from, to, prevFrom, prevTo } = d.range;
-  const agents = pilAgents();
-  const rows = agents.map(a => ({ agent: a, cur: pilRaw(d, a.id, from, to), prev: pilRaw(d, a.id, prevFrom, prevTo) }));
-  const team = which => Object.fromEntries(PIL_KPIS.map(k => {
+// Agrège l'équipe : sommes (+ moyenne par agent ayant des données) ou moyennes pondérées.
+function pilTeam(rows, which) {
+  return Object.fromEntries(PIL_KPIS.map(k => {
     const list = rows.map(r => r[which][k.key]).filter(Boolean);
     if (!list.length) return [k.key, null];
     if (k.kind === 'sum') return [k.key, { n: list.reduce((s, x) => s + x.n, 0), perAgent: list.reduce((s, x) => s + x.n, 0) / list.length }];
     const num = list.reduce((s, x) => s + x.num, 0), den = list.reduce((s, x) => s + x.den, 0);
     return [k.key, den ? { num, den } : null];
   }));
-  return { rows, team: team('cur'), teamPrev: team('prev'), range: d.range };
+}
+function pilRows(d, agents) {
+  const { from, to, prevFrom, prevTo } = d.range;
+  return agents.map(a => ({ agent: a, cur: pilRaw(d, a.id, from, to), prev: pilRaw(d, a.id, prevFrom, prevTo) }));
+}
+function pilCompute() {
+  const d = pilState.data;
+  if (!d) return null;
+  const rows = pilRows(d, pilAgents());
+  return { rows, team: pilTeam(rows, 'cur'), teamPrev: pilTeam(rows, 'prev'), range: d.range };
 }
 
 // ---------- Mise en forme ----------

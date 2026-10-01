@@ -575,7 +575,7 @@ window.addEventListener('popstate', event => {
   if (view && currentUser) switchTab(view, document.querySelector(`[data-admin-nav="${view}"], #tab-${view}`), { history: false });
 });
 let navigationSequence = 0;
-const adminSubPanelIds = ['admin-overview-panel','admin-workflow-panel','admin-stat-panel','daily-results-panel','missed-calls-panel','pilotage-panel','admin-quality-panel','admin-training-panel','admin-settings-panel','admin-agent-sessions-panel'];
+const adminSubPanelIds = ['admin-overview-panel','admin-workflow-panel','admin-stat-panel','daily-results-panel','missed-calls-panel','pilotage-panel','admin-quality-panel','admin-training-panel','admin-settings-panel','admin-agent-sessions-panel','admin-exports-panel'];
 
 function hideAdminSubPanels() {
   adminSubPanelIds.forEach(id => document.getElementById(id)?.classList.add('hidden'));
@@ -650,6 +650,12 @@ async function switchTab(view, btn, options = {}) {
     if (panel?.dataset.adminReady !== '1' || adminSubViews[view].always) {
       await adminSubViews[view].render();
       panel?.setAttribute('data-admin-ready', '1');
+    }
+    // Exports pour le management : panneau à part, tout en bas de Supervision (non effacé par le rafraîchissement en direct).
+    if (view === 'workflow-kpi') {
+      const exportsPanel = document.getElementById('admin-exports-panel');
+      exportsPanel?.classList.remove('hidden');
+      if (exportsPanel && exportsPanel.dataset.adminReady !== '1') { await loadModule('29-exports.js'); await window.taskinExportsMount?.(exportsPanel); exportsPanel.setAttribute('data-admin-ready', '1'); }
     }
     return;
   }
