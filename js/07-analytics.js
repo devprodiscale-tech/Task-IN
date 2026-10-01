@@ -184,35 +184,37 @@ function renderGoalInputs() {
   gi('goal-total', agentGoals.total);
   gi('goal-dmt',   agentGoals.dmt);
   gi('goal-frt',   agentGoals.frt);
-  // Sup inputs (même données) : lecture seule pour le superviseur, seul l'admin peut enregistrer.
+  // Sup inputs (même données) : modifiables par l'admin et le superviseur (action serveur updateGoals).
   gi('goal-count-sup', agentGoals.count);
   gi('goal-total-sup', agentGoals.total);
   gi('goal-dmt-sup',   agentGoals.dmt);
   gi('goal-frt-sup',   agentGoals.frt);
-  const readOnly = currentUser?.role !== 'admin';
+  const readOnly = currentUser?.role !== 'admin' && currentUser?.role !== 'supervisor';
   ['goal-count-sup', 'goal-total-sup', 'goal-dmt-sup', 'goal-frt-sup'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = readOnly; });
   const supCard = document.getElementById('goals-sup-card');
   if (supCard) {
     supCard.querySelectorAll('button').forEach(b => { b.classList.toggle('hidden', readOnly); });
     const badge = supCard.querySelector('.count-badge');
-    if (badge) badge.textContent = readOnly ? 'Réglés par l’admin' : 'Admin';
+    if (badge) badge.textContent = readOnly ? 'Réglés par l’admin' : 'Admin & superviseur';
   }
 }
 
 // saveGoals pour le superviseur — lit les inputs -sup
 async function saveGoalsSup() {
-  // Seul l'admin peut écrire les réglages (règle Supabase settings_write_admin).
-  if (!requireRoles('admin')) return;
-  agentGoals = {
+  // Admin et superviseur : passe par le serveur (la table settings reste en écriture admin seule),
+  // sans « poles » : les objectifs par pôle enregistrés sont conservés.
+  if (!requireRoles('admin', 'supervisor')) return;
+  const next = {
     count: parseInt(document.getElementById('goal-count-sup')?.value || 20),
     total: parseInt(document.getElementById('goal-total-sup')?.value || 360),
     dmt:   parseInt(document.getElementById('goal-dmt-sup')?.value   || 8),
     frt:   parseInt(document.getElementById('goal-frt-sup')?.value   || 3),
   };
-  const supabase = window.taskinDataProviders?.supabase;
-  if (!supabase?.enabled()) throw new Error('Supabase n’est pas configuré.');
   try {
-    await supabase.upsertSetting('goals', { ...agentGoals, poles: poleGoals }, currentUser.id);
+    const result = await adminSettingsServerAction('updateGoals', next);
+    const v = result.value || {};
+    agentGoals = { count: Number(v.count ?? next.count), total: Number(v.total ?? next.total), dmt: Number(v.dmt ?? next.dmt), frt: Number(v.frt ?? next.frt) };
+    if (v.poles && typeof v.poles === 'object') poleGoals = v.poles;
     renderGoalInputs();
     renderOpsVisuals();
     alert('Objectifs enregistrés ✓');

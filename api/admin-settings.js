@@ -25,14 +25,17 @@ async function request(path, options = {}) {
   if (!response.ok) throw new Error(payload?.message || payload?.msg || payload?.error_description || `Supabase HTTP ${response.status}`);
   return payload;
 }
-// { user } si administrateur ; { status: 401 } si la session est absente ou expirée ; { status: 403 } sinon.
+// { user, role } si administrateur ou superviseur ; { status: 401 } si la session est absente ou expirée ; { status: 403 } sinon.
+// Le superviseur n'a droit qu'aux actions listées dans SUPERVISOR_ACTIONS.
+const SUPERVISOR_ACTIONS = ['updateGoals'];
 async function requester(accessToken) {
   if (!accessToken) return { status: 401 };
   const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: SERVICE_ROLE_KEY, Authorization: `Bearer ${accessToken}` } });
   const user = await response.json().catch(() => null);
   if (!response.ok || !user?.id) return { status: 401 };
   const profiles = await request(`/rest/v1/profiles?select=id,role&id=eq.${encodeURIComponent(user.id)}&limit=1`);
-  return profiles?.[0]?.role === 'admin' ? { user } : { status: 403 };
+  const role = profiles?.[0]?.role;
+  return role === 'admin' || role === 'supervisor' ? { user, role } : { status: 403 };
 }
 async function setting(key) {
   const rows = await request(`/rest/v1/settings?select=key,value&key=eq.${encodeURIComponent(key)}&limit=1`);
@@ -58,6 +61,7 @@ module.exports = async (req, res) => {
     const admin = auth.user;
     const body = req.body || {};
     const action = str(body.action, 80);
+    if (auth.role !== 'admin' && !SUPERVISOR_ACTIONS.includes(action)) return fail(res, 403, 'Seuls les administrateurs peuvent effectuer cette action.');
     const payload = body.payload && typeof body.payload === 'object' ? body.payload : {};
     const now = new Date().toISOString();
 

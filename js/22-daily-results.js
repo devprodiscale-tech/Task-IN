@@ -837,6 +837,7 @@ function drPaintGoals() {
   const policy = currentUser?.role === 'admin'
     ? `<label class="dr-policy">Progression demandée <input class="form-input" type="number" id="dr-progress" min="-50" max="100" step="1" value="${drState.policy.progress}"> % <button type="button" class="dr-edit-btn" onclick="drSavePolicy()">Appliquer</button></label>`
     : `<span class="dr-policy">Progression demandée : <b>${drPct(drState.policy.progress)}</b></span>`;
+  const poleBtn = write && typeof adminSettingsGoalsSection === 'function' ? '<button type="button" class="dr-edit-btn" onclick="drOpenPoleGoals()">Objectifs fixes par pôle</button>' : '';
   const body = drState.loading
     ? '<div class="dr-empty">Chargement des objectifs…</div>'
     : drState.error
@@ -864,7 +865,7 @@ function drPaintGoals() {
     </div>
     ${me && !drState.loading ? drMyGoalHtml(me) : ''}
     <div class="dr-toolbar">${drDaynavHtml()}${drModesHtml()}${drPolesHtml()}</div>
-    <div class="dr-goal-strip">${policy}
+    <div class="dr-goal-strip">${policy}${poleBtn}
       ${trends.length ? `<span>Flux équipe vs ${escHtml(drShortDay(trends[0].t.refDay))} : ${trends.map(({ m, t }) => `<b class="${t.pct >= 0 ? 'dr-up' : 'dr-down'}">${m.label} ${drPct(t.pct)}</b>`).join(' · ')}</span>` : '<span class="dr-muted">Flux équipe : saisis deux jours pour comparer.</span>'}
       <span class="dr-goal-count"><b class="dr-up">${reached}</b> atteint${reached > 1 ? 's' : ''} · <b class="${below ? 'dr-down' : ''}">${below}</b> sous la tendance</span>
     </div>
@@ -1159,4 +1160,38 @@ function drExportWeekCsv() {
   link.download = `taskin-bilan-${drWeek.start}.csv`;
   document.body.appendChild(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+// Objectifs fixes par pôle (référence quand il n'y a pas encore d'historique J-1) :
+// même tableau que Paramètres › Objectifs, modifiable par l'admin ET le superviseur.
+function drOpenPoleGoals() {
+  if (!drCanWrite() || typeof adminSettingsGoalsSection !== 'function') return;
+  const overlay = drOverlay('dr-pole-goals-overlay', () => overlay.classList.add('hidden'));
+  overlay.innerHTML = `<div class="modal dr-modal dr-pole-goals-modal" role="dialog" aria-modal="true" aria-label="Objectifs fixes par pôle">
+    <div class="modal-header"><div class="modal-title">Objectifs fixes par pôle</div><button class="modal-close" type="button" onclick="document.getElementById('dr-pole-goals-overlay').classList.add('hidden')" aria-label="Fermer">×</button></div>
+    <div class="modal-body">${adminSettingsGoalsSection(adminSettingsGoals())}</div></div>`;
+  overlay.classList.remove('hidden');
+  overlay.querySelector('#admin-settings-goals-draft')?.addEventListener('click', drSavePoleGoals);
+}
+async function drSavePoleGoals() {
+  const box = drEl('dr-pole-goals-overlay');
+  const button = box.querySelector('#admin-settings-goals-draft');
+  const read = (pole, key) => box.querySelector(`[data-goal-pole="${pole}"][data-goal-key="${key}"]`)?.value.trim() ?? '';
+  const keys = ['count', 'total', 'dmt', 'frt'];
+  const payload = {};
+  keys.forEach(k => { payload[k] = read('global', k); });
+  payload.poles = {};
+  ['fo', 'bo', 'reconf'].forEach(p => { const row = {}; keys.forEach(k => { const v = read(p, k); if (v !== '') row[k] = v; }); payload.poles[p] = row; });
+  button.disabled = true;
+  adminSettingsSetStatus('admin-settings-goals-status', 'Enregistrement…');
+  try {
+    const result = await adminSettingsServerAction('updateGoals', payload);
+    const v = result.value || {};
+    if (typeof agentGoals !== 'undefined') agentGoals = { count: Number(v.count), total: Number(v.total), dmt: Number(v.dmt), frt: Number(v.frt) };
+    if (typeof poleGoals !== 'undefined') poleGoals = v.poles && typeof v.poles === 'object' ? v.poles : {};
+    if (typeof renderGoalInputs === 'function') renderGoalInputs();
+    adminSettingsSetStatus('admin-settings-goals-status', 'Objectifs enregistrés.');
+  } catch (error) {
+    adminSettingsSetStatus('admin-settings-goals-status', error.message, true);
+  } finally { button.disabled = false; }
 }
