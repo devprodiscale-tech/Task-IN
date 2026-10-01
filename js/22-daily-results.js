@@ -205,14 +205,19 @@ function drPolesHtml() {
 }
 function drModesHtml() {
   if (!drCanWrite()) return '';
-  return `<div class="dr-modes" role="tablist"><button type="button" class="${drState.mode === 'entry' ? 'active' : ''}" onclick="drSetMode('entry')">Saisie OSC</button><button type="button" class="${drState.mode === 'goals' ? 'active' : ''}" onclick="drSetMode('goals')">Objectifs &amp; tendance</button></div>`;
+  return `<div class="dr-modes" role="tablist"><button type="button" class="${drState.mode === 'entry' ? 'active' : ''}" onclick="drSetMode('entry')">Saisie OSC</button><button type="button" class="${drState.mode === 'goals' ? 'active' : ''}" onclick="drSetMode('goals')">Objectifs &amp; tendance</button><button type="button" class="${drState.mode === 'week' ? 'active' : ''}" onclick="drSetMode('week')">Semaine</button></div>`;
 }
-function drSetMode(mode) { drState.mode = mode === 'goals' ? 'goals' : 'entry'; drPaint(); }
+function drSetMode(mode) {
+  drState.mode = ['goals', 'week'].includes(mode) ? mode : 'entry';
+  if (drState.mode === 'week') { drLoadWeek(); return; }
+  drPaint();
+}
 
 function drPaint() {
   const panel = drEl('daily-results-panel');
   if (!panel) return;
   if (drState.mode === 'goals') { drPaintGoals(); return; }
+  if (drState.mode === 'week') { drPaintWeek(); return; }
   const agents = drAgents();
   const write = drCanWrite();
   const rows = agents.map(a => ({ agent: a, row: drState.rows.get(a.id) || null }));
@@ -968,4 +973,190 @@ async function drResetGoal() {
     state.busy = false;
     drEl('dr-goal-status').textContent = e.message;
   }
+}
+
+// ======================= REPORTING HEBDOMADAIRE =======================
+// Bilan lundi → dimanche par agent : totaux, moyenne par jour saisi, évolution vs semaine
+// précédente, jours où l'objectif (calcul J-1 ou ajusté) est atteint, cas complexes ouverts.
+// Points d'attention automatiques + message prêt à copier pour l'équipe, export CSV, impression.
+let drWeek = { start: '', byDay: new Map(), goals: new Map(), cases: [], loading: false, error: '' };
+
+function drMonday(day) {
+  const [y, m, d] = day.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return drLocalDay(new Date(y, m - 1, d - ((date.getDay() + 6) % 7)));
+}
+function drWeekDays(start) { return Array.from({ length: 7 }, (_, i) => drShiftDay(start, i)); }
+function drWeekLabel(start) {
+  const fmt = day => { const [y, m, d] = day.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); };
+  return `Semaine du ${fmt(start)} au ${fmt(drShiftDay(start, 6))}`;
+}
+
+async function drLoadWeek(start) {
+  drWeek.start = start || drWeek.start || drMonday(drState.day || drLocalDay());
+  const from = drShiftDay(drWeek.start, -14), to = drShiftDay(drWeek.start, 6);
+  const requested = drWeek.start;
+  drWeek.loading = true; drWeek.error = '';
+  drPaint();
+  try {
+    const [rows, goals, cases] = await Promise.all([
+      drLoadRange(from, to),
+      drFetch(`/rest/v1/agent_daily_goals?select=*&day=gte.${drShiftDay(drWeek.start, -7)}&day=lte.${to}`, { headers: { Accept: 'application/json' } }).then(r => r.json()),
+      drFetch('/rest/v1/complex_cases?select=agent_id,status&status=neq.resolu&limit=2000', { headers: { Accept: 'application/json' } }).then(r => r.json()).catch(() => []),
+    ]);
+    if (requested !== drWeek.start) return;
+    drWeek.byDay = new Map();
+    rows.forEach(r => { if (!drWeek.byDay.has(r.day)) drWeek.byDay.set(r.day, new Map()); drWeek.byDay.get(r.day).set(r.agent_id, r); });
+    drWeek.goals = new Map(goals.map(g => [`${g.agent_id}|${g.day}`, g]));
+    drWeek.cases = cases;
+  } catch (e) {
+    if (requested !== drWeek.start) return;
+    drWeek.error = e.message;
+  }
+  drWeek.loading = false;
+  drPaint();
+}
+function drGoWeek(delta) {
+  const next = drShiftDay(drWeek.start, delta * 7);
+  if (next > drLocalDay()) return;
+  drLoadWeek(next);
+}
+
+// Objectif d'un jour donné (même règle que la vue du jour) : ajusté sinon dernier résultat + progression.
+function drDayGoalReached(agentId, day) {
+  const row = drWeek.byDay.get(day)?.get(agentId);
+  if (!drHasData(row)) return null;
+  let ref = null;
+  for (let i = 1; i <= 7 && !ref; i++) { const r = drWeek.byDay.get(drShiftDay(day, -i))?.get(agentId); if (drHasData(r)) ref = r; }
+  const override = drWeek.goals.get(`${agentId}|${day}`);
+  for (const m of DR_GOAL_METRICS) {
+    const raw = override?.goals?.[m.key];
+    const set = raw === null || raw === undefined || raw === '' ? null : Number(raw);
+    const refV = drMetricValue(m, ref);
+    const goal = set ?? (refV > 0 ? Math.ceil(Math.round(refV * (100 + drState.policy.progress)) / 100) : null);
+    if (!goal) continue;
+    const done = drMetricValue(m, row);
+    return done === null ? null : done >= goal;
+  }
+  return null;
+}
+
+function drWeekStats(agent) {
+  const days = drWeekDays(drWeek.start), prev = drWeekDays(drShiftDay(drWeek.start, -7));
+  // null = mesure jamais saisie sur la période (affichée « — », pas 0).
+  const total = (list, m) => list.reduce((s, d) => { const v = drMetricValue(m, drWeek.byDay.get(d)?.get(agent.id)); return v === null ? s : (s ?? 0) + v; }, null);
+  const filled = (list, m) => list.filter(d => drMetricValue(m, drWeek.byDay.get(d)?.get(agent.id)) !== null).length;
+  const worked = days.filter(d => drHasData(drWeek.byDay.get(d)?.get(agent.id)));
+  const prevWorked = prev.filter(d => drHasData(drWeek.byDay.get(d)?.get(agent.id)));
+  const metrics = DR_GOAL_METRICS.map(m => {
+    const sum = total(days, m), prevSum = total(prev, m);
+    const avg = sum === null ? null : sum / filled(days, m);
+    const prevAvg = prevSum === null ? null : prevSum / filled(prev, m);
+    // Évolution sur la moyenne par jour saisi : une absence ne fausse pas la comparaison.
+    return { ...m, sum, avg, prevAvg, var: avg !== null && prevAvg ? (avg - prevAvg) / prevAvg * 100 : null };
+  });
+  const reached = days.map(d => drDayGoalReached(agent.id, d)).filter(v => v !== null);
+  const openCases = drWeek.cases.filter(c => c.agent_id === agent.id).length;
+  const trend = days.map(d => drMetricValue(DR_GOAL_METRICS[0], drWeek.byDay.get(d)?.get(agent.id)));
+  return { agent, worked: worked.length, metrics, reached: reached.filter(Boolean).length, measured: reached.length, openCases, trend };
+}
+
+function drWeekTeamVar(list, key) {
+  const m = list.map(x => x.metrics.find(y => y.key === key)).filter(x => x.avg !== null && x.prevAvg);
+  const a = m.reduce((s, x) => s + x.avg, 0), b = m.reduce((s, x) => s + x.prevAvg, 0);
+  return b ? (a - b) / b * 100 : null;
+}
+
+function drWeekAttention(list) {
+  const teamVar = drWeekTeamVar(list, 'actions');
+  const notes = [];
+  list.forEach(x => {
+    const name = x.agent.name;
+    const actions = x.metrics.find(m => m.key === 'actions');
+    if (!x.worked) { notes.push([name, 'aucun résultat saisi cette semaine', 'is-neutral']); return; }
+    if (actions.var !== null && teamVar !== null && actions.var < teamVar - DR_TREND_GAP) notes.push([name, `actions ${drPct(actions.var)} par jour contre ${drPct(teamVar)} pour l’équipe — faire un point`, 'is-alert']);
+    else if (x.measured >= 2 && x.reached / x.measured < 0.5) notes.push([name, `objectif atteint ${x.reached} jour${x.reached > 1 ? 's' : ''} sur ${x.measured} — faire un point`, 'is-warn']);
+    if (x.openCases >= 2) notes.push([name, `${x.openCases} cas complexes ouverts`, 'is-warn']);
+  });
+  return notes;
+}
+
+function drWeekMessage(list) {
+  const team = DR_GOAL_METRICS.map(m => ({ m, sum: list.reduce((s, x) => s + (x.metrics.find(y => y.key === m.key).sum || 0), 0), v: drWeekTeamVar(list, m.key) })).filter(t => t.sum);
+  const best = list.filter(x => x.measured).sort((a, b) => b.reached / b.measured - a.reached / a.measured)[0];
+  const lines = [`Bilan ${drWeekLabel(drWeek.start).toLowerCase()}`, ''];
+  lines.push('Équipe : ' + (team.length ? team.map(t => `${t.sum} ${t.m.label.toLowerCase()}${t.v !== null ? ` (${drPct(t.v)} / jour vs S-1)` : ''}`).join(', ') : 'aucun résultat saisi') + '.');
+  if (best) lines.push(`Régularité : ${best.agent.name} a atteint son objectif ${best.reached} jour${best.reached > 1 ? 's' : ''} sur ${best.measured}.`);
+  lines.push('', 'Par agent :');
+  list.forEach(x => {
+    const a = x.metrics.find(m => m.key === 'actions');
+    lines.push(`- ${x.agent.name} : ${x.worked} jour${x.worked > 1 ? 's' : ''} saisi${x.worked > 1 ? 's' : ''}, ${a.sum ?? 0} actions${a.avg !== null ? ` (${Math.round(a.avg)}/jour${a.var !== null ? `, ${drPct(a.var)}` : ''})` : ''}, objectif atteint ${x.reached}/${x.measured}`);
+  });
+  lines.push('', 'Objectif de la semaine prochaine : faire au moins aussi bien que votre meilleure journée, avec la priorité aux appels.');
+  return lines.join('\n');
+}
+
+function drPaintWeek() {
+  const panel = drEl('daily-results-panel');
+  if (!drWeek.start) drWeek.start = drMonday(drState.day || drLocalDay());
+  const list = drAgents().map(drWeekStats);
+  const attention = drWeekAttention(list);
+  const cell = m => m.sum === null ? '<td><span class="dr-muted">—</span></td>' : `<td><b>${m.sum}</b><small>${m.avg !== null ? `${(Math.round(m.avg * 10) / 10).toString().replace('.', ',')}/j` : '—'}${m.var !== null ? ` · <span class="${m.var >= 0 ? 'dr-up' : 'dr-down'}">${drPct(m.var)}</span>` : ''}</small></td>`;
+  const teamCell = key => { const sum = list.reduce((s, x) => s + (x.metrics.find(m => m.key === key).sum || 0), 0), v = drWeekTeamVar(list, key); if (!sum && !list.some(x => x.metrics.find(m => m.key === key).sum !== null)) return '<td>—</td>'; return `<td>${sum}${v !== null ? `<small class="${v >= 0 ? 'dr-up' : 'dr-down'}">${drPct(v)}</small>` : ''}</td>`; };
+  const body = drWeek.loading ? '<div class="dr-empty">Chargement du bilan…</div>'
+    : drWeek.error ? `<div class="dr-empty dr-error">Impossible de charger le bilan : ${escHtml(drWeek.error)}</div>`
+    : !list.length ? '<div class="dr-empty">Aucun agent dans ce pôle.</div>'
+    : `<div class="dr-table-wrap"><table class="dr-table dr-week-table">
+        <thead><tr><th>Agent</th><th>Jours saisis</th>${DR_GOAL_METRICS.map(m => `<th>${m.label}<small>total · /jour · vs S-1</small></th>`).join('')}<th>Objectif atteint</th><th>Cas ouverts</th><th>Actions / jour</th></tr></thead>
+        <tbody>${list.map(x => {
+          const pole = typeof poleLabel === 'function' ? poleLabel(x.agent.pole) : '';
+          const rate = x.measured ? x.reached / x.measured : null;
+          return `<tr><td><div class="dr-agent"><span class="dr-avatar" style="--c:${safeColor(x.agent.color)}">${escHtml(x.agent.initials || '??')}</span><div><strong>${escHtml(x.agent.name)}</strong>${pole ? `<em class="dr-pole dr-pole-${escHtml(x.agent.pole)}">${pole}</em>` : ''}</div></div></td>
+            <td>${x.worked} / 7</td>${x.metrics.map(cell).join('')}
+            <td>${x.measured ? `<span class="dr-status ${rate >= 0.7 ? 'is-good' : rate >= 0.5 ? 'is-warn' : 'is-alert'}">${x.reached} / ${x.measured} j</span>` : '<span class="dr-muted">—</span>'}</td>
+            <td>${x.openCases ? `<b class="dr-down">${x.openCases}</b>` : '0'}</td>
+            <td class="dr-spark-cell">${drSpark(x.trend)}</td></tr>`;
+        }).join('')}</tbody>
+        <tfoot><tr><td>Équipe</td><td></td>${DR_GOAL_METRICS.map(m => teamCell(m.key)).join('')}<td>${list.reduce((s, x) => s + x.reached, 0)} / ${list.reduce((s, x) => s + x.measured, 0)} j</td><td>${list.reduce((s, x) => s + x.openCases, 0)}</td><td></td></tr></tfoot>
+      </table></div>
+      <div class="dr-week-bottom">
+        <section class="dr-week-card"><h3>Points d’attention</h3>${attention.length ? `<ul>${attention.map(([n, t, c]) => `<li class="${c}"><b>${escHtml(n)}</b> : ${escHtml(t)}</li>`).join('')}</ul>` : '<p class="dr-muted">Rien à signaler : l’équipe suit la tendance.</p>'}</section>
+        <section class="dr-week-card"><h3>Message pour l’équipe <button type="button" class="dr-edit-btn" onclick="drCopyWeekMessage()">Copier</button></h3><textarea class="form-input" id="dr-week-message" rows="9">${escHtml(drWeekMessage(list))}</textarea><small class="dr-muted" id="dr-week-copy-status">Modifiable avant de copier.</small></section>
+      </div>`;
+  panel.innerHTML = `<section class="dr-shell dr-week-shell">
+    <div class="dr-head">
+      <div>${drSwitchHtml()}<span class="admin-overview-section-label">Stat · reporting hebdomadaire</span><h2>Bilan de la semaine</h2>
+        <p>Résultats OSC saisis du lundi au dimanche. L’évolution compare la moyenne par jour saisi avec la semaine précédente, pour ne pas pénaliser les absences.</p></div>
+      <div class="dr-head-actions"><button type="button" class="btn btn-ghost" onclick="drExportWeekCsv()">Exporter CSV</button><button type="button" class="btn btn-ghost" onclick="window.print()">Imprimer / PDF</button></div>
+    </div>
+    <div class="dr-toolbar">
+      <div class="dr-daynav"><button type="button" class="dr-icon-btn" onclick="drGoWeek(-1)" aria-label="Semaine précédente">‹</button>
+        <strong>${escHtml(drWeekLabel(drWeek.start))}</strong>
+        <button type="button" class="dr-icon-btn" onclick="drGoWeek(1)" aria-label="Semaine suivante" ${drShiftDay(drWeek.start, 7) > drLocalDay() ? 'disabled' : ''}>›</button></div>
+      ${drModesHtml()}${drPolesHtml()}
+    </div>
+    ${body}
+  </section>`;
+}
+
+async function drCopyWeekMessage() {
+  const text = drEl('dr-week-message')?.value || '';
+  const status = drEl('dr-week-copy-status');
+  try { await navigator.clipboard.writeText(text); status.textContent = 'Message copié.'; }
+  catch (_) { drEl('dr-week-message').select(); status.textContent = 'Sélectionné : fais Ctrl+C pour copier.'; }
+}
+
+function drExportWeekCsv() {
+  const list = drAgents().map(drWeekStats);
+  const head = ['Semaine', 'Agent', 'Pôle', 'Jours saisis', ...DR_GOAL_METRICS.flatMap(m => [`${m.label} total`, `${m.label} par jour`, `${m.label} vs S-1 (%)`]), 'Jours objectif atteint', 'Jours mesurés', 'Cas ouverts'];
+  const esc = v => { const t = String(v ?? ''); return /[";\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  const rows = list.map(x => [drWeek.start, x.agent.name, typeof poleLabel === 'function' ? poleLabel(x.agent.pole) : '', x.worked,
+    ...x.metrics.flatMap(m => [m.sum ?? '', m.avg === null ? '' : String(Math.round(m.avg * 10) / 10).replace('.', ','), m.var === null ? '' : Math.round(m.var)]),
+    x.reached, x.measured, x.openCases]);
+  const csv = '﻿' + [head, ...rows].map(r => r.map(esc).join(';')).join('\r\n');
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  link.download = `taskin-bilan-${drWeek.start}.csv`;
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }

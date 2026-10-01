@@ -224,3 +224,26 @@ body:not(.admin-shell-active) #daily-results-panel .dr-shell{margin:0}
 .sv-pill.sv-pill-type{background:color-mix(in srgb,var(--t) 13%,var(--surface));color:var(--t)}
 .sv-pill.sv-pill-reported{background:color-mix(in srgb,var(--clay) 13%,var(--surface));color:var(--clay)}
 @media(max-width:900px){.sv-esc-types{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Reporting hebdomadaire */
+.dr-week-table td small{display:block;margin-top:2px;color:var(--text3);font-size:10.5px}
+.dr-week-table td b{font-size:13px}
+.dr-week-bottom{display:grid;grid-template-columns:1fr 1fr;gap:1px;border-top:1px solid var(--border);background:var(--border)}
+.dr-week-card{padding:16px 20px;background:var(--surface)}
+.dr-week-card h3{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;color:var(--ocean-deep);font-size:14px}
+.dr-week-card ul{display:grid;gap:7px;margin:0;padding:0;list-style:none}
+.dr-week-card li{padding:8px 11px;border-left:3px solid var(--border2);border-radius:0 8px 8px 0;background:var(--surface2);color:var(--text2);font-size:12.5px}
+.dr-week-card li b{color:var(--text)}
+.dr-week-card li.is-alert{border-left-color:var(--clay)}
+.dr-week-card li.is-warn{border-left-color:var(--amber)}
+.dr-week-card textarea{width:100%;font-size:12.5px;line-height:1.5;resize:vertical}
+@media(max-width:900px){.dr-week-bottom{grid-template-columns:1fr}}
+@media print{
+  body *{visibility:hidden}
+  #daily-results-panel,#daily-results-panel *{visibility:visible}
+  #daily-results-panel{position:absolute;inset:0 auto auto 0;width:100%;margin:0!important;padding:0!important}
+  #daily-results-panel .dr-shell{border:0;box-shadow:none}
+  #daily-results-panel button,#daily-results-panel .dr-modes,#daily-results-panel .dr-poles,#daily-results-panel .dr-switch,#daily-results-panel .dr-head-actions{display:none!important}
+  #daily-results-panel .dr-table-wrap{overflow:visible}
+  #daily-results-panel .dr-table td:first-child,#daily-results-panel .dr-table th:first-child{position:static}
+}
