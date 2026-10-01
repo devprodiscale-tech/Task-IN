@@ -6,7 +6,7 @@ Dernière mise à jour : 1er octobre 2026.
 
 | Élément | Où | Base de données |
 |---|---|---|
-| Contrôles de formulaire harmonisés, extension v1.10.6 | **main** (en ligne) | — |
+| Contrôles de formulaire harmonisés (extension v1.10.6) | **main** (en ligne) | — |
 | A · Résultats OSC (saisie quotidienne, captures, import CSV) | **main** | migration 011 appliquée |
 | B · Objectifs du jour (J-1 + progression) et « Mes résultats » agent | **main** | migration 012 appliquée |
 | C · Dispatch déclaré par l’agent | **main** | migration 012 appliquée |
@@ -33,7 +33,7 @@ Chaque ligne est cochée dès qu’elle est terminée, testée et poussée.
 | G3 | Connexions : choix des dates à la main (comparaison au planning après le module Planning, post-prod) | ✅ fait (+ écart au shift, export CSV) |
 | G4 | Exports : stats à cocher, période, agents (multi-sélection) → Google Sheet + Google Slides. Superviseur : en bas de Reporting ; admin : en bas de Supervision | ✅ fait (.xlsx 8 onglets + .pptx, modèles enregistrables) |
 | G5 | Agent : saisie de ses stats OSC en fin de shift, heure de saisie signalée, capture avec l’heure visible et filtre OSC « Aujourd’hui » | ✅ fait (migration 019, rappel à la déconnexion) |
-| G6 | Dispatch client dans le pop-up de l’extension (pas dans le reste de l’extension) | à faire |
+| G6 | Dispatch client dans le pop-up de l’extension (pas dans le reste de l’extension) | ✅ fait (extension v1.11.0, à réinstaller) |
 | G7 | Bilan avant déploiement ; s’il ne reste rien : injection des données fictives pour la vidéo | à faire |
 
 Après la mise en production : module Planning (puis présence vs planning), Reconf, documentation management.
