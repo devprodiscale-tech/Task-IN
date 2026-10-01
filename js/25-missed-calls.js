@@ -39,6 +39,8 @@ function mcAgents() { return typeof agentsOnly === 'function' ? agentsOnly() : (
 function mcDayLabel(day) { const [y, m, d] = day.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }); }
 function mcCalledBy(r) { return r.callback_by ? mcName(r.callback_by) : r.callback_by_other || ''; }
 function mcIsDone(r) { return ['5', '10', '10+'].includes(r.callback); }
+// Un agent ne modifie que SES lignes (auteur ou agent concerné) ; la base applique la même règle.
+function mcCanEdit(r) { return mcIsManager() || r.created_by === currentUser?.id || r.agent_id === currentUser?.id; }
 
 async function mcRest(path, init = {}) {
   if (typeof dispatchRest === 'function') return dispatchRest(path, init);
@@ -146,7 +148,7 @@ function mcJournalHtml() {
         return `<div class="mc-pending-row ${claimed ? 'is-claimed' : ''} ${claimedByMe ? 'is-mine' : ''}">
           <div><strong>${mcHm(r.call_time)}</strong><span>${r.call_date !== today ? escHtml(mcDayLabel(r.call_date)) + ' · ' : ''}${escHtml(mcName(r.agent_id) || '—')} · ${escHtml(r.cause)}${r.call_ref ? ` · ID ${escHtml(r.call_ref)}` : ''}</span>${r.notes ? `<small>${escHtml(r.notes)}</small>` : ''}</div>
           ${claimed ? `<em>Pris en charge par ${escHtml(mcName(r.claimed_by))} à ${new Date(r.claimed_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</em>`
-            : claimedByMe ? `<span class="mc-actions"><button type="button" class="btn btn-primary" onclick="mcOpenEdit('${r.id}', true)">Marquer rappelé</button><button type="button" class="dr-edit-btn" onclick="mcClaim('${r.id}', false)">Libérer</button></span>`
+            : claimedByMe ? `<span class="mc-actions"><button type="button" class="btn btn-primary" onclick="mcOpenCallback('${r.id}')">Marquer rappelé</button><button type="button" class="dr-edit-btn" onclick="mcClaim('${r.id}', false)">Libérer</button></span>`
             : `<button type="button" class="btn btn-primary" onclick="mcClaim('${r.id}', true)">Je rappelle</button>`}
         </div>`;
       }).join('') : '<p class="dr-muted">Tous les appels manqués ont été traités.</p>'}
@@ -158,18 +160,18 @@ function mcJournalHtml() {
         <td><span class="dr-status ${mcIsDone(r) ? 'is-good' : r.callback === 'none' ? 'is-alert' : 'is-warn'}">${MC_CALLBACK[r.callback] || r.callback}</span></td>
         <td>${escHtml(mcCalledBy(r)) || '—'}</td><td>${escHtml(r.call_ref || '—')}</td><td>${mcHm(r.callback_time) || '—'}</td>
         <td class="mc-notes">${escHtml(r.notes || '')}</td>
-        <td class="dr-row-action"><button type="button" class="dr-edit-btn" onclick="mcOpenEdit('${r.id}')">Modifier</button></td></tr>`).join('')}</tbody></table></div>`}`;
+        <td class="dr-row-action">${mcCanEdit(r) ? `<button type="button" class="dr-edit-btn" onclick="mcOpenEdit('${r.id}')">Modifier</button>` : ''}</td></tr>`).join('')}</tbody></table></div>`}`;
 }
 
 async function mcClaim(id, take) {
   const row = mcState.rows.find(r => r.id === id);
   if (!row) return;
   try {
-    // Garde-fou serveur : on ne prend la main que si personne d'autre ne l'a fait entre-temps.
-    const filter = take ? `&or=(claimed_by.is.null,claimed_by.eq.${currentUser.id})` : `&claimed_by=eq.${currentUser.id}`;
-    const rows = await mcRest(`missed_calls?id=eq.${id}&callback=eq.pending${filter}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify(take ? { claimed_by: currentUser.id, claimed_at: new Date().toISOString() } : { claimed_by: null, claimed_at: null }),
+    // Fonction serveur : ne prend la main que si personne d'autre ne l'a fait entre-temps,
+    // et ne touche qu'aux champs de réservation (même sur la ligne d'un collègue).
+    const rows = await mcRest('rpc/taskin_missed_claim', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_id: id, p_take: take }),
     });
     if (!rows.length) { await renderMissedCalls(); alert('Un collègue a déjà pris en charge ce rappel.'); return; }
     Object.assign(row, rows[0]);
@@ -177,9 +179,59 @@ async function mcClaim(id, take) {
   } catch (e) { alert(`Action impossible : ${e.message}`); }
 }
 
+// ---------- Marquer rappelé (fonction serveur : valable aussi sur la ligne d'un collègue) ----------
+function mcOpenCallback(id) {
+  const row = mcState.rows.find(r => r.id === id);
+  if (!row) return;
+  mcEdit = { row, busy: false, callback: true };
+  let overlay = mcEl('mc-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'mc-overlay';
+    overlay.className = 'modal-overlay hidden';
+    overlay.addEventListener('click', e => { if (e.target === overlay) mcCloseEdit(); });
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `<div class="modal dr-modal mc-callback-modal" role="dialog" aria-modal="true" aria-labelledby="mc-title">
+    <div class="modal-header"><div class="modal-title" id="mc-title">Rappel de l’appel de ${mcHm(row.call_time)} (${escHtml(mcName(row.agent_id) || '—')})</div><button class="modal-close" type="button" onclick="mcCloseEdit()" aria-label="Fermer">×</button></div>
+    <div class="modal-body">
+      <p class="dr-goal-intro">${escHtml(row.cause)}${row.call_ref ? ` · ID ${escHtml(row.call_ref)}` : ''}${row.notes ? ` — ${escHtml(row.notes)}` : ''}</p>
+      <div class="dr-form-grid">
+        <label class="dr-field"><span>Résultat</span><select class="form-input" id="mc-cb-result"><option value="5">Rappelé — 5 min</option><option value="10">Rappelé — 10 min</option><option value="10+">Rappelé — plus de 10 min</option><option value="none">Rappel impossible (non rappelé)</option></select></label>
+        <label class="dr-field"><span>Heure de rappel</span><input class="form-input" type="time" id="mc-cb-at" value="${mcNowTime()}"></label>
+      </div>
+      <label class="dr-field dr-field-wide"><span>Action faite (ajoutée aux notes)</span><textarea class="form-input" id="mc-cb-note" rows="2" maxlength="300" placeholder="ex. Rappelé, messagerie — message laissé"></textarea></label>
+      <div class="dr-status" id="mc-status" role="status"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" type="button" onclick="mcCloseEdit()">Annuler</button><button class="btn btn-primary" type="button" id="mc-save" onclick="mcSaveCallback()">Enregistrer le rappel</button></div></div>`;
+  overlay.classList.remove('hidden');
+  mcEl('mc-cb-note').focus();
+}
+
+async function mcSaveCallback() {
+  if (!mcEdit?.callback || mcEdit.busy) return;
+  const state = mcEdit;
+  state.busy = true;
+  mcEl('mc-save').disabled = true;
+  try {
+    const rows = await mcRest('rpc/taskin_missed_callback', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_id: state.row.id, p_callback: mcEl('mc-cb-result').value, p_time: mcEl('mc-cb-at').value || null, p_note: mcEl('mc-cb-note').value.trim() }),
+    });
+    if (!Array.isArray(rows) || !rows.length) throw new Error('déjà traité ou réservé par un collègue');
+    mcCloseEdit();
+    await renderMissedCalls();
+  } catch (e) {
+    state.busy = false;
+    if (mcEl('mc-save')) mcEl('mc-save').disabled = false;
+    mcEl('mc-status').textContent = `Rappel non enregistré : ${e.message}`;
+  }
+}
+
 // ---------- Saisie ----------
 function mcOpenEdit(id, markDone = false) {
   const row = id ? mcState.rows.find(r => r.id === id) : null;
+  if (row && !mcCanEdit(row)) return;
   mcEdit = { row, busy: false };
   let overlay = mcEl('mc-overlay');
   if (!overlay) {
@@ -263,7 +315,7 @@ async function mcSave() {
     const rows = state.row
       ? await mcRest(`missed_calls?id=eq.${state.row.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(payload) })
       : await mcRest('missed_calls', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ ...payload, created_by: currentUser.id }) });
-    if (!Array.isArray(rows) || !rows.length) throw new Error('enregistrement refusé');
+    if (!Array.isArray(rows) || !rows.length) throw new Error('enregistrement refusé (tu ne peux modifier que tes propres lignes)');
     mcCloseEdit();
     await renderMissedCalls();
   } catch (e) {
