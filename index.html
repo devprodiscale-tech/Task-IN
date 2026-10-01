@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="css/09-supervisor.css?v=20260930c">
 <link rel="stylesheet" href="css/10-interfaces.css?v=20260930purge2">
 <link rel="stylesheet" href="css/11-form-controls.css?v=20260930a">
-<link rel="stylesheet" href="css/12-daily-results.css?v=20261002h">
+<link rel="stylesheet" href="css/12-daily-results.css?v=20261002i">
 </head>
 <body>
 
@@ -656,18 +656,10 @@
         <button class="lb-period-btn" data-lbp="all" onclick="setLbPeriod('all',this)">Tout</button>
         <button class="btn btn-ghost" onclick="exportLeaderboardPDF()" style="margin-left:auto;background:var(--surface);color:var(--text2);border-color:var(--border)">↓ PDF</button>
       </div>
+      <div id="lb-config" class="lb-config"></div>
       <div class="lb-table">
         <table>
-          <thead>
-            <tr>
-              <th id="lbth-rank" onclick="sortLeaderboard('rank')"># <span class="sort-arrow">↕</span></th>
-              <th id="lbth-name" onclick="sortLeaderboard('name')">Agent <span class="sort-arrow">↕</span></th>
-              <th id="lbth-volume" onclick="sortLeaderboard('volume')">Volume <span class="sort-arrow">↕</span></th>
-              <th id="lbth-frt" onclick="sortLeaderboard('frt')">FRT moy. <span class="sort-arrow">↕</span></th>
-              <th id="lbth-dmt" onclick="sortLeaderboard('dmt')">DMT moy. <span class="sort-arrow">↕</span></th>
-              <th id="lbth-quality" onclick="sortLeaderboard('quality')">Score qualité <span class="sort-arrow">↕</span></th>
-            </tr>
-          </thead>
+          <thead id="lb-head"></thead>
           <tbody id="leaderboard-body"></tbody>
         </table>
       </div>
@@ -1373,7 +1365,7 @@
 <script src="js/17-admin-local-features.js?v=20260930sec" defer></script>
 <script src="js/06-ui-modals.js?v=20260930t" defer></script>
 <script src="js/07-analytics.js?v=20261002h" defer></script>
-<script src="js/08-analytics-advanced.js?v=20260930ui" defer></script>
+<script src="js/08-analytics-advanced.js?v=20261002i" defer></script>
 <script src="js/18-agent-sessions.js?v=20261002e" defer></script>
 <script src="js/19-extension-bridge.js?v=20260930u" defer></script>
 <script src="js/20-agent-pole.js?v=20261002h" defer></script>

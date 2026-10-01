@@ -648,3 +648,19 @@ a.sv-ticket-link:hover{background:var(--ocean-dim)}
 .sla-tip small{color:var(--text3);font-size:10.5px}
 .ops-bar-stack .ops-bar-on{order:2;border-radius:0 0 3px 3px}
 .ops-bar-stack .ops-bar-late{order:1;border-radius:3px 3px 0 0}
+
+/* Classement : KPI au choix, tri, score global */
+.lb-config{display:grid;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.lb-config-kpis{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.lb-config-kpis>b{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-right:4px}
+.lb-kpi{display:inline-flex;align-items:baseline;gap:5px;border:1px solid var(--border);border-radius:999px;background:var(--surface);padding:4px 10px;font:inherit;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer}
+.lb-kpi small{font-size:10px;font-weight:600;color:var(--text3)}
+.lb-kpi.active{border-color:var(--ocean);background:var(--ocean-dim);color:var(--ocean-deep)}
+.lb-config-sort{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--text2)}
+.lb-config-sort select{width:auto;padding:5px 9px;font-size:12px}
+.lb-config-help{color:var(--text3);font-size:11px}
+.lb-score{display:inline-grid;grid-template-columns:34px 80px;align-items:center;gap:6px}
+.lb-score b{font-size:14px}
+.lb-score i{display:block;height:6px;border-radius:3px;background:var(--ocean);max-width:80px}
+.lb-table th{cursor:pointer;user-select:none}
+@media print{.lb-config{display:none!important}}

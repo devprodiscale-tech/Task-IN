@@ -1,7 +1,41 @@
 // ===== P2 : LEADERBOARD =====
 let lbPeriod = 'day';
-let lbSortKey = 'volume';
+// Classement : l'encadrant choisit les KPI qui le composent et le critère de tri.
+// Score global = moyenne, sur les KPI cochés, d'une note 0–100 par KPI (100 = meilleur agent de la
+// période, 0 = le moins bon ; sens « plus haut » ou « plus bas » propre à chaque KPI).
+const LB_KPIS = [
+  { key: 'volume', label: 'Traitements', better: 'high', fmt: v => String(v) },
+  { key: 'time', label: 'Temps traité', better: 'high', fmt: v => `${Math.floor(v / 60)}h${String(Math.round(v % 60)).padStart(2, '0')}` },
+  { key: 'dmt', label: 'DMT moy.', better: 'low', fmt: v => `${v} min` },
+  { key: 'frt', label: 'FRT moy.', better: 'low', fmt: v => `${v} min` },
+  { key: 'sla', label: '% in SLA', better: 'high', fmt: v => `${v} %` },
+  { key: 'quality', label: 'Score qualité', better: 'high', fmt: v => `${v} %` },
+  { key: 'actions', label: 'Actions OSC', better: 'high', fmt: v => String(v) },
+];
+const LB_DEFAULT = ['volume', 'dmt', 'sla', 'quality'];
+let lbSortKey = 'score';
 let lbSortAsc = false;
+let lbOscCache = { key: '', rows: [] };
+
+function lbPrefsKey() { return `taskin_lb_kpis_${currentUser?.id || 'x'}`; }
+function lbSelected() {
+  try { const v = JSON.parse(localStorage.getItem(lbPrefsKey()) || 'null'); if (Array.isArray(v) && v.length) return v.filter(k => LB_KPIS.some(x => x.key === k)); } catch (_) {}
+  return LB_DEFAULT.slice();
+}
+function lbToggleKpi(key) {
+  let sel = lbSelected();
+  sel = sel.includes(key) ? sel.filter(k => k !== key) : [...sel, key];
+  if (!sel.length) return; // au moins un KPI
+  sel = LB_KPIS.map(k => k.key).filter(k => sel.includes(k));
+  try { localStorage.setItem(lbPrefsKey(), JSON.stringify(sel)); } catch (_) {}
+  if (lbSortKey !== 'score' && lbSortKey !== 'name' && !sel.includes(lbSortKey)) lbSortKey = 'score';
+  renderLeaderboard();
+}
+function lbSetSort(value) {
+  const [key, dir] = value.split(':');
+  lbSortKey = key; lbSortAsc = dir === 'asc';
+  renderLeaderboard();
+}
 
 function setLbPeriod(p, btn) {
   lbPeriod = p;
@@ -16,15 +50,20 @@ function setLbPeriod(p, btn) {
 
 function sortLeaderboard(key) {
   if (lbSortKey === key) lbSortAsc = !lbSortAsc;
-  else { lbSortKey = key; lbSortAsc = key === 'name'; }
-  document.querySelectorAll('.lb-table th').forEach(th => {
-    th.classList.remove('sorted');
-    const arrow = th.querySelector('.sort-arrow');
-    if (arrow) arrow.textContent = '↕';
-  });
-  const th = document.getElementById('lbth-' + key);
-  if (th) { th.classList.add('sorted'); const a = th.querySelector('.sort-arrow'); if(a) a.textContent = lbSortAsc ? '↑' : '↓'; }
+  else { lbSortKey = key; const k = LB_KPIS.find(x => x.key === key); lbSortAsc = key === 'name' || k?.better === 'low'; }
   renderLeaderboard();
+}
+
+// Bornes de la période affichée (pour les actions OSC).
+function lbRange() {
+  const day = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const now = new Date(), from = new Date(now);
+  const fromVal = document.getElementById('filter-date-from')?.value, toVal = document.getElementById('filter-date-to')?.value;
+  if (typeof dateFilterApplied !== 'undefined' && dateFilterApplied && (fromVal || toVal)) return { from: fromVal || '2000-01-01', to: toVal || day(now) };
+  if (lbPeriod === 'week') from.setDate(now.getDate() - (now.getDay() + 6) % 7);
+  else if (lbPeriod === 'month') from.setDate(1);
+  else if (lbPeriod === 'all') return { from: '2000-01-01', to: day(now) };
+  return { from: day(from), to: day(now) };
 }
 
 function getLbEntries() {
@@ -54,16 +93,26 @@ function getLbEntries() {
 
 let qualityReviewsLoadedForLb = false;
 async function renderLeaderboard() {
+  // Le classement peut s'ouvrir avant le module Supervision (scores qualité) : on le charge au besoin.
+  if (typeof svFetchCollection !== 'function' && typeof loadModule === 'function') await loadModule('10-supervision.js');
   if (!qualityReviewsLoadedForLb) {
     qualityReviews = await svFetchCollection('qualityReviews');
     qualityReviewsLoadedForLb = true;
+  }
+  const sel = lbSelected();
+  // Actions OSC de la période (lues seulement si le KPI est coché).
+  if (sel.includes('actions') && typeof dispatchRest === 'function') {
+    const r = lbRange(), key = `${r.from}|${r.to}`;
+    if (lbOscCache.key !== key) {
+      try { lbOscCache = { key, rows: await dispatchRest(`agent_daily_stats?select=agent_id,actions&day=gte.${r.from}&day=lte.${r.to}&limit=20000`) }; }
+      catch (_) { lbOscCache = { key, rows: [] }; }
+    }
   }
   const pool = getLbEntries();
   const agents = agentsOnly();
   const rows = agents.map(a => {
     const ae = pool.filter(e => e.agent === a.id);
-    const kpi = calcKpiSet(ae);
-    const frtMin = ae.reduce((acc, e) => {
+    const frt = ae.reduce((acc, e) => {
       if (e.inboundTime && e.inboundTime !== '--:--') {
         const [ih, im] = e.inboundTime.split(':').map(Number);
         if (!isNaN(ih) && !isNaN(im)) {
@@ -75,43 +124,65 @@ async function renderLeaderboard() {
       }
       return acc;
     }, []);
-    const frtAvgMin = frtMin.length ? Math.floor(frtMin.reduce((s,v)=>s+v,0)/frtMin.length/60) : null;
-    const dmtMin = ae.length ? Math.floor(ae.reduce((s,e)=>s+e.durationSec,0)/ae.length/60) : 0;
     const review = svLatestReview(a.id);
-    const quality = review ? svReviewPct(review) : null;
-    return { agent: a, volume: ae.length, dmt: dmtMin, frt: frtAvgMin, quality };
+    const osc = lbOscCache.rows.filter(x => x.agent_id === a.id && x.actions !== null && x.actions !== undefined);
+    const sla = ae.length && typeof taskinSlaSplit === 'function' ? Math.round(taskinSlaSplit(ae).in / ae.length * 100) : null;
+    return { agent: a, values: {
+      volume: ae.length,
+      time: ae.length ? Math.round(ae.reduce((s, e) => s + e.durationSec, 0) / 60) : 0,
+      dmt: ae.length ? Math.floor(ae.reduce((s, e) => s + e.durationSec, 0) / ae.length / 60) : null,
+      frt: frt.length ? Math.floor(frt.reduce((s, v) => s + v, 0) / frt.length / 60) : null,
+      sla,
+      quality: review ? svReviewPct(review) : null,
+      actions: osc.length ? osc.reduce((s, x) => s + Number(x.actions || 0), 0) : null,
+    } };
   });
+  // Note 0–100 par KPI coché, puis score global = moyenne des notes disponibles.
+  const kpis = LB_KPIS.filter(k => sel.includes(k.key));
+  kpis.forEach(k => {
+    const vals = rows.map(r => r.values[k.key]).filter(v => v !== null && v !== undefined);
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    rows.forEach(r => {
+      const v = r.values[k.key];
+      r.notes = r.notes || {};
+      r.notes[k.key] = v === null || v === undefined || !vals.length ? null : hi === lo ? 100 : Math.round((k.better === 'high' ? (v - lo) / (hi - lo) : (hi - v) / (hi - lo)) * 100);
+    });
+  });
+  rows.forEach(r => { const n = Object.values(r.notes || {}).filter(v => v !== null); r.score = n.length ? Math.round(n.reduce((a, b) => a + b, 0) / n.length) : null; });
 
   rows.sort((a, b) => {
-    let va, vb;
     if (lbSortKey === 'name') return lbSortAsc ? a.agent.name.localeCompare(b.agent.name) : b.agent.name.localeCompare(a.agent.name);
-    if (lbSortKey === 'volume') { va = a.volume; vb = b.volume; }
-    else if (lbSortKey === 'dmt') { va = a.dmt; vb = b.dmt; }
-    else if (lbSortKey === 'frt') { va = a.frt ?? 9999; vb = b.frt ?? 9999; }
-    else if (lbSortKey === 'quality') { va = a.quality ?? -1; vb = b.quality ?? -1; }
-    else { va = a.volume; vb = b.volume; }
+    const va = lbSortKey === 'score' ? a.score : a.values[lbSortKey], vb = lbSortKey === 'score' ? b.score : b.values[lbSortKey];
+    if (va === null || va === undefined) return 1;
+    if (vb === null || vb === undefined) return -1;
     return lbSortAsc ? va - vb : vb - va;
   });
 
-  const avgDmt = rows.filter(r=>r.volume>0).reduce((s,r)=>s+r.dmt,0) / (rows.filter(r=>r.volume>0).length || 1);
+  // Barre de réglages : KPI du classement + tri
+  const cfg = document.getElementById('lb-config');
+  if (cfg) {
+    const sortOptions = [['score', 'Score global'], ...kpis.map(k => [k.key, k.label]), ['name', 'Nom']];
+    cfg.innerHTML = `<div class="lb-config-kpis"><b>KPI du classement</b>${LB_KPIS.map(k => `<button type="button" class="lb-kpi ${sel.includes(k.key) ? 'active' : ''}" aria-pressed="${sel.includes(k.key)}" onclick="lbToggleKpi('${k.key}')">${k.label}<small>${k.better === 'high' ? '↑ mieux' : '↓ mieux'}</small></button>`).join('')}</div>
+      <label class="lb-config-sort">Trier par <select class="form-input" onchange="lbSetSort(this.value)">${sortOptions.flatMap(([k, l]) => [[`${k}:desc`, `${l} · décroissant`], [`${k}:asc`, `${l} · croissant`]]).map(([v, l]) => `<option value="${v}" ${v === `${lbSortKey}:${lbSortAsc ? 'asc' : 'desc'}` ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <small class="lb-config-help">Score global : moyenne des notes 0–100 obtenues sur chaque KPI coché (100 = meilleur agent de la période).</small>`;
+  }
+  const head = document.getElementById('lb-head');
+  const arrow = key => lbSortKey === key ? (lbSortAsc ? '↑' : '↓') : '↕';
+  if (head) head.innerHTML = `<tr><th>#</th><th id="lbth-name" class="${lbSortKey === 'name' ? 'sorted' : ''}" onclick="sortLeaderboard('name')">Agent <span class="sort-arrow">${arrow('name')}</span></th><th id="lbth-score" class="${lbSortKey === 'score' ? 'sorted' : ''}" onclick="sortLeaderboard('score')">Score global <span class="sort-arrow">${arrow('score')}</span></th>${kpis.map(k => `<th id="lbth-${k.key}" class="${lbSortKey === k.key ? 'sorted' : ''}" onclick="sortLeaderboard('${k.key}')">${k.label} <span class="sort-arrow">${arrow(k.key)}</span></th>`).join('')}</tr>`;
 
   const body = document.getElementById('leaderboard-body');
   if (!body) return;
-  if (!rows.length) { body.innerHTML = '<tr><td colspan="6"><div class="empty">Aucun agent.</div></td></tr>'; return; }
-
+  if (!rows.length) { body.innerHTML = `<tr><td colspan="${kpis.length + 3}"><div class="empty">Aucun agent.</div></td></tr>`; return; }
+  const tone = note => note === null || note === undefined ? '' : note >= 67 ? 'good' : note >= 34 ? 'warn' : 'bad';
   // Podium : pastilles or / argent / bronze dessinées en CSS (plus d'emojis).
   body.innerHTML = rows.map((r, i) => {
     const rank = i + 1;
     const rankDisplay = `<span class="lb-rank-badge${rank <= 3 ? ' lb-podium-' + rank : ''}">${rank}</span>`;
-    const dmtClass = r.dmt === 0 ? '' : r.dmt <= avgDmt * 0.9 ? 'good' : r.dmt > avgDmt * 1.2 ? 'bad' : 'warn';
-    const qualityClass = r.quality === null ? '' : r.quality >= 75 ? 'good' : r.quality >= 55 ? 'warn' : 'bad';
     return `<tr>
       <td>${rankDisplay}</td>
       <td><div class="agent-cell"><div class="mini-avatar" style="background:${r.agent.color}20;color:${r.agent.color}">${escHtml(r.agent.initials)}</div>${escHtml(r.agent.name)}</div></td>
-      <td><span class="lb-val">${r.volume}</span></td>
-      <td><span class="lb-val">${r.frt !== null ? r.frt + 'min' : '—'}</span></td>
-      <td><span class="lb-val ${dmtClass}">${r.dmt ? r.dmt + 'min' : '—'}</span></td>
-      <td><span class="lb-val ${qualityClass}">${r.quality !== null ? r.quality + '%' : '—'}</span></td>
+      <td><span class="lb-score"><b>${r.score ?? '—'}</b>${r.score !== null ? `<i style="width:${r.score}%"></i>` : ''}</span></td>
+      ${kpis.map(k => { const v = r.values[k.key]; return `<td><span class="lb-val ${tone(r.notes?.[k.key])}" title="Note ${r.notes?.[k.key] ?? '—'}/100">${v === null || v === undefined ? '—' : k.fmt(v)}</span></td>`; }).join('')}
     </tr>`;
   }).join('');
 }
