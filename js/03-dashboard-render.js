@@ -617,6 +617,8 @@ async function switchTab(view, btn, options = {}) {
   const sequence = ++navigationSequence;
   // L’Admin n’a pas d’accueil « home » : sa vue d’ensemble est « admin ».
   if (currentUser?.role === 'admin' && view === 'home') view = 'admin';
+  // L'agent n'a plus d'onglet « Cette semaine » (vue mémorisée d'avant) : retour à « Aujourd'hui ».
+  if (currentUser?.role === 'agent' && view === 'week') view = 'today';
   // Remonte en haut à chaque navigation (y compris re-clic sur la page active),
   // sauf lors d’un simple rafraîchissement de la vue courante (history:false, même vue).
   const viewChanged = view !== currentView || options.history !== false;

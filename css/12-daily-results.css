@@ -610,3 +610,10 @@ a.sv-ticket-link:hover{background:var(--ocean-dim)}
 .tr-foot details summary{cursor:pointer;color:var(--ocean-deep);font-weight:700}
 .tr-foot details .dr-table-wrap{max-height:260px;overflow:auto;margin-top:6px}
 .sv-tl-sum small{font-weight:500;color:var(--text3);font-size:10px}
+
+/* Agent : « Mes résultats » centré sur ses propres chiffres */
+.dr-mine .dr-me{margin:18px 24px 16px}
+.dr-mine-history{padding:4px 24px 18px}
+.dr-mine-history h3{margin:4px 0 10px;font-size:15px}
+.dr-mine-history h3 small{font-weight:500;color:var(--text2);font-size:12px;margin-left:6px}
+@media (max-width:640px){.dr-mine .dr-me{margin:12px}.dr-mine-history{padding:4px 12px 14px}}

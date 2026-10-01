@@ -52,6 +52,20 @@ Tous les points « code » (R1 → R3) sont faits ; restent les points R5 → R7
 
 Ensuite seulement : injection des données fictives (5 FO, 3 BO, 3 Reconf) pour la vidéo, puis nettoyage avant ouverture aux agents.
 
+### Lot S (demandé après R1 → R3)
+
+| # | Point | Statut |
+|---|---|---|
+| S1 | Agent : pas d’onglet « Cette semaine » ; « Mes résultats » sans les chiffres OSC des autres | ✅ fait (migration 022) |
+| S2 | Extension : retirer « Cas complexe » (même système que « Remonter un ticket ») | à faire |
+| S3 | Heatmap : vert très pâle (faible) → rouge intense (fort) | à faire |
+| S4 | Graphique « Performance opérationnelle » : in SLA / out SLA au survol (admin, superviseur, agent) | à faire |
+| S5 | Classement agents : KPI au choix et tri | à faire |
+| S6 | Admin › Paramètres › Comptes : changer le pôle FO / BO / Reconf | à faire |
+| S7 | Extension : synchro plus rapide, avis de mise à jour, installation simplifiée | à faire |
+| S8 | Visuel métier et organisation des onglets superviseur | à faire |
+| S9 | Push sur `main` puis injection des données fictives | à faire |
+
 Après la mise en production : module Planning (puis présence vs planning), Reconf, documentation management.
 
 ## Où trouver chaque fonction

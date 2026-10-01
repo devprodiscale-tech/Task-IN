@@ -923,7 +923,31 @@ function drGoalCell(m, refDay) {
   return `<td><div class="dr-goal ${cls}" title="${escHtml(title)}"><span><b>${m.done === null ? '—' : m.done}</b> / ${m.goal}${m.set !== null ? '<em>ajusté</em>' : ''}</span><i><u style="width:${pct}%"></u></i></div></td>`;
 }
 
+// ---------- Agent : « Mes résultats », uniquement ses propres chiffres ----------
+function drPaintMine() {
+  const panel = drEl('daily-results-panel');
+  if (!panel) return;
+  const me = drAgentGoals(currentUser);
+  const days = Array.from({ length: 7 }, (_, i) => drShiftDay(drLocalDay(), -i));
+  const rows = days.map(day => ({ day, row: drState.byDay.get(day)?.get(currentUser.id) || null })).filter(x => x.row);
+  const reachedFor = day => { const g = drState.day === day ? me : null; return g?.main && g.main.done !== null ? g.main.done >= g.main.goal : null; };
+  const body = drState.loading ? '<div class="dr-empty">Chargement de tes résultats…</div>'
+    : drState.error ? `<div class="dr-empty dr-error">Impossible de charger tes résultats : ${escHtml(drState.error)}</div>`
+    : `${drMyGoalHtml(me)}${drMyDeclareHtml()}
+      <div class="dr-mine-history"><h3>Mes 7 derniers jours <small>chiffres OSC repris par ton superviseur</small></h3>
+        ${rows.length ? `<div class="dr-table-wrap"><table class="dr-table"><thead><tr><th>Jour</th><th>Actions</th><th>Appels<small>entr. · sort.</small></th><th>Résolus</th><th>Crisp</th><th>Travaillé</th></tr></thead><tbody>${rows.map(({ day, row }) => `<tr><td>${escHtml(drDayLabel(day))}</td><td><b>${row.actions ?? '—'}</b></td><td>${row.calls_in ?? '—'} · ${row.calls_out ?? '—'}</td><td>${row.resolved ?? '—'}</td><td>${row.crisp_conversations ?? '—'}</td><td>${drFormatDuration(row.worked_minutes)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="dr-muted">Pas encore de chiffres repris sur les 7 derniers jours.</p>'}
+      </div>`;
+  panel.innerHTML = `<section class="dr-shell dr-mine">
+    <div class="dr-head"><div><span class="admin-overview-section-label">Mes résultats</span><h2>Mon objectif du jour</h2>
+      <p>Ton objectif reprend ton dernier résultat OSC, plus la progression demandée. En fin de shift, déclare tes chiffres du jour.</p></div></div>
+    ${body}
+    <div id="dr-my-reviews" class="dr-my-reviews"></div>
+  </section>`;
+  if (!drState.loading && !drState.error) drRenderMyReviews();
+}
+
 function drPaintGoals() {
+  if (currentUser?.role === 'agent') { drPaintMine(); return; }
   const panel = drEl('daily-results-panel');
   const write = drCanWrite();
   const list = drAgents().map(drAgentGoals);
