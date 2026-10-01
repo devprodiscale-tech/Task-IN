@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="css/09-supervisor.css?v=20260930c">
 <link rel="stylesheet" href="css/10-interfaces.css?v=20260930purge2">
 <link rel="stylesheet" href="css/11-form-controls.css?v=20260930a">
-<link rel="stylesheet" href="css/12-daily-results.css?v=20261002c3">
+<link rel="stylesheet" href="css/12-daily-results.css?v=20261002d">
 </head>
 <body>
 
@@ -875,6 +875,7 @@
       <button class="modal-close" onclick="svCloseEscalationModal()">×</button>
     </div>
     <div class="modal-body" style="max-height:65vh;overflow-y:auto">
+      <div id="sv-esc-report"></div>
       <div class="form-row"><label class="form-label">Titre</label><input class="form-input" id="sv-esc-title"></div>
       <div class="form-row"><label class="form-label">Type de difficulté</label>
         <select class="form-input" id="sv-esc-difficulty">
@@ -921,10 +922,10 @@
         <div><label class="form-label">Procédure liée (optionnel)</label><select class="form-input" id="sv-esc-procedure"><option value="">—</option></select></div>
       </div>
       <div class="form-row" id="sv-esc-updates-wrap" style="display:none">
-        <label class="form-label">Suivi</label>
-        <div id="sv-esc-updates-list" style="max-height:160px;overflow-y:auto;margin-bottom:8px"></div>
+        <label class="form-label">Commentaires <small style="font-weight:400;color:var(--text2)">visibles par l’agent qui a signalé et les agents concernés</small></label>
+        <div id="sv-esc-updates-list" style="max-height:220px;overflow-y:auto;margin-bottom:8px"></div>
         <div style="display:flex;gap:8px">
-          <input class="form-input" id="sv-esc-new-update" placeholder="Ajouter une note de suivi…" style="flex:1">
+          <input class="form-input" id="sv-esc-new-update" placeholder="Répondre à l’agent ou ajouter une note de suivi…" style="flex:1" onkeydown="if(event.key==='Enter')svAddEscalationUpdate()">
           <button class="btn btn-ghost" onclick="svAddEscalationUpdate()">Ajouter</button>
         </div>
       </div>
@@ -1352,7 +1353,7 @@
 
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260930blocb" defer></script>
-<script src="js/00-core-init.js?v=20261002c3" defer></script>
+<script src="js/00-core-init.js?v=20261002d" defer></script>
 <script src="js/01-core-auth-network.js?v=20261002c" defer></script>
 <script src="js/02-time-data.js?v=20260930sup" defer></script>
 <script src="js/03-dashboard-render.js?v=20261002c" defer></script>
@@ -1371,8 +1372,8 @@
 <script src="js/19-extension-bridge.js?v=20260930u" defer></script>
 <script src="js/20-agent-pole.js?v=20261001f" defer></script>
 <script src="js/21-agent-purge.js?v=20260930a" defer></script>
-<script src="js/23-agent-dispatch.js?v=20261002c" defer></script>
-<script src="js/24-agent-difficulty.js?v=20261001a" defer></script>
+<script src="js/23-agent-dispatch.js?v=20261002d" defer></script>
+<script src="js/24-agent-difficulty.js?v=20261002d" defer></script>
 <script src="js/27-heatmap.js?v=20261001a" defer></script>
 <script src="js/00-landing.js?v=20260930d" defer></script>
 <script src="js/99-init.js?v=20260827" defer></script>

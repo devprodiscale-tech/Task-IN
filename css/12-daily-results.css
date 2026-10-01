@@ -495,3 +495,66 @@ button.dr-sub{cursor:pointer;font-family:inherit}
 .dr-check{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-top:8px}
 @media (max-width:640px){.dr-declare,.dr-subs-banner{margin-left:12px;margin-right:12px}.dr-declare .btn{width:100%}}
 #dr-edit-status.is-info{color:var(--text2)}
+
+/* Tickets de retour agents */
+.agent-difficulty-modal{max-width:720px}
+.agent-difficulty-tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--border)}
+.agent-difficulty-tabs button{border:0;background:none;padding:8px 10px;font:inherit;font-size:13px;font-weight:700;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}
+.agent-difficulty-tabs button.active{color:var(--ocean-deep);border-bottom-color:var(--ocean)}
+.agent-difficulty-tabs b{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:4px;border-radius:9px;background:var(--ocean);color:#fff;font-size:10.5px}
+.agent-difficulty-tabs b:empty{display:none}
+.agent-difficulty-label>span{display:inline-grid;place-items:center;width:18px;height:18px;margin-right:6px;border-radius:50%;background:var(--ocean);color:#fff;font-size:10.5px;letter-spacing:0}
+.agent-difficulty-label small{font-weight:500;text-transform:none;letter-spacing:0;margin-left:4px}
+.agent-ticket-objects,.agent-ticket-urgency{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.agent-ticket-wide{grid-column:1/-1}
+#agent-ticket-refs [hidden]{display:none}
+.form-label small{font-weight:400;color:var(--text3)}
+.agent-ticket-dup{border:1px solid var(--amber);background:var(--amber-dim);border-radius:12px;padding:12px 14px;margin:2px 0 14px;font-size:13px;color:var(--text)}
+.agent-ticket-dup-title{margin:6px 0 10px;font-weight:700}
+.agent-ticket-dup textarea{width:100%;resize:vertical;margin-top:4px}
+.agent-ticket-dup-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.agent-ticket-shots{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.agent-ticket-shots figure{position:relative;width:96px;height:68px;margin:0;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--surface2)}
+.agent-ticket-shots img{width:100%;height:100%;object-fit:cover}
+.agent-ticket-shots figure.is-loading{opacity:.6}
+.agent-ticket-shots figcaption{position:absolute;inset:auto 0 0;background:rgba(15,23,42,.7);color:#fff;font-size:10px;text-align:center}
+.agent-ticket-shots figure button{position:absolute;top:3px;right:3px;width:20px;height:20px;border:0;border-radius:50%;background:rgba(15,23,42,.75);color:#fff;cursor:pointer;line-height:1}
+.agent-ticket-shot-add{display:grid;place-items:center;width:96px;height:68px;border:1px dashed var(--border2);border-radius:9px;color:var(--ocean);font-size:12px;font-weight:700;cursor:pointer}
+.agent-ticket-item{border:1px solid var(--border);border-radius:10px;background:var(--surface2);margin-bottom:8px}
+.agent-ticket-item summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;cursor:pointer;list-style:none}
+.agent-ticket-item summary::-webkit-details-marker{display:none}
+.agent-ticket-item summary strong{display:block;font-size:12.5px}
+.agent-ticket-item summary small{display:block;color:var(--text3);font-size:10.5px}
+.agent-ticket-item summary small.agent-ticket-last{color:var(--ocean-deep);font-weight:600;margin-top:2px}
+.agent-ticket-item summary em{flex-shrink:0;padding:2px 8px;border-radius:10px;background:var(--surface);color:var(--text2);font-size:10.5px;font-style:normal;font-weight:800}
+.agent-ticket-item summary em.is-resolu{color:var(--green)}
+.agent-ticket-item summary em.is-en_cours{color:var(--ocean)}
+.agent-ticket-thread{padding:0 11px 11px;font-size:12.5px}
+.agent-ticket-thread p{margin:6px 0;padding:7px 9px;border-radius:9px;background:var(--surface)}
+.agent-ticket-thread p.is-manager{border-left:3px solid var(--ocean)}
+.agent-ticket-thread p.is-agent{border-left:3px solid var(--border2)}
+.agent-ticket-thread small{color:var(--text3)}
+.agent-ticket-reply{display:flex;gap:8px;align-items:flex-start;margin-top:8px}
+.agent-ticket-reply textarea{flex:1;resize:vertical}
+/* Fiche superviseur */
+.sv-ticket-line{display:flex;flex-wrap:wrap;gap:5px;margin:2px 0 8px}
+.sv-ticket-chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text);text-decoration:none}
+a.sv-ticket-link{color:var(--ocean-deep);border-color:var(--ocean)}
+a.sv-ticket-link:hover{background:var(--ocean-dim)}
+.sv-ticket-followers{border-color:var(--bloom)}
+.sv-ticket-report{border:1px solid var(--border);border-left:4px solid var(--bloom);border-radius:12px;padding:12px 14px;margin-bottom:14px;background:var(--surface2);font-size:12.5px}
+.sv-ticket-report-head{display:flex;flex-wrap:wrap;gap:4px 10px;margin-bottom:8px}
+.sv-ticket-report-head span{color:var(--text2)}
+.sv-ticket-url{margin:0 0 8px;word-break:break-all}
+.sv-ticket-url a{color:var(--ocean-deep)}
+.sv-ticket-report dl{display:grid;grid-template-columns:120px 1fr;gap:4px 10px;margin:0}
+.sv-ticket-report dt{color:var(--text2);font-weight:700}
+.sv-ticket-report dd{margin:0;white-space:pre-wrap}
+.sv-ticket-shots{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.sv-ticket-shot{width:120px;height:80px;border:1px solid var(--border);border-radius:9px;background:var(--surface);padding:0;overflow:hidden;cursor:zoom-in;font-size:11px;color:var(--text2)}
+.sv-ticket-shot img{width:100%;height:100%;object-fit:cover}
+.sv-case-comment{font-size:12px;padding:6px 8px;border-bottom:1px solid var(--border)}
+.sv-case-comment.is-agent{background:var(--surface2);border-left:3px solid var(--bloom)}
+.sv-case-comment em{font-style:normal;font-size:10px;font-weight:800;color:var(--bloom);text-transform:uppercase}
+@media (max-width:640px){.agent-difficulty-grid{grid-template-columns:1fr}.sv-ticket-report dl{grid-template-columns:1fr}.agent-ticket-reply{flex-direction:column}}
+.agent-difficulty-modal [hidden]{display:none !important}

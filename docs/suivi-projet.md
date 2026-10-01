@@ -40,10 +40,10 @@ Chaque ligne est cochée dès qu’elle est terminée, testée et poussée.
 
 | # | Point | Qui |
 |---|---|---|
-| R1 | Tickets de retour agents : type, références, lien vers l’outil client, description guidée, capture, détection des doublons, fiche soignée côté superviseur | code |
+| R1 | Tickets de retour agents : type, références, lien vers l’outil client, description guidée, capture, détection des doublons, fiche soignée côté superviseur | ✅ fait (migration 021) |
 | R2 | Panneau « Supervision » encore visible pour un agent après une déconnexion admin / superviseur dans le même onglet (mis en pause à ta demande ; les données restent protégées par la base) | code |
 | R3 | Statut « attente flux » hors shift et courbe d’évolution (reste du sprint « revue globale ») | code |
-| R4 | Mettre `main` à jour avec G1 → G6 (sur ta consigne « push ») | toi |
+| R4 | Mettre `main` à jour avec G1 → G6 | ✅ fait (main = 2baab9a) |
 | R5 | Supabase : activer la protection contre les mots de passe divulgués (Authentication › Policies) ; Vercel : `SUPABASE_URL` sans `/rest/v1`, `GEMINI_API_KEY`, `TASKIN_ALLOWED_ORIGIN` | toi |
 | R6 | Agents : réinstaller l’extension v1.11.0 (dispatch dans le pop-up) | toi / agents |
 | R7 | Test réel : une déclaration agent, une reprise superviseur, une grille partagée, un export | toi |

@@ -300,9 +300,54 @@ function svRenderEscalations() {
           <span class="sv-pill sv-pill-${e.status}">${SV_STATUS_LABEL[e.status] || e.status}</span>
         </div>
       </div>
-      <div style="font-size:12.5px;color:var(--text2)">${docEsc((e.description || '').slice(0, 160))}${(e.description || '').length > 160 ? '…' : ''}</div>
+      ${svCaseTicketLine(e)}
+      <div style="font-size:12.5px;color:var(--text2)">${docEsc((e.report?.what || e.description || '').slice(0, 160))}${(e.report?.what || e.description || '').length > 160 ? '…' : ''}</div>
     </div>`;
   }).join('');
+}
+
+// ---- Tickets de retour agents : références, lien outil, captures, commentaires, agents concernés ----
+const SV_TICKET_OBJECT = { ticket: '🎫 Ticket OSC', call: '📞 Appel', message: '💬 E-mail / chat', situation: '🧭 Situation générale' };
+const SV_CASE_EXTRA_KEYS = ['object', 'refs', 'refKey', 'report', 'urgency', 'screenshots', 'followers'];
+function svSafeLink(url) { return /^https?:\/\//i.test(String(url || '')) ? String(url) : ''; }
+function svCaseTicketLine(e) {
+  const refs = e.refs || {};
+  const chips = [
+    e.object ? `<span class="sv-ticket-chip">${SV_TICKET_OBJECT[e.object] || docEsc(e.object)}</span>` : '',
+    refs.ticket ? `<span class="sv-ticket-chip">N° ${docEsc(refs.ticket)}</span>` : '',
+    refs.booking ? `<span class="sv-ticket-chip">Dossier ${docEsc(refs.booking)}</span>` : '',
+    svSafeLink(refs.link) ? `<a class="sv-ticket-chip sv-ticket-link" href="${docEsc(svSafeLink(refs.link))}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Ouvrir dans l’outil ↗</a>` : '',
+    (e.screenshots || []).length ? `<span class="sv-ticket-chip">📎 ${(e.screenshots || []).length} capture${(e.screenshots || []).length > 1 ? 's' : ''}</span>` : '',
+    (e.updates || []).length ? `<span class="sv-ticket-chip">💬 ${(e.updates || []).length}</span>` : '',
+    (e.followers || []).length ? `<span class="sv-ticket-chip sv-ticket-followers" title="${docEsc((e.followers || []).map(svAgentName).join(', '))}">+${(e.followers || []).length} agent${(e.followers || []).length > 1 ? 's' : ''} concerné${(e.followers || []).length > 1 ? 's' : ''}</span>` : '',
+  ].filter(Boolean);
+  return chips.length ? `<div class="sv-ticket-line">${chips.join('')}</div>` : '';
+}
+async function svRenderCaseReport(e) {
+  const box = document.getElementById('sv-esc-report');
+  if (!box) return;
+  if (!e?.reportedBy) { box.innerHTML = ''; return; }
+  const refs = e.refs || {}, r = e.report || {};
+  const link = svSafeLink(refs.link);
+  const urgency = { low: 'Peut attendre', medium: 'Bloque le dossier', high: 'Client en attente' }[e.urgency];
+  box.innerHTML = `<div class="sv-ticket-report">
+    <div class="sv-ticket-report-head"><b>Signalé par ${svAgentName(e.reportedBy)}</b><span>${e.createdAt ? new Date(e.createdAt).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}${urgency ? ` · urgence ressentie : <b>${urgency}</b>` : ''}</span></div>
+    ${svCaseTicketLine({ ...e, updates: [] })}
+    ${link ? `<p class="sv-ticket-url"><a href="${docEsc(link)}" target="_blank" rel="noopener noreferrer">${docEsc(link)}</a></p>` : ''}
+    ${r.what ? `<dl><dt>Ce qui se passe</dt><dd>${docEsc(r.what)}</dd>${r.tried ? `<dt>Déjà essayé</dt><dd>${docEsc(r.tried)}</dd>` : ''}${r.need ? `<dt>Besoin</dt><dd>${docEsc(r.need)}</dd>` : ''}</dl>` : ''}
+    ${(e.screenshots || []).length ? `<div class="sv-ticket-shots">${e.screenshots.map((x, i) => `<button type="button" class="sv-ticket-shot" data-shot="${i}" aria-label="Ouvrir la capture ${i + 1}"><span>Capture ${i + 1}</span></button>`).join('')}</div>` : ''}
+  </div>`;
+  if (!(e.screenshots || []).length) return;
+  if (typeof drShotUrl !== 'function') await loadModule('22-daily-results.js').catch(() => {});
+  if (typeof drShotUrl !== 'function') return;
+  box.querySelectorAll('[data-shot]').forEach(async btn => {
+    const shot = e.screenshots[Number(btn.dataset.shot)];
+    try {
+      const url = await drShotUrl(shot.path);
+      btn.innerHTML = `<img src="${url}" alt="">`;
+      btn.onclick = () => window.open(url, '_blank', 'noopener');
+    } catch (_) { btn.querySelector('span').textContent = 'Capture indisponible'; }
+  });
 }
 
 let svEditingEscalationId = null;
@@ -324,6 +369,7 @@ function svOpenEscalationModal(id) {
   const updatesWrap = document.getElementById('sv-esc-updates-wrap');
   updatesWrap.style.display = e ? 'block' : 'none';
   svRenderEscalationUpdates(e?.updates || []);
+  svRenderCaseReport(e);
   document.getElementById('sv-esc-overlay').classList.remove('hidden');
 }
 function svToDatetimeLocal(ms) {
@@ -333,19 +379,34 @@ function svToDatetimeLocal(ms) {
 function svRenderEscalationUpdates(updates) {
   const el = document.getElementById('sv-esc-updates-list');
   if (!updates.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text2)">Aucune note de suivi.</div>'; return; }
-  el.innerHTML = updates.slice().reverse().map(u => `<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><strong>${svAgentName(u.by)}</strong> · ${new Date(u.at).toLocaleString('fr-FR')}<br>${docEsc(u.note)}</div>`).join('');
+  el.innerHTML = updates.slice().reverse().map(u => `<div class="sv-case-comment ${u.kind === 'agent' ? 'is-agent' : ''}"><strong>${svAgentName(u.by)}</strong>${u.kind === 'agent' ? ' <em>agent</em>' : ''} · ${new Date(u.at).toLocaleString('fr-FR')}<br>${docEsc(u.note)}</div>`).join('');
 }
 let svPendingUpdates = null;
-function svAddEscalationUpdate() {
+// Le commentaire part tout de suite (l'agent le voit sans attendre « Enregistrer ») ; cas résolu : gardé jusqu'à l'enregistrement.
+async function svAddEscalationUpdate() {
   const input = document.getElementById('sv-esc-new-update');
   const note = input.value.trim();
   if (!note) return;
   const e = escalations.find(x => x.id === svEditingEscalationId);
   if (!e) return;
-  e.updates = e.updates || [];
-  e.updates.push({ by: currentUser.id, at: Date.now(), note });
   input.value = '';
+  try {
+    const rows = await dispatchRest('rpc/taskin_case_comment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_id: e.id, p_note: note }) });
+    if (Array.isArray(rows) && rows[0]) { e.updates = rows[0].data?.updates || []; e.followers = rows[0].data?.followers || e.followers; }
+    else { e.updates = [...(e.updates || []), { by: currentUser.id, at: Date.now(), note, kind: 'manager' }]; }
+  } catch (_) {
+    e.updates = [...(e.updates || []), { by: currentUser.id, at: Date.now(), note, kind: 'manager' }];
+  }
   svRenderEscalationUpdates(e.updates);
+}
+// Fusionne les commentaires locaux avec ceux arrivés sur le serveur entre-temps (agents).
+async function svFreshCaseData(id) {
+  try { const [row] = await dispatchRest(`complex_cases?select=data&id=eq.${id}`); return row?.data || null; } catch (_) { return null; }
+}
+function svMergeUpdates(a = [], b = []) {
+  const seen = new Map();
+  [...a, ...b].forEach(u => { const k = `${u.by}|${u.at}|${u.note}`; if (!seen.has(k)) seen.set(k, u); });
+  return [...seen.values()].sort((x, y) => x.at - y.at);
 }
 function svCloseEscalationModal() { document.getElementById('sv-esc-overlay').classList.add('hidden'); svEditingEscalationId = null; }
 async function svSaveEscalation() {
@@ -361,6 +422,7 @@ async function svSaveEscalation() {
     difficulty: document.getElementById('sv-esc-difficulty').value,
     reportedBy: existing?.reportedBy || null,
     ref: existing?.ref || '',
+    ...Object.fromEntries(SV_CASE_EXTRA_KEYS.filter(k => existing && existing[k] !== undefined).map(k => [k, existing[k]])),
     priority: document.getElementById('sv-esc-priority').value,
     status,
     deadlineAt: deadlineInput ? new Date(deadlineInput).getTime() : null,
@@ -372,6 +434,8 @@ async function svSaveEscalation() {
   };
   try {
     if (svEditingEscalationId) {
+      const fresh = await svFreshCaseData(svEditingEscalationId);
+      if (fresh) { obj.updates = svMergeUpdates(fresh.updates, obj.updates); if (Array.isArray(fresh.followers)) obj.followers = fresh.followers; }
       await svUpdateDoc(existing?._collection || 'escalations', svEditingEscalationId, obj);
       Object.assign(existing, obj);
     } else {
