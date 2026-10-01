@@ -90,7 +90,7 @@ function mcFiltered() {
 
 function mcSwitchHtml() {
   if (currentUser?.role !== 'admin') return '';
-  return `<div class="dr-switch" role="tablist"><button type="button" onclick="switchTab('stat', document.querySelector('[data-admin-nav=&quot;stat&quot;]'))">Analyse</button><button type="button" onclick="switchTab('results')">Résultats OSC</button><button type="button" class="active" aria-selected="true">Appels manqués</button></div>`;
+  return `<div class="dr-switch" role="tablist"><button type="button" onclick="switchTab('pilotage')">Pilotage 360°</button><button type="button" onclick="switchTab('stat', document.querySelector('[data-admin-nav=&quot;stat&quot;]'))">Analyse</button><button type="button" onclick="switchTab('results')">Résultats OSC</button><button type="button" class="active" aria-selected="true">Appels manqués</button></div>`;
 }
 
 function mcFiltersHtml() {
