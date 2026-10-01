@@ -330,6 +330,8 @@ function applyRoleUI() {
 
 async function logout() {
   if (activeTimer) { alert('Arrête le timer en cours avant de te déconnecter.'); return; }
+  // Fin de shift : rappel de la déclaration des chiffres OSC du jour (agent uniquement).
+  if (currentUser?.role === 'agent' && typeof taskinShiftStatsReminder === 'function' && !(await taskinShiftStatsReminder())) return;
   stopLiveRefresh();
   if (typeof agentSessionsLog === 'function') await Promise.race([agentSessionsLog('logout'), new Promise(resolve => setTimeout(resolve, 3000))]);
   if (typeof taskinExtensionSignOut === 'function') taskinExtensionSignOut();

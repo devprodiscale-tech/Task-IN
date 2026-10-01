@@ -20,9 +20,10 @@ const DR_FIELDS = [
 const DR_FIELD_KEYS = DR_FIELDS.map(f => f.key);
 const DR_MAX_SHOTS = 10;
 const DR_BUCKET = 'daily-stats';
+const DR_DECLARE_MAX_SHOTS = 5;
 
 // rows = saisies du jour affiché ; byDay = 15 derniers jours (référence J-1, tendance 7 jours).
-let drState = { day: '', pole: 'all', mode: 'entry', rows: new Map(), byDay: new Map(), goals: new Map(), dispatch: new Map(), policy: { progress: 5 }, loading: false, error: '' };
+let drState = { day: '', pole: 'all', mode: 'entry', rows: new Map(), byDay: new Map(), goals: new Map(), dispatch: new Map(), policy: { progress: 5 }, loading: false, error: '', subs: new Map(), mySub: undefined };
 let drEdit = null;
 let drImport = null;
 
@@ -114,6 +115,11 @@ async function drUpsert(rows) {
   if (!Array.isArray(saved) || saved.length !== rows.length) throw new Error('Enregistrement refusé : seuls l’admin et le superviseur peuvent saisir les résultats.');
   return saved;
 }
+async function drLoadSubmissions(day) {
+  const filter = currentUser?.role === 'agent' ? `&agent_id=eq.${currentUser.id}` : '';
+  const response = await drFetch(`/rest/v1/agent_stat_submissions?select=*&day=eq.${day}${filter}`, { headers: { Accept: 'application/json' } });
+  return response.json();
+}
 function drObjectPath(path) { return path.split('/').map(encodeURIComponent).join('/'); }
 async function drUploadShot(blob, agentId, day) {
   const path = `${agentId}/${day}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
@@ -133,7 +139,7 @@ async function drShotUrl(path) {
 }
 
 // Capture d'écran → JPEG allégé (texte lisible, ~150–300 Ko).
-async function drCompressImage(file) {
+async function drCompressImage(file, stamp = '') {
   if (!/^image\//.test(file.type)) throw new Error('Ce fichier n’est pas une image.');
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, 1800 / bitmap.width);
@@ -145,6 +151,16 @@ async function drCompressImage(file) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close?.();
+  // Horodatage Task’in incrusté en bas à droite : heure d’ajout, impossible à retirer après coup.
+  if (stamp) {
+    const size = Math.max(14, Math.round(canvas.width / 70));
+    ctx.font = `700 ${size}px system-ui, sans-serif`;
+    const w = ctx.measureText(stamp).width + size, h = size * 1.8;
+    ctx.fillStyle = 'rgba(15,23,42,.9)';
+    ctx.fillRect(canvas.width - w - 8, canvas.height - h - 8, w, h);
+    ctx.fillStyle = '#fff'; ctx.textBaseline = 'middle';
+    ctx.fillText(stamp, canvas.width - w - 8 + size / 2, canvas.height - 8 - h / 2);
+  }
   return new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Image illisible.')), 'image/jpeg', 0.85));
 }
 
@@ -164,9 +180,10 @@ async function renderDailyResults() {
   drState.loading = true; drState.error = '';
   drPaint();
   try {
-    const [rows, goals, policy, dispatch] = await Promise.all([
+    const [rows, goals, policy, dispatch, subs] = await Promise.all([
       drLoadRange(drShiftDay(day, -14), day), drLoadGoals(day), drLoadPolicy(),
       typeof loadDispatchLog === 'function' ? loadDispatchLog(day).catch(() => []) : [],
+      drLoadSubmissions(day).catch(() => []),
     ]);
     if (day !== drState.day) return; // un autre jour a été choisi entre-temps
     drState.byDay = new Map();
@@ -175,6 +192,8 @@ async function renderDailyResults() {
     drState.rows = drState.byDay.get(day);
     drState.goals = new Map(goals.map(g => [g.agent_id, g]));
     drState.policy = policy;
+    drState.subs = new Map(subs.map(x => [x.agent_id, x]));
+    if (currentUser.role === 'agent') drState.mySub = day === drLocalDay() ? drState.subs.get(currentUser.id) || null : drState.mySub;
     drState.dispatch = new Map();
     dispatch.forEach(l => { if (!drState.dispatch.has(l.agent_id)) drState.dispatch.set(l.agent_id, []); drState.dispatch.get(l.agent_id).push(l); });
   } catch (e) {
@@ -251,6 +270,7 @@ function drPaint() {
       ${drPolesHtml()}
       <span class="dr-progress ${filled === rows.length && rows.length ? 'is-done' : ''}">${filled} agent${filled > 1 ? 's' : ''} saisi${filled > 1 ? 's' : ''} sur ${rows.length}</span>
     </div>
+    ${write && !drState.loading && !drState.error ? drSubsBanner(agents) : ''}
     ${body}
   </section>`;
 }
@@ -279,8 +299,26 @@ function drRowHtml(agent, row, write) {
     <td>${dash(v('actions'))}</td><td>${dash(v('created'))}</td><td>${dash(v('resolved'))}</td>
     <td>${dash(v('crisp_conversations'))}${ratio !== null ? ` · <span class="dr-ratio ${ratio < 2 ? 'is-low' : ''}" title="${ratio < 2 ? 'Moins de 2 messages par conversation : suivi à vérifier' : 'Messages par conversation'}">${ratio.toFixed(1).replace('.', ',')}</span>` : ''}</td>
     <td>${shots ? `<button type="button" class="dr-shot-btn" onclick="drOpenShots('${agent.id}')">${shots} capture${shots > 1 ? 's' : ''}</button>` : row ? '<span class="dr-muted">aucune</span>' : ''}</td>
-    <td class="dr-row-action">${write ? `<button type="button" class="dr-edit-btn" onclick="drOpenEdit('${agent.id}')">${row ? 'Modifier' : 'Saisir'}</button>` : ''}${row ? `<small title="${escHtml(new Date(row.updated_at).toLocaleString('fr-FR'))}">${row.source === 'csv' ? 'CSV' : row.source === 'mixed' ? 'CSV + saisie' : 'saisie'}${who ? ' · ' + escHtml(who) : ''}</small>` : ''}</td>
+    <td class="dr-row-action">${drSubChip(agent.id, row)}${write ? `<button type="button" class="dr-edit-btn" onclick="drOpenEdit('${agent.id}')">${drState.subs.get(agent.id)?.status === 'pending' ? 'Reprendre' : row ? 'Modifier' : 'Saisir'}</button>` : ''}${row ? `<small title="${escHtml(new Date(row.updated_at).toLocaleString('fr-FR'))}">${row.source === 'csv' ? 'CSV' : row.source === 'mixed' ? 'CSV + saisie' : 'saisie'}${who ? ' · ' + escHtml(who) : ''}</small>` : ''}</td>
   </tr>`;
+}
+
+// Heure d’envoi et heure du relevé de la déclaration agent (ou de celle reprise dans les chiffres officiels).
+function drHm(value) { return value ? new Date(value).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''; }
+function drSubChip(agentId, row) {
+  const sub = drState.subs.get(agentId);
+  if (sub) {
+    const label = { pending: 'à reprendre', validated: 'reprise', rejected: 'renvoyée à l’agent' }[sub.status];
+    return `<span class="dr-sub dr-sub-${sub.status}" title="Déclaration de l’agent envoyée à ${drHm(sub.submitted_at)}, chiffres OSC relevés à ${String(sub.stats_time).slice(0, 5)}">📨 ${drHm(sub.submitted_at)} · relevé ${String(sub.stats_time).slice(0, 5)} · ${label}</span>`;
+  }
+  return row?.agent_submitted_at ? `<span class="dr-sub dr-sub-validated">📨 ${drHm(row.agent_submitted_at)} · relevé ${String(row.agent_stats_time || '').slice(0, 5)}</span>` : '';
+}
+function drSubsBanner(agents) {
+  const list = agents.map(a => ({ a, sub: drState.subs.get(a.id) })).filter(x => x.sub);
+  if (!list.length) return drState.day === drLocalDay() ? '<div class="dr-subs-banner is-empty">Aucune déclaration d’agent reçue pour l’instant aujourd’hui.</div>' : '';
+  const pending = list.filter(x => x.sub.status === 'pending');
+  return `<div class="dr-subs-banner"><b>Déclarations des agents</b> · ${list.length} reçue${list.length > 1 ? 's' : ''}${pending.length ? `, <b class="dr-down">${pending.length} à reprendre</b>` : ''} :
+    ${list.sort((x, y) => new Date(x.sub.submitted_at) - new Date(y.sub.submitted_at)).map(({ a, sub }) => `<button type="button" class="dr-sub dr-sub-${sub.status}" onclick="drOpenEdit('${a.id}')">${escHtml(a.name)} · envoyé ${drHm(sub.submitted_at)} · relevé ${String(sub.stats_time).slice(0, 5)}</button>`).join('')}</div>`;
 }
 
 function drSetDay(day) { if (/^\d{4}-\d{2}-\d{2}$/.test(day) && day <= drLocalDay()) { drState.day = day; renderDailyResults(); } }
@@ -305,7 +343,8 @@ function drOpenEdit(agentId) {
   const agent = (TEAM || []).find(u => u.id === agentId);
   if (!agent) return;
   const row = drState.rows.get(agentId) || null;
-  drEdit = { agent, row, shots: (row?.screenshots || []).map(s => ({ ...s })), added: [], removed: [], busy: false };
+  const sub = drState.subs.get(agentId) || null;
+  drEdit = { agent, row, sub, subUsed: false, shots: (row?.screenshots || []).map(s => ({ ...s })), added: [], removed: [], busy: false };
   const overlay = drOverlay('dr-edit-overlay', drCloseEdit);
   overlay.innerHTML = `<div class="modal dr-modal" role="dialog" aria-modal="true" aria-labelledby="dr-edit-title">
     <div class="modal-header">
@@ -313,6 +352,7 @@ function drOpenEdit(agentId) {
       <button class="modal-close" type="button" onclick="drCloseEdit()" aria-label="Fermer">×</button>
     </div>
     <div class="modal-body">
+      ${sub ? drSubPanel(sub) : ''}
       <div class="dr-form-grid">${DR_FIELDS.map(f => `<label class="dr-field"><span>${f.label}</span>
         <input class="form-input" data-dr-field="${f.key}" inputmode="${f.type === 'int' ? 'numeric' : 'text'}" autocomplete="off" placeholder="${f.type === 'duration' ? '0h 00m' : '—'}" value="${row && row[f.key] !== null && row[f.key] !== undefined ? escHtml(f.type === 'duration' ? drFormatDuration(row[f.key]) : String(row[f.key])) : ''}">
         ${f.help ? `<small>${f.help}</small>` : ''}</label>`).join('')}</div>
@@ -353,15 +393,16 @@ async function drAddFiles(files) {
   const state = drEdit;
   const status = drEl('dr-edit-status');
   for (const file of files) {
-    if (state.shots.length >= DR_MAX_SHOTS) { status.textContent = `${DR_MAX_SHOTS} captures maximum.`; break; }
+    const maxShots = state.declare ? DR_DECLARE_MAX_SHOTS : DR_MAX_SHOTS;
+    if (state.shots.length >= maxShots) { status.textContent = `${maxShots} captures maximum.`; break; }
     const temp = { path: '', name: file.name || 'capture', uploading: true, at: new Date().toISOString() };
     state.shots.push(temp);
     drPaintThumbs();
     try {
-      const blob = await drCompressImage(file);
+      const blob = await drCompressImage(file, state.declare ? `Task’in · ${state.agent.name} · ajoutée le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : '');
       temp.preview = URL.createObjectURL(blob);
       drPaintThumbs();
-      temp.path = await drUploadShot(blob, state.agent.id, drState.day);
+      temp.path = await drUploadShot(blob, state.agent.id, state.declare ? drLocalDay() : drState.day);
       if (drEdit !== state) { drDeleteShot(temp.path); return; } // fenêtre fermée entre-temps
       drShotUrls.set(temp.path, temp.preview);
       state.added.push(temp.path);
@@ -423,6 +464,7 @@ function drReadForm() {
 async function drSave(goNext) {
   if (!drEdit || drEdit.busy) return;
   const status = drEl('dr-edit-status');
+  status.classList.remove('is-info');
   if (drEdit.shots.some(s => s.uploading)) { status.textContent = 'Attends la fin de l’envoi des captures.'; return; }
   const { values, errors } = drReadForm();
   if (errors.length) { status.textContent = `Valeur illisible : ${errors.join(', ')}.`; return; }
@@ -439,7 +481,12 @@ async function drSave(goNext) {
       source: state.row && state.row.source !== 'manual' ? 'mixed' : 'manual',
       entered_by: currentUser.id,
     };
+    if (state.subUsed && state.sub) Object.assign(row, { agent_submitted_at: state.sub.submitted_at, agent_stats_time: state.sub.stats_time });
     const [saved] = await drUpsert([row]);
+    if (state.subUsed && state.sub) {
+      const [updated] = await drSubPatch(state.sub.id, { status: 'validated', reviewed_by: currentUser.id, reviewed_at: new Date().toISOString(), review_note: null });
+      if (updated) drState.subs.set(state.agent.id, updated);
+    }
     drState.rows.set(state.agent.id, saved);
     state.added = [];
     state.removed.forEach(drDeleteShot);
@@ -453,6 +500,52 @@ async function drSave(goNext) {
     status.textContent = e.message;
     drEl('dr-save').disabled = drEl('dr-save-next').disabled = false;
   }
+}
+
+function drSubPanel(sub) {
+  const values = sub.stat_values || {};
+  const filled = DR_FIELDS.filter(f => values[f.key] !== null && values[f.key] !== undefined);
+  return `<div class="dr-subpanel dr-sub-${sub.status}">
+    <div class="dr-subpanel-head"><b>📨 Déclaration de l’agent</b><span>envoyée à <b>${drHm(sub.submitted_at)}</b> · chiffres relevés à <b>${String(sub.stats_time).slice(0, 5)}</b> · ${{ pending: 'à reprendre', validated: 'déjà reprise', rejected: 'renvoyée à l’agent' }[sub.status]}</span></div>
+    <div class="dr-subpanel-checks">✓ filtre OSC « Aujourd’hui » confirmé · ✓ heure visible sur la capture confirmée · ${(sub.screenshots || []).length} capture${(sub.screenshots || []).length > 1 ? 's' : ''}</div>
+    <div class="dr-subpanel-values">${filled.map(f => `<span>${f.label} <b>${escHtml(drFormatValue(f, values[f.key]))}</b></span>`).join('') || '<span class="dr-muted">Aucun chiffre saisi, captures seulement.</span>'}</div>
+    ${sub.note ? `<p class="dr-subpanel-note">« ${escHtml(sub.note)} »</p>` : ''}
+    ${sub.status === 'rejected' && sub.review_note ? `<p class="dr-subpanel-note">Motif du renvoi : ${escHtml(sub.review_note)}</p>` : ''}
+    ${sub.status !== 'validated' ? `<div class="dr-subpanel-actions"><button type="button" class="btn btn-primary" onclick="drUseSubmission()">Reprendre ces chiffres et captures</button>${sub.status === 'pending' ? '<button type="button" class="btn btn-ghost" onclick="drRejectSubmission()">Renvoyer à l’agent…</button>' : ''}</div>` : ''}
+  </div>`;
+}
+function drUseSubmission() {
+  if (!drEdit?.sub) return;
+  const values = drEdit.sub.stat_values || {};
+  DR_FIELDS.forEach(f => {
+    const input = document.querySelector(`#dr-edit-overlay [data-dr-field="${f.key}"]`);
+    const v = values[f.key];
+    if (input && v !== null && v !== undefined) input.value = f.type === 'duration' ? drFormatDuration(v) : String(v);
+  });
+  const known = new Set(drEdit.shots.map(x => x.path));
+  (drEdit.sub.screenshots || []).forEach(x => { if (x.path && !known.has(x.path) && drEdit.shots.length < DR_MAX_SHOTS) drEdit.shots.push({ ...x }); });
+  const note = drEl('dr-note');
+  const trace = `Déclaré par l’agent à ${drHm(drEdit.sub.submitted_at)} (relevé OSC de ${String(drEdit.sub.stats_time).slice(0, 5)})`;
+  if (note && !note.value.includes('Déclaré par l’agent')) note.value = [trace, drEdit.sub.note, note.value].filter(Boolean).join(' · ');
+  drEdit.subUsed = true;
+  drPaintThumbs();
+  drEl('dr-edit-status').classList.add('is-info');
+  drEl('dr-edit-status').textContent = 'Chiffres de l’agent repris : vérifie-les avec la capture puis enregistre.';
+}
+async function drSubPatch(id, body) {
+  const response = await drFetch(`/rest/v1/agent_stat_submissions?id=eq.${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(body) });
+  return response.json();
+}
+async function drRejectSubmission() {
+  if (!drEdit?.sub) return;
+  const reason = prompt('Motif du renvoi (visible par l’agent) :', 'Capture sans l’heure ou filtre OSC différent de « Aujourd’hui »');
+  if (reason === null) return;
+  try {
+    const [updated] = await drSubPatch(drEdit.sub.id, { status: 'rejected', review_note: reason.trim().slice(0, 1000) || null, reviewed_by: currentUser.id, reviewed_at: new Date().toISOString() });
+    if (updated) drState.subs.set(drEdit.agent.id, updated);
+    drCloseEdit();
+    drPaint();
+  } catch (e) { drEl('dr-edit-status').textContent = 'Renvoi impossible : ' + e.message; }
 }
 
 async function drDeleteRow() {
@@ -869,6 +962,7 @@ function drPaintGoals() {
       ${write ? `<div class="dr-head-actions">${drPoleGoalsBtn()}</div>` : ''}
     </div>
     ${me && !drState.loading ? drMyGoalHtml(me) : ''}
+    ${me && !drState.loading ? drMyDeclareHtml() : ''}
     <div class="dr-toolbar">${drDaynavHtml()}${drModesHtml()}${drPolesHtml()}</div>
     <div class="dr-goal-strip">${policy}${poleBtn}
       ${trends.length ? `<span>Flux équipe vs ${escHtml(drShortDay(trends[0].t.refDay))} : ${trends.map(({ m, t }) => `<b class="${t.pct >= 0 ? 'dr-up' : 'dr-down'}">${m.label} ${drPct(t.pct)}</b>`).join(' · ')}</span>` : '<span class="dr-muted">Flux équipe : saisis deux jours pour comparer.</span>'}
@@ -915,6 +1009,98 @@ async function drAckReview(id, btn) {
     if (r) r.data = { ...(r.data || {}), agentAckAt: rows?.[0]?.data?.agentAckAt || Date.now() };
     drRenderMyReviews();
   } catch (e) { btn.disabled = false; alert('Confirmation impossible : ' + e.message); }
+}
+
+// ---------- Agent : déclarer ses chiffres OSC en fin de shift ----------
+function drMyDeclareHtml() {
+  const sub = drState.mySub;
+  const today = drLocalDay();
+  if (sub === undefined) return '';
+  const state = !sub ? `<p>Fin de shift : déclare tes chiffres OSC du jour, capture à l’appui. Ton superviseur les vérifie et les reprend.</p>`
+    : sub.status === 'pending' ? `<p><b>Envoyée à ${drHm(sub.submitted_at)}</b> (chiffres relevés à ${String(sub.stats_time).slice(0, 5)}) · en attente de vérification. Tu peux encore la corriger.</p>`
+    : sub.status === 'validated' ? `<p class="dr-up"><b>✓ Reprise par ${escHtml((TEAM || []).find(u => u.id === sub.reviewed_by)?.name || 'ton superviseur')}</b> à ${drHm(sub.reviewed_at)} (envoyée à ${drHm(sub.submitted_at)}).</p>`
+    : `<p class="dr-down"><b>Renvoyée par ${escHtml((TEAM || []).find(u => u.id === sub.reviewed_by)?.name || 'ton superviseur')}</b> : ${escHtml(sub.review_note || 'à corriger')}. Corrige et renvoie.</p>`;
+  return `<div class="dr-declare ${sub ? 'dr-sub-' + sub.status : ''}">
+    <div><strong>Mes chiffres OSC de fin de shift</strong><small>${escHtml(drDayLabel(today))}</small>${state}</div>
+    ${!sub || sub.status !== 'validated' ? `<button type="button" class="btn btn-primary" onclick="drOpenDeclare()">${!sub ? 'Déclarer mes chiffres' : sub.status === 'rejected' ? 'Corriger et renvoyer' : 'Modifier ma déclaration'}</button>` : ''}
+  </div>`;
+}
+
+function drOpenDeclare() {
+  if (currentUser?.role !== 'agent') return;
+  const sub = drState.mySub || null;
+  if (sub?.status === 'validated') return;
+  const values = sub?.stat_values || {};
+  const now = new Date();
+  drEdit = { agent: currentUser, row: null, declare: true, sub, shots: (sub?.screenshots || []).map(s => ({ ...s })), added: [], removed: [], busy: false };
+  const overlay = drOverlay('dr-edit-overlay', drCloseEdit);
+  overlay.innerHTML = `<div class="modal dr-modal" role="dialog" aria-modal="true" aria-labelledby="dr-edit-title">
+    <div class="modal-header">
+      <div class="modal-title" id="dr-edit-title">Mes chiffres OSC — ${escHtml(drDayLabel(drLocalDay()))}</div>
+      <button class="modal-close" type="button" onclick="drCloseEdit()" aria-label="Fermer">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="dr-rules"><b>Règles de la capture</b> (sinon ta déclaration est renvoyée) :
+        <ol><li>Dans OSC, le filtre de date est sur <b>« Aujourd’hui »</b>.</li><li>L’<b>heure de ton ordinateur</b> (barre des tâches) est <b>visible</b> sur la capture.</li></ol>
+        <small>Task’in ajoute aussi automatiquement l’heure d’envoi sur chaque capture.</small></div>
+      ${sub?.status === 'rejected' && sub.review_note ? `<p class="dr-subpanel-note">Motif du renvoi : ${escHtml(sub.review_note)}</p>` : ''}
+      <label class="dr-field dr-field-time"><span>Heure affichée sur ta capture (heure du relevé)</span><input class="form-input" type="time" id="dr-stats-time" value="${sub?.stats_time ? String(sub.stats_time).slice(0, 5) : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`}"></label>
+      <div class="dr-form-grid">${DR_FIELDS.map(f => `<label class="dr-field"><span>${f.label}</span>
+        <input class="form-input" data-dr-field="${f.key}" inputmode="${f.type === 'int' ? 'numeric' : 'text'}" autocomplete="off" placeholder="${f.type === 'duration' ? '0h 00m' : '—'}" value="${values[f.key] !== null && values[f.key] !== undefined ? escHtml(f.type === 'duration' ? drFormatDuration(values[f.key]) : String(values[f.key])) : ''}">
+        ${f.help ? `<small>${f.help}</small>` : ''}</label>`).join('')}</div>
+      <label class="dr-field dr-field-wide"><span>Commentaire (optionnel)</span><textarea class="form-input" id="dr-note" rows="2" maxlength="1000">${escHtml(sub?.note || '')}</textarea></label>
+      <div class="dr-shots-label">Capture(s) OSC <small>obligatoire · colle (Ctrl+V), glisse ou choisis jusqu’à ${DR_DECLARE_MAX_SHOTS} images</small></div>
+      <div class="dr-drop" id="dr-drop" tabindex="0">
+        <div class="dr-thumbs" id="dr-thumbs"></div>
+        <label class="dr-drop-add"><input type="file" accept="image/*" multiple id="dr-file" hidden>+ Ajouter</label>
+      </div>
+      <label class="dr-check"><input type="checkbox" id="dr-check-today"> Le filtre OSC est sur « Aujourd’hui »</label>
+      <label class="dr-check"><input type="checkbox" id="dr-check-clock"> L’heure est visible sur ma capture</label>
+      <div class="dr-status" id="dr-edit-status" role="status"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" type="button" onclick="drCloseEdit()">Annuler</button>
+      <button class="btn btn-primary" type="button" id="dr-save" onclick="drSubmitDeclare()">Envoyer à mon superviseur</button>
+    </div>
+  </div>`;
+  overlay.classList.remove('hidden');
+  drEl('dr-file').addEventListener('change', e => { drAddFiles([...e.target.files]); e.target.value = ''; });
+  const drop = drEl('dr-drop');
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('is-over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('is-over'); drAddFiles([...e.dataTransfer.files]); });
+  document.addEventListener('paste', drOnPaste);
+  drPaintThumbs();
+}
+
+async function drSubmitDeclare() {
+  if (!drEdit?.declare || drEdit.busy) return;
+  const status = drEl('dr-edit-status');
+  if (drEdit.shots.some(s => s.uploading)) { status.textContent = 'Attends la fin de l’envoi des captures.'; return; }
+  const { values, errors } = drReadForm();
+  if (errors.length) { status.textContent = `Valeur illisible : ${errors.join(', ')}.`; return; }
+  const time = drEl('dr-stats-time').value;
+  if (!/^\d{2}:\d{2}$/.test(time)) { status.textContent = 'Indique l’heure affichée sur ta capture.'; drEl('dr-stats-time').focus(); return; }
+  if (!drEdit.shots.length) { status.textContent = 'Ajoute au moins une capture OSC.'; return; }
+  if (!drEl('dr-check-today').checked || !drEl('dr-check-clock').checked) { status.textContent = 'Confirme les deux règles de la capture (filtre « Aujourd’hui » et heure visible).'; return; }
+  const state = drEdit;
+  state.busy = true; drEl('dr-save').disabled = true; status.textContent = 'Envoi…';
+  try {
+    const body = { agent_id: currentUser.id, day: drLocalDay(), stat_values: values, stats_time: time, osc_filter_today: true, clock_visible: true,
+      screenshots: state.shots.map(s => ({ path: s.path, name: String(s.name || '').slice(0, 120), at: s.at })), note: drEl('dr-note').value.trim() || null, review_note: null };
+    const response = await drFetch('/rest/v1/agent_stat_submissions?on_conflict=agent_id,day', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(body) });
+    const [saved] = await response.json();
+    if (!saved) throw new Error('Envoi refusé.');
+    drState.mySub = saved;
+    if (drState.day === drLocalDay()) drState.subs.set(currentUser.id, saved);
+    state.added = [];
+    state.removed.forEach(drDeleteShot);
+    drCloseEdit();
+    drPaint();
+  } catch (e) {
+    state.busy = false; drEl('dr-save').disabled = false;
+    status.textContent = 'Envoi impossible : ' + e.message;
+  }
 }
 
 function drMyGoalHtml(g) {

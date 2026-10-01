@@ -129,3 +129,20 @@ if (typeof applyRoleUI === 'function') {
     initAgentDispatch();
   };
 }
+
+// ---------- Fin de shift : rappel de la déclaration des chiffres OSC ----------
+// Renvoie true pour continuer la déconnexion, false si l'agent préfère déclarer d'abord.
+async function taskinShiftStatsReminder() {
+  try {
+    const d = new Date(), day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const rows = await Promise.race([dispatchRest(`agent_stat_submissions?select=id&agent_id=eq.${currentUser.id}&day=eq.${day}`), new Promise(resolve => setTimeout(() => resolve(null), 3000))]);
+    if (!Array.isArray(rows) || rows.length) return true;
+  } catch (_) { return true; }
+  if (!confirm('Tu n’as pas encore déclaré tes chiffres OSC du jour.\n\nOK : les déclarer maintenant\nAnnuler : te déconnecter quand même')) return true;
+  await switchTab('results', document.getElementById('tab-results'));
+  for (let i = 0; i < 40; i++) {
+    if (typeof drOpenDeclare === 'function' && typeof drState !== 'undefined' && drState.mySub !== undefined && !drState.loading) { drOpenDeclare(); break; }
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  return false;
+}
