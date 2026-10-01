@@ -316,11 +316,14 @@ body:not(.admin-shell-active) #missed-calls-panel .dr-shell{margin:0}
 .hm-head small{color:var(--text3);font-size:9.5px;text-align:center}
 .hm-head em{color:var(--text3)}
 .hm-cell{display:grid;place-items:center;height:28px;border-radius:5px;background:var(--surface2);color:var(--text);font-size:10px;font-weight:700}
-.hm-l1{background:color-mix(in srgb,var(--ocean) 14%,var(--surface))}
-.hm-l2{background:color-mix(in srgb,var(--ocean) 30%,var(--surface))}
-.hm-l3{background:color-mix(in srgb,var(--ocean) 50%,var(--surface));color:#fff}
-.hm-l4{background:color-mix(in srgb,var(--ocean) 72%,var(--surface));color:#fff}
-.hm-l5{background:var(--ocean);color:#fff}
+/* Échelle de flux : vert très pâle (très faible) → rouge intense (très fort). */
+:root{--hm-1:#D6F3DC;--hm-2:#B3E39C;--hm-3:#DDA532;--hm-4:#DB6A26;--hm-5:#BC1C1C;--hm-ink-1:#14301E;--hm-ink-2:#14301E;--hm-ink-3:#2A1A00;--hm-ink-4:#1F0E00;--hm-ink-5:#FFFFFF}
+:root[data-theme="dark"]{--hm-1:#1B4D34;--hm-2:#3F7F3A;--hm-3:#B08A1C;--hm-4:#E0702C;--hm-5:#FF4D4D;--hm-ink-1:#FFFFFF;--hm-ink-2:#FFFFFF;--hm-ink-3:#1A1200;--hm-ink-4:#1A0A00;--hm-ink-5:#1A0000}
+.hm-l1{background:var(--hm-1);color:var(--hm-ink-1)}
+.hm-l2{background:var(--hm-2);color:var(--hm-ink-2)}
+.hm-l3{background:var(--hm-3);color:var(--hm-ink-3)}
+.hm-l4{background:var(--hm-4);color:var(--hm-ink-4)}
+.hm-l5{background:var(--hm-5);color:var(--hm-ink-5)}
 .hm-total span{color:var(--text2);font-size:10px;font-weight:800;text-align:center}
 .hm-foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 14px;margin-top:10px;color:var(--text2);font-size:11.5px}
 .hm-legend{display:flex;align-items:center;gap:4px;color:var(--text3);font-size:10.5px}

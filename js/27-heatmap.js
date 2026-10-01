@@ -97,7 +97,7 @@ function taskinHeatmapRender(container, opts = {}) {
       ${rows}
     </div></div>
     <div class="hm-foot">
-      <span class="hm-legend">Faible ${[1, 2, 3, 4, 5].map(l => `<i class="hm-l${l}"></i>`).join('')} Fort</span>
+      <span class="hm-legend">Flux très faible ${[1, 2, 3, 4, 5].map(l => `<i class="hm-l${l}"></i>`).join('')} très fort</span>
       <span>${data.total ? `Pointe : <b>${opts.compact ? `${data.peakHour.hour}h–${data.peakHour.hour + 1}h` : `${data.peak.day} ${data.peak.hour}h–${data.peak.hour + 1}h`}</b> (${hmFormat(opts.compact ? data.peakHour.v : data.peak.v, st.measure)})` : 'Aucun traitement sur la période.'}${data.outside ? ` · ${hmFormat(data.outside, st.measure)} hors 7h–23h non affiché${data.outside > 1 ? 's' : ''}` : ''}</span>
     </div>
   </div>`;
