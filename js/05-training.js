@@ -140,7 +140,7 @@ async function trainingAIStructure(procedure) {
   const apiKey = await docGetStoredApiKey();
   const res = await apiFetch('/api/ai-structure', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mode: 'training', sourceProcedureId: procedure.id, sourceTitle: procedure.title, text: trainingProcedureToText(procedure), filename: `${procedure.title || 'procedure'}-formation`, apiKey: apiKey || undefined,
+    body: JSON.stringify({ module: 'formation', mode: 'training', sourceProcedureId: procedure.id, sourceTitle: procedure.title, text: trainingProcedureToText(procedure), filename: `${procedure.title || 'procedure'}-formation`, apiKey: apiKey || undefined,
       instruction: 'Transforme cette procédure en parcours de formation. Retourne un objet training avec title, description, objectives, modules, quizzes et skills. Chaque quiz doit contenir text, options, correctIndex et explanation.' })
   });
   const data = await res.json().catch(() => null);

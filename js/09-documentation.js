@@ -388,7 +388,7 @@ async function docAIStructure(payload, filename) {
   const res = await apiFetch('/api/ai-structure', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, filename, apiKey: apiKey || undefined }),
+    body: JSON.stringify({ ...payload, module: 'documentation', filename, apiKey: apiKey || undefined }),
   });
   if (res.status === 404) {
     throw new Error("le endpoint /api/ai-structure n'est pas déployé sur Vercel (vérifie que api/ai-structure.js et package.json sont bien poussés sur GitHub, et que le déploiement a réussi)");

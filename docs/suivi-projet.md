@@ -76,9 +76,25 @@ Ensuite seulement : injection des données fictives (5 FO, 3 BO, 3 Reconf) pour 
 | T4 | Latence après injection des données, capacité sur plusieurs mois, stockage local + Supabase Pro | ✅ correctifs faits (migrations 023 + 024, fenêtre 62 jours, agrégats) — analyse et mail : `docs/capacite-volumetrie.md` |
 | T5 | Extension : « Tickets & cas » ouvrait un nouvel onglet au lieu du formulaire | ✅ corrigé (extension v1.12.1 : onglet Task’in réutilisé, formulaire ouvert directement) |
 
+### Lot U (demandé le 2 octobre) — interface superviseur et admin
+
+| # | Point | Statut |
+|---|---|---|
+| U1 | Superviseur · Reporting : « Préparation des 1:1 » en accordéon ; « Activité de la journée » filtrable par agent et pôle ; « Exporter les statistiques » : CSS seulement | ✅ fait |
+| U2 | Superviseur · Grille d’écoute : Kanban par pôle (résumé par agent) → mosaïque des agents (résumé détaillé) → détails complets | ✅ fait (fil d’Ariane pôles › pôle › agent) |
+| U3 | Admin : latence générale | ✅ fait (historique : 2 allers-retours au lieu de 9 — 2,9 s → 1,3 s à 300 ms de latence) |
+| U4 | Admin · Supervision : logs équipe en semi-accordéon, durée vert → rouge selon l’objectif, contour selon la source ; « Exporter les statistiques » déplacé dans Statistiques (CSS seulement) | ✅ fait |
+| U5 | Admin · Vue d’ensemble : « Équipe en direct » = agents connectés, le reste en accordéon | ✅ fait |
+| U6 | Admin · Qualité individuelle : filtre pôle, top 5, le reste en accordéon | ✅ fait |
+| U7 | Admin · Équipe : classement par pôle, donut par pôle et par personne, fiche détaillée de chaque compte | ✅ fait (annuaire de tous les comptes + fiche) |
+| U8 | Admin · Connexions : filtre pôle, tri dernier connecté (récent ↔ ancien) | ✅ fait |
+| U9 | Admin · Paramètres : bloc unique « Procédures » ; API IA multiples (+) ; donut d’usage IA ; comportement par API (quoi / où / quand) ; UI de l’objectif journalier ; rangs des types de traitement (synchro extension) ; Team shift en 3 vues (agent, pôle, emploi du temps filtrable) | ✅ fait (migration 025 : clés IA côté serveur ; à faire de ton côté : brancher une 1re API dans Paramètres › API IA) |
+
 ### Reste à faire (hors ce qui est déjà annoncé)
 
-- Côté toi : R5 (Supabase / Vercel), R6 (extension 1.12.1), R7 (test réel), décision Supabase Pro.
+- Côté toi : R5 (Supabase / Vercel), R6 (extension 1.12.1), R7 (test réel), décision Supabase Pro ;
+  Paramètres › API IA : brancher une 1re API (clé) — sinon la variable GEMINI_API_KEY reste utilisée.
+- Données fictives encore en base (12 comptes démo + ancien jeu C4) : à effacer quand tu le décides.
 - Optionnel, sur décision : fusion d’onglets (`docs/organisation-interface.md`), publication Chrome Web Store.
 - Phase 2 (après la mise en production) : purge automatique des captures > 90 jours, cache local
   (IndexedDB) de l’historique, module Planning, Reconf.
@@ -92,7 +108,7 @@ Après la mise en production : module Planning (puis présence vs planning), Rec
 - **Superviseur** : onglets « Pilotage 360° » (vues enregistrées, fiche 360° + notes 1:1), « Résultats » (déclarations
   des agents à reprendre), « Appels manqués », « Cas complexes », « Grille d’écoute » (retour partagé avec l’agent),
   « Coaching 1:1 » (notes à aborder), « Reporting » (préparation des 1:1, **Exports tout en bas**), « Connexions » (dates au choix).
-- **Admin** : Supervision → **Exports tout en bas** ; Connexions : dates au choix, écart au shift, export CSV.
+- **Admin** : Statistiques (Analyse) → **Exports tout en bas** ; Connexions : dates au choix, écart au shift, export CSV.
 - **Agent** : barre « Mon dispatch client » (+ « Signaler une difficulté ») sur l’accueil et dans le pop-up de
   l’extension ; onglet « Mes résultats » : objectif du jour, **déclaration des chiffres OSC de fin de shift**,
   **Mes écoutes** ; onglet « Appels manqués ».

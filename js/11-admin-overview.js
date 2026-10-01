@@ -49,7 +49,10 @@ function adminOverviewTeamRows(activeTimers) {
   const agentEntries = (entries || []).reduce((map, entry) => { const list = map.get(entry.agent) || []; list.push(entry); map.set(entry.agent, list); return map; }, new Map());
   const agents = typeof agentsOnly === 'function' ? agentsOnly() : (TEAM || []).filter(user => user.role === 'agent');
   if (!agents.length) return '<div class="admin-overview-empty">Aucun agent n’est encore rattaché à l’équipe.</div>';
-  return agents.map(agent => {
+  // Connectés = traitement en cours, ou présents aujourd'hui et dans leur shift ; les autres sont repliés.
+  const isLogged = agent => timerByAgent.has(agent.id) || ((typeof taskinSeenToday === 'function' ? taskinSeenToday(agent) === true : false) && (typeof taskinInShift !== 'function' || taskinInShift(agent)));
+  const logged = agents.filter(isLogged), others = agents.filter(a => !isLogged(a));
+  const row = agent => {
     const timer = timerByAgent.get(agent.id), history = agentEntries.get(agent.id) || [], todayHistory = history.filter(entry => isToday(entry.startTimeStr));
     const totalMinutes = Math.round(todayHistory.reduce((sum, entry) => sum + Number(entry.durationSec || 0), 0) / 60);
     // Sans traitement en cours : « Attente flux » pendant le shift, « Hors shift » en dehors.
@@ -58,8 +61,11 @@ function adminOverviewTeamRows(activeTimers) {
     const statusClass = timer ? 'live' : idleLabel === 'Attente flux' ? 'seen' : 'idle';
     const detail = timer ? `${adminOverviewSourceLabel(timer.source)} · ${adminOverviewFormatElapsed(timer.startTime)}` : todayHistory.length ? `${todayHistory.length} traitement${todayHistory.length > 1 ? 's' : ''} · ${totalMinutes} min` : 'Aucune activité enregistrée';
     return `<button class="admin-overview-team-row" type="button" data-admin-agent-id="${adminOverviewEscape(agent.id)}">${adminOverviewAvatar(agent, Boolean(timer))}<span class="admin-overview-team-copy"><strong>${adminOverviewEscape(agent.name || 'Sans nom')}</strong><small>${adminOverviewEscape(detail)}</small></span><span class="admin-overview-status ${statusClass}"><i></i>${status}</span><span class="admin-overview-chevron">→</span></button>`;
-  }).join('');
+  };
+  return `${logged.length ? logged.map(row).join('') : '<div class="admin-overview-empty">Aucun agent connecté pour le moment.</div>'}
+    ${others.length ? `<details class="sv-acc ao-team-rest"${adminOverviewRestOpen ? ' open' : ''} ontoggle="adminOverviewRestOpen=this.open"><summary class="sv-acc-head"><span>Non connectés · hors shift</span><span class="sv-acc-meta"><b>${others.length}</b> agent${others.length > 1 ? 's' : ''}</span><i class="sv-acc-chevron" aria-hidden="true"></i></summary><div class="ao-team-rest-list">${others.map(row).join('')}</div></details>` : ''}`;
 }
+let adminOverviewRestOpen = false;
 function adminOverviewActivityRows(periodEntries) {
   const recent = periodEntries.slice().sort((a,b) => new Date(b.startTimeStr) - new Date(a.startTimeStr)).slice(0, 5);
   if (!recent.length) return '<div class="admin-overview-empty">Aucune activité sur cette période.</div>';

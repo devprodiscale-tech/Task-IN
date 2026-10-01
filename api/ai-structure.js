@@ -4,10 +4,10 @@
 // La clé API reste côté serveur. Gemini lit nativement les PDF et images (OCR/vision inclus),
 // donc les scans/photos sont supportés sans extraction de texte préalable.
 //
-// Variables d'environnement serveur requises sur Vercel : GEMINI_API_KEY, SUPABASE_URL,
-// SUPABASE_SERVICE_ROLE_KEY, TASKIN_ALLOWED_ORIGIN.
+// Variables d'environnement serveur : SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TASKIN_ALLOWED_ORIGIN ; GEMINI_API_KEY
+// devient facultative (dernier recours) quand des API sont branchées dans Paramètres › API IA.
 
-const GEMINI_MODEL = 'gemini-3.6-flash';
+const { runTask } = require('./_ai-providers');
 const ALLOWED_FORMATS = ['narrative', 'action_table', 'supplier_guide', 'role_guide', 'hybrid'];
 const ALLOWED_BLOCK_TYPES = ['text', 'list', 'callout', 'contact', 'table'];
 const ALLOWED_CALLOUT_STYLES = ['info', 'warning', 'important'];
@@ -123,46 +123,21 @@ module.exports = async (req, res) => {
       userParts = [{ text: `Nom du fichier source : ${filename || 'inconnu'}\n\nTexte brut extrait du document :\n"""\n${truncated}\n"""` }];
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY serveur non configurée.' });
+    // API IA configurées dans Paramètres › API IA (ordre, comportement, quotas), Gemini serveur en dernier recours.
+    const moduleName = ['documentation', 'formation'].includes(req.body?.module) ? req.body.module : 'documentation';
+    const input = fileBase64 ? { fileBase64, mediaType } : { text: userParts[0].text };
+    let result;
+    try {
+      result = await runTask({
+        task: 'structure_procedure', module: moduleName, userId: requester.id, system: SYSTEM_PROMPT,
+        intro: fileBase64 ? userParts[1].text : 'Transforme ce document en procédure structurée selon le schéma demandé.',
+        input, maxTokens: 8000,
+      });
+    } catch (e) {
+      return res.status(e.status || 502).json({ error: e.message });
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: [{ role: 'user', parts: userParts }],
-          generationConfig: {
-            response_mime_type: 'application/json',
-            max_output_tokens: 8000,
-          },
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('Gemini API error', response.status, errText);
-      let detail = errText;
-      try { detail = JSON.parse(errText)?.error?.message || errText; } catch (_) {}
-      return res.status(502).json({ error: `Erreur API IA (${response.status}) : ${String(detail).slice(0, 300)}` });
-    }
-
-    const data = await response.json();
-    const candidate = (data.candidates || [])[0];
-    const textPart = candidate?.content?.parts?.find(p => typeof p.text === 'string');
-    if (!textPart) {
-      console.error('Gemini response missing text part', JSON.stringify(data).slice(0, 500));
-      return res.status(502).json({ error: candidate?.finishReason === 'SAFETY' ? "L'IA a refusé de traiter ce document (filtre de sécurité)." : 'Réponse IA vide.' });
-    }
-
-    let raw = textPart.text.trim();
+    let raw = String(result.text || '').trim();
     raw = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
 
     let parsed;
@@ -174,7 +149,7 @@ module.exports = async (req, res) => {
     }
 
     const cleaned = sanitizeProcedure(parsed);
-    return res.status(200).json({ procedure: cleaned });
+    return res.status(200).json({ procedure: cleaned, provider: result.provider.name });
   } catch (e) {
     console.error('ai-structure handler error', e);
     return res.status(500).json({ error: e.message || 'Erreur serveur inconnue.' });

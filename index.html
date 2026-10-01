@@ -24,6 +24,7 @@
 <link rel="stylesheet" href="css/10-interfaces.css?v=20260930purge2">
 <link rel="stylesheet" href="css/11-form-controls.css?v=20260930a">
 <link rel="stylesheet" href="css/12-daily-results.css?v=20261003c">
+<link rel="stylesheet" href="css/13-lot-u.css?v=20261004d">
 </head>
 <body>
 
@@ -407,6 +408,7 @@
 
     <div id="team-live-panel" class="hidden">
       <!-- Le classement a quitté l'onglet Équipe : accès direct à son onglet dédié. -->
+      <div id="team-poles-panel" class="tp-shell hidden"></div>
       <div class="team-lb-link hidden" id="team-lb-link"><span>Classement des agents : KPI au choix, filtre FO / BO / Reconf.</span><button type="button" class="btn btn-ghost team-lb-btn" onclick="switchTab('leaderboard', document.getElementById('tab-leaderboard'))">Ouvrir le classement →</button></div>
       <div class="admin-card team-live-edit-only" style="margin-bottom:16px">
         <div class="admin-card-header">
@@ -827,13 +829,16 @@
           <div id="sv-rep-deviation"></div>
         </div>
 
-        <div class="sv-card" style="cursor:default;margin-bottom:14px">
-          <div class="sv-card-title" style="margin-bottom:4px">Préparation des 1:1 <span style="font-weight:400;font-size:11.5px;color:var(--text2)">notes privées, dernière écoute, dernier point</span></div>
-          <div id="sv-rep-coaching"></div>
-        </div>
+        <details class="sv-card sv-acc" id="sv-acc-coaching" style="cursor:default;margin-bottom:14px">
+          <summary class="sv-acc-head"><span class="sv-card-title" style="margin:0">Préparation des 1:1 <span style="font-weight:400;font-size:11.5px;color:var(--text2)">notes privées, dernière écoute, dernier point</span></span><span class="sv-acc-meta" id="sv-acc-coaching-meta"></span><i class="sv-acc-chevron" aria-hidden="true"></i></summary>
+          <div class="sv-acc-body"><div id="sv-rep-coaching"></div></div>
+        </details>
 
         <div class="sv-card" style="cursor:default">
-          <div class="sv-card-title" style="margin-bottom:10px">Activité de la journée <span style="font-weight:400;font-size:11.5px;color:var(--text2)">(7h–23h)</span></div>
+          <div class="sv-tl-head">
+            <div class="sv-card-title" style="margin:0">Activité de la journée <span style="font-weight:400;font-size:11.5px;color:var(--text2)">(7h–23h)</span></div>
+            <div class="sv-tl-filters" id="sv-rep-timeline-filters"></div>
+          </div>
           <div id="sv-rep-timeline"></div>
           <div class="sv-tl-legend">
             <span><i class="is-task"></i>Tâche chronométrée</span>
@@ -858,8 +863,8 @@
 
   <!-- Sections Admin : enfants directs de #app (décalage sidebar via #app > .admin-overview-section) -->
   <div id="admin-workflow-panel" class="admin-overview-section hidden"></div>
-  <div id="admin-exports-panel" class="admin-overview-section exp-mount hidden"></div>
   <div id="admin-stat-panel" class="admin-overview-section hidden"></div>
+  <div id="admin-exports-panel" class="admin-overview-section exp-mount hidden"></div>
   <div id="daily-results-panel" class="admin-overview-section daily-results-section hidden"></div>
   <div id="missed-calls-panel" class="admin-overview-section missed-calls-section hidden"></div>
   <div id="pilotage-panel" class="admin-overview-section pilotage-section hidden"></div>
@@ -1352,23 +1357,24 @@
 </div>
 
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
-<script src="js/00-data-provider.js?v=20261003c" defer></script>
-<script src="js/00-core-init.js?v=20261003c" defer></script>
-<script src="js/01-core-auth-network.js?v=20261003c" defer></script>
-<script src="js/02-time-data.js?v=20261003c" defer></script>
-<script src="js/03-dashboard-render.js?v=20261003c" defer></script>
-<script src="js/04-admin.js?v=20261002h" defer></script>
-<script src="js/11-admin-overview.js?v=20261002h" defer></script>
-<script src="js/12-admin-workflow.js?v=20260930sup" defer></script>
-<script src="js/13-admin-stat.js?v=20261003c" defer></script>
-<script src="js/14-admin-quality.js?v=20260918" defer></script>
+<script src="js/00-data-provider.js?v=20261004b" defer></script>
+<script src="js/00-core-init.js?v=20261004b" defer></script>
+<script src="js/01-core-auth-network.js?v=20261004b" defer></script>
+<script src="js/02-time-data.js?v=20261004b" defer></script>
+<script src="js/03-dashboard-render.js?v=20261004b" defer></script>
+<script src="js/04-admin.js?v=20261004b" defer></script>
+<script src="js/11-admin-overview.js?v=20261004b" defer></script>
+<script src="js/12-admin-workflow.js?v=20261004b" defer></script>
+<script src="js/13-admin-stat.js?v=20261004b" defer></script>
+<script src="js/14-admin-quality.js?v=20261004b" defer></script>
 <script src="js/15-admin-training.js?v=20260918" defer></script>
-<script src="js/16-admin-settings.js?v=20261002j" defer></script>
+<script src="js/16-admin-settings.js?v=20261004b" defer></script>
+<script src="js/31-admin-settings-plus.js?v=20261004b" defer></script>
 <script src="js/17-admin-local-features.js?v=20260930sec" defer></script>
 <script src="js/06-ui-modals.js?v=20260930t" defer></script>
 <script src="js/07-analytics.js?v=20261002h" defer></script>
 <script src="js/08-analytics-advanced.js?v=20261003c" defer></script>
-<script src="js/18-agent-sessions.js?v=20261002e" defer></script>
+<script src="js/18-agent-sessions.js?v=20261004b" defer></script>
 <script src="js/19-extension-bridge.js?v=20261002k" defer></script>
 <script src="js/20-agent-pole.js?v=20261002h" defer></script>
 <script src="js/21-agent-purge.js?v=20260930a" defer></script>

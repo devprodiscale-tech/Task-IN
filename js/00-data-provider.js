@@ -55,6 +55,19 @@
     return parseResponse(response, table);
   }
 
+  // Comme request(), avec le nombre total de lignes (Prefer: count=exact → Content-Range « 0-999/22500 »).
+  async function requestWithCount(table, params = {}) {
+    const options = { headers: { Prefer: 'count=exact' } };
+    let response = await fetch(restUrl(table, params), { ...options, headers: authHeaders(options.headers) });
+    if (response.status === 401 && getSession()?.refresh_token) {
+      await refreshSession();
+      response = await fetch(restUrl(table, params), { ...options, headers: authHeaders(options.headers) });
+    }
+    const range = response.headers.get('content-range') || '';
+    const total = Number(range.split('/')[1]);
+    return { rows: await parseResponse(response, table), total: range.includes('/') && range.split('/')[1] !== '*' ? total : NaN };
+  }
+
   async function signIn(email, password) {
     assertConfigured();
     const response = await fetch(`${baseUrl}/auth/v1/token?grant_type=password`, {
@@ -270,22 +283,36 @@
       const params = { select: 'id,raw_id,source,description,treatment,agent_id,inbound_time,started_at,duration_seconds', order: 'started_at.desc,id.desc', limit: String(pageSize) };
       const range = [since && `started_at.gte.${since}`, until && `started_at.lt.${until}`].filter(Boolean);
       if (range.length) params.and = `(${range.join(',')})`;
-      // Pas = taille réelle de la 1re page : robuste si le plafond serveur (max-rows) est inférieur à pageSize.
-      const first = await request('time_entries', {}, { ...params, offset: '0' });
-      const all = Array.isArray(first) ? [...first] : [];
+      // 1re page avec le total (en-tête Content-Range), puis toutes les pages restantes en parallèle (8 à la fois) :
+      // 2 allers-retours réseau au lieu d'un par tranche de 3 pages. Pas = taille réelle de la 1re page
+      // (robuste si le plafond serveur max-rows est inférieur à pageSize).
+      const first = await requestWithCount('time_entries', { ...params, offset: '0' });
+      const all = Array.isArray(first.rows) ? [...first.rows] : [];
       const step = all.length;
-      let offset = step;
-      // 1re page incomplète = tout est lu (sauf plafond serveur « rond » inférieur à pageSize).
-      while (step && (step === pageSize || step % 250 === 0) && all.length < maxRows) {
-        const pages = await Promise.all([0, 1, 2].map(i => request('time_entries', {}, { ...params, offset: String(offset + i * step) })));
-        let done = false;
-        for (const page of pages) {
-          if (!Array.isArray(page) || !page.length) { done = true; break; }
-          all.push(...page);
-          if (page.length < step) { done = true; break; }
+      if (step && Number.isFinite(first.total) && first.total > step) {
+        const offsets = [];
+        for (let o = step; o < Math.min(first.total, maxRows); o += step) offsets.push(o);
+        const pages = new Array(offsets.length);
+        for (let i = 0; i < offsets.length; i += 8) {
+          const chunk = offsets.slice(i, i + 8);
+          const got = await Promise.all(chunk.map(o => request('time_entries', {}, { ...params, offset: String(o) })));
+          got.forEach((page, j) => { pages[i + j] = Array.isArray(page) ? page : []; });
         }
-        if (done) break;
-        offset += 3 * step;
+        pages.forEach(page => all.push(...page));
+      } else if (step && !Number.isFinite(first.total) && (step === pageSize || step % 250 === 0)) {
+        // Total inconnu (en-tête absent) : lecture par vagues jusqu'à une page incomplète.
+        let offset = step;
+        while (all.length < maxRows) {
+          const pages = await Promise.all([0, 1, 2].map(i => request('time_entries', {}, { ...params, offset: String(offset + i * step) })));
+          let done = false;
+          for (const page of pages) {
+            if (!Array.isArray(page) || !page.length) { done = true; break; }
+            all.push(...page);
+            if (page.length < step) { done = true; break; }
+          }
+          if (done) break;
+          offset += 3 * step;
+        }
       }
       if (all.length >= maxRows) console.warn(`time_entries : limite de ${maxRows} lignes atteinte.`);
       return all;

@@ -286,7 +286,7 @@ async function loadAccounts() {
     TEAM = (profiles || []).map(profile => ({
       id: profile.id, name: profile.name || 'Sans nom', email: profile.email || '',
       color: safeColor(profile.color, '#2B4C7E'), initials: profile.initials || '??',
-      role: profile.role || 'agent', pole: profile.pole || null, photo: safePhoto(profile.photo),
+      role: profile.role || 'agent', pole: profile.pole || null, photo: safePhoto(profile.photo), createdAt: profile.created_at || null,
       shift: typeof shifts[profile.id] === 'string' ? shifts[profile.id] : ''
     }));
     teamById = new Map(TEAM.map(member => [member.id, member]));

@@ -1,5 +1,5 @@
 // ======================= EXPORTS POUR LE MANAGEMENT =======================
-// Un seul endroit pour sortir les chiffres : superviseur en bas de Reporting, admin en bas de Supervision.
+// Un seul endroit pour sortir les chiffres : superviseur en bas de Reporting, admin en bas de Statistiques (Analyse).
 // On coche les indicateurs, on choisit la période et les agents (sélection multiple), et on obtient :
 //  · un classeur .xlsx à plusieurs onglets (s'ouvre tel quel dans Google Sheets) ;
 //  · une présentation .pptx avec synthèse, tableau par agent, points d'attention et commentaire

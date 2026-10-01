@@ -155,7 +155,7 @@ module.exports = async (req, res) => {
       const types = current.map(item => typeof item === 'string' ? item : str(item?.name, 100)).filter(Boolean);
       const next = [...types.filter(item => item !== name), name].slice(-200);
       // customTreatmentTypes est chargé depuis settings.treatments.list.
-      await saveSetting('treatments', { list: next }, admin.id);
+      await saveSetting('treatments', { ...(stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {}), list: next }, admin.id);
       return json(res, { message: 'Type de traitement enregistré.', value: next });
     }
     if (action === 'updateShift') {
@@ -174,6 +174,87 @@ module.exports = async (req, res) => {
       if (pole && !['fo', 'bo', 'reconf'].includes(pole)) return fail(res, 400, 'Pôle invalide.');
       await saveProfile(uid, payload.pole === undefined ? { role } : { role, pole: role === 'agent' ? (pole || null) : null });
       return json(res, { message: 'Accès du compte enregistré.' });
+    }
+    // ---- API IA multiples (Paramètres › API IA) : la clé n'est jamais renvoyée au navigateur.
+    if (action === 'listAiProviders') {
+      const rows = await request('/rest/v1/taskin_ai_providers?select=id,name,provider,model,base_url,key_hint,enabled,rank,daily_quota,behavior,created_at,updated_at&order=rank.asc,created_at.asc');
+      const since = new Date(Date.now() - 7 * 864e5).toISOString();
+      const usage = await request(`/rest/v1/taskin_ai_usage?select=provider_id,provider,ok,latency_ms,error,created_at&created_at=gte.${encodeURIComponent(since)}&order=created_at.desc&limit=20000`).catch(() => []);
+      const dayStart = new Date(Date.now() + 3 * 3600e3); dayStart.setUTCHours(0, 0, 0, 0);
+      const today = dayStart.getTime() - 3 * 3600e3;
+      const stats = key => {
+        const list = (usage || []).filter(u => (u.provider_id || 'env') === key);
+        const ok = list.filter(u => u.ok);
+        return { calls: list.length, ok: ok.length, errors: list.length - ok.length, today: list.filter(u => new Date(u.created_at).getTime() >= today).length,
+          avgLatency: ok.length ? Math.round(ok.reduce((n, u) => n + (u.latency_ms || 0), 0) / ok.length) : null,
+          lastError: list.find(u => !u.ok)?.error || null, lastAt: list[0]?.created_at || null };
+      };
+      return json(res, { providers: (rows || []).map(p => ({ ...p, stats: stats(p.id) })), env: { configured: !!process.env.GEMINI_API_KEY, stats: stats('env') } });
+    }
+    if (action === 'upsertAiProvider') {
+      const AI = require('./_ai-providers');
+      const provider = str(payload.provider, 20);
+      if (!['gemini', 'anthropic', 'openai'].includes(provider)) return fail(res, 400, 'Fournisseur inconnu.');
+      const name = str(payload.name, 80), model = str(payload.model, 120) || AI.DEFAULT_MODELS[provider];
+      if (!name) return fail(res, 400, 'Nom de l’API requis.');
+      const baseUrl = str(payload.baseUrl, 300);
+      if (baseUrl && !/^https:\/\/[^\s]+$/.test(baseUrl)) return fail(res, 400, 'L’URL doit commencer par https://');
+      const b = payload.behavior && typeof payload.behavior === 'object' ? payload.behavior : {};
+      const behavior = {
+        tasks: (Array.isArray(b.tasks) ? b.tasks : []).filter(t => AI.TASKS.includes(t)),
+        modules: (Array.isArray(b.modules) ? b.modules : []).filter(m => AI.MODULES.includes(m)),
+        when: AI.WHEN.includes(b.when) ? b.when : 'always',
+        note: str(b.note, 300),
+      };
+      const row = { name, provider, model, base_url: provider === 'openai' ? (baseUrl || null) : null, enabled: payload.enabled !== false,
+        rank: num(payload.rank, 0, 1000) ?? 100, daily_quota: payload.dailyQuota === '' || payload.dailyQuota === null || payload.dailyQuota === undefined ? null : num(payload.dailyQuota, 1, 100000), behavior, updated_at: now };
+      const apiKey = str(payload.apiKey, 500);
+      if (apiKey) { row.api_key = apiKey; row.key_hint = `…${apiKey.slice(-4)}`; }
+      const id = str(payload.id, 80);
+      if (id) await request(`/rest/v1/taskin_ai_providers?id=eq.${encodeURIComponent(id)}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(row) });
+      else {
+        if (!apiKey) return fail(res, 400, 'Clé API requise pour une nouvelle API.');
+        await request('/rest/v1/taskin_ai_providers', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ ...row, created_by: admin.id }) });
+      }
+      return json(res, { message: 'API IA enregistrée.' });
+    }
+    if (action === 'deleteAiProvider') {
+      const id = str(payload.id, 80);
+      if (!id) return fail(res, 400, 'API requise.');
+      await request(`/rest/v1/taskin_ai_providers?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+      return json(res, { message: 'API IA supprimée.' });
+    }
+    if (action === 'testAiProvider') {
+      const AI = require('./_ai-providers');
+      const id = str(payload.id, 80);
+      let p;
+      if (id === 'env') {
+        if (!process.env.GEMINI_API_KEY) return fail(res, 400, 'GEMINI_API_KEY absente.');
+        p = { id: null, name: 'Gemini (variable serveur)', provider: 'gemini', model: 'gemini-3.6-flash', api_key: process.env.GEMINI_API_KEY };
+      } else {
+        p = (await request(`/rest/v1/taskin_ai_providers?select=*&id=eq.${encodeURIComponent(id)}&limit=1`))?.[0];
+        if (!p) return fail(res, 404, 'API introuvable.');
+      }
+      const t0 = Date.now();
+      try {
+        const text = await AI.callProvider(p, { system: 'Réponds uniquement avec un objet JSON.', intro: 'Renvoie exactement {"ok": true}.', input: { text: '' }, maxTokens: 64 });
+        const latency = Date.now() - t0;
+        await AI.logUsage(p, { task: 'test', module: null, ok: true, latency, userId: admin.id });
+        return json(res, { message: `Réponse en ${(latency / 1000).toFixed(1)} s.`, latency, sample: String(text).slice(0, 80) });
+      } catch (e) {
+        await AI.logUsage(p, { task: 'test', module: null, ok: false, latency: Date.now() - t0, error: e.message, userId: admin.id });
+        return fail(res, 502, `Test échoué : ${e.message}`);
+      }
+    }
+    if (action === 'saveTreatmentTypes') {
+      // Liste complète et ordonnée des types de traitement : l'ordre (rang) est celui affiché dans la web app
+      // et dans l'extension (qui relit ce réglage à chaque ouverture du pop-up).
+      const seen = new Set();
+      const list = (Array.isArray(payload.list) ? payload.list : []).map(v => str(v, 100)).filter(v => v && !seen.has(v.toLowerCase()) && seen.add(v.toLowerCase())).slice(0, 200);
+      if (!list.length) return fail(res, 400, 'La liste ne peut pas être vide.');
+      const stored = await setting('treatments');
+      await saveSetting('treatments', { ...(stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {}), list }, admin.id);
+      return json(res, { message: 'Types de traitement enregistrés.', value: list });
     }
     if (action === 'importProcedureFile') {
       const name = str(payload.name, 200), mime = str(payload.mime, 120), contentBase64 = str(payload.contentBase64, 700000);

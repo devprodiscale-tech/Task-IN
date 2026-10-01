@@ -671,8 +671,8 @@ async function switchTab(view, btn, options = {}) {
       await adminSubViews[view].render();
       panel?.setAttribute('data-admin-ready', '1');
     }
-    // Exports pour le management : panneau à part, tout en bas de Supervision (non effacé par le rafraîchissement en direct).
-    if (view === 'workflow-kpi') {
+    // Exports pour le management : panneau à part, tout en bas de Statistiques (onglet « Analyse »).
+    if (view === 'stat') {
       const exportsPanel = document.getElementById('admin-exports-panel');
       exportsPanel?.classList.remove('hidden');
       if (exportsPanel && exportsPanel.dataset.adminReady !== '1') { await loadModule('29-exports.js'); await window.taskinExportsMount?.(exportsPanel); exportsPanel.setAttribute('data-admin-ready', '1'); }
@@ -786,6 +786,13 @@ async function renderRoleHome(routeSequence) {
     renderAdminOverview(activeTimers);
   }
   renderTeamLiveList(activeTimers);
+  // Admin · Équipe : vue par pôle (donuts) et fiche de chaque compte (module chargé à la demande).
+  const polesPanel = document.getElementById('team-poles-panel');
+  if (polesPanel) {
+    const showPoles = currentUser.role === 'admin' && currentView === 'team';
+    polesPanel.classList.toggle('hidden', !showPoles);
+    if (showPoles) loadModule('30-admin-team.js').then(() => window.taskinTeamPolesRender?.(activeTimers)).catch(e => console.warn('Vue par pôle indisponible :', e.message));
+  }
   // P3 : mosaïque — passe les timers actifs pour les pastilles live
   renderMosaicKpis(activeTimers);
   // FEAT 3 : objectifs lisibles par Sup aussi

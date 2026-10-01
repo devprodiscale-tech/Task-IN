@@ -21,7 +21,7 @@ async function agentSessionsLog(event) {
 
 // Plage choisie à la main (dates libres) ou raccourcis ; la veille est lue en plus pour retrouver
 // la connexion d’une session encore ouverte au début de la plage.
-const agentSessionsRange = { period: '7d', from: '', to: '' };
+const agentSessionsRange = { period: '7d', from: '', to: '', pole: 'all', sort: 'online' };
 function agentSessionsDayKey(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
 function agentSessionsParse(day) { const [y, m, d] = day.split('-').map(Number); return new Date(y, m - 1, d); }
 function agentSessionsBounds() {
@@ -216,9 +216,29 @@ function agentSessionsCsv(rows) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+// Filtre par pôle et tri : en ligne d'abord (défaut), dernière connexion récente → ancienne, ou l'inverse.
+function agentSessionsLastLogin(acc) { return acc.sessions.reduce((m, x) => x.start && x.start > m ? x.start : m, new Date(0)); }
+function agentSessionsFiltersHtml() {
+  const st = agentSessionsRange;
+  const chip = (k, l) => `<button type="button" class="${st.pole === k ? 'active' : ''}" data-sessions-pole="${k}">${l}</button>`;
+  return `<div class="sessions-filters"><div class="dr-poles">${chip('all', 'Tous')}${chip('fo', 'FO')}${chip('bo', 'BO')}${chip('reconf', 'Reconf')}${chip('staff', 'Encadrement')}</div>
+    <label class="sessions-sort">Trier <select class="form-input" data-sessions-sort>
+      <option value="online" ${st.sort === 'online' ? 'selected' : ''}>En ligne d’abord</option>
+      <option value="recent" ${st.sort === 'recent' ? 'selected' : ''}>Dernière connexion : la plus récente d’abord</option>
+      <option value="oldest" ${st.sort === 'oldest' ? 'selected' : ''}>Dernière connexion : la plus ancienne d’abord</option>
+    </select></label></div>`;
+}
 function agentSessionsTable(rows) {
-  const accounts = agentSessionsByAccount(rows).filter(acc => agentSessionsPresence(acc).length || acc.online);
-  if (!accounts.length) return '<p class="admin-workflow-empty">Aucune connexion sur la période.</p>';
+  const st = agentSessionsRange;
+  let accounts = agentSessionsByAccount(rows).filter(acc => agentSessionsPresence(acc).length || acc.online);
+  accounts = accounts.filter(acc => {
+    if (st.pole === 'all') return true;
+    const user = agentSessionsUser(acc.id);
+    return st.pole === 'staff' ? user && user.role !== 'agent' : user?.role === 'agent' && user.pole === st.pole;
+  });
+  if (st.sort === 'recent') accounts.sort((a, b) => agentSessionsLastLogin(b) - agentSessionsLastLogin(a));
+  else if (st.sort === 'oldest') accounts.sort((a, b) => agentSessionsLastLogin(a) - agentSessionsLastLogin(b));
+  if (!accounts.length) return agentSessionsFiltersHtml() + `<p class="admin-workflow-empty">${st.pole === 'all' ? 'Aucune connexion sur la période.' : 'Aucune connexion pour ce filtre sur la période.'}</p>`;
   const items = accounts.map(acc => {
     const user = agentSessionsUser(acc.id);
     const name = user ? user.name : `Compte ${String(acc.id).slice(0, 8)}`;
@@ -230,6 +250,7 @@ function agentSessionsTable(rows) {
     const presence = agentSessionsPresence(acc);
     const total = presence.reduce((sum, d) => sum + d.ms, 0);
     const presenceLabel = presence.length ? `${agentSessionsDuration(total)} · ${presence.length} jour${presence.length > 1 ? 's' : ''}${shift ? ` · shift ${agentSessionsEsc(shift.label)}` : ''}` : 'Absent sur la période';
+    const lastLogin = agentSessionsLastLogin(acc);
     const status = acc.online
       ? `<span class="sessions-status on">En ligne depuis ${agentSessionsTime(acc.last.at)}</span>`
       : `<span class="sessions-status">Hors ligne · ${agentSessionsEsc(agentSessionsDay(acc.last.at).toLowerCase())} à ${agentSessionsTime(acc.last.at)}</span>`;
@@ -238,14 +259,14 @@ function agentSessionsTable(rows) {
         <span class="sessions-avatar" style="color:${agentSessionsEsc(color)};background:${agentSessionsEsc(color)}22">${agentSessionsEsc(initials)}<i class="${acc.online ? 'on' : ''}"></i></span>
         <span class="sessions-who"><strong>${agentSessionsEsc(name)}</strong><small>${agentSessionsEsc(role + pole)}</small></span>
         ${status}
-        <span class="sessions-count">${presenceLabel}</span>
+        <span class="sessions-count">${presenceLabel}${+lastLogin ? `<small class="sessions-lastlogin">dernière connexion ${agentSessionsEsc(agentSessionsDay(lastLogin).toLowerCase())} à ${agentSessionsTime(lastLogin)}</small>` : ''}</span>
         <svg class="sessions-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
       </summary>
       <div class="sessions-detail">${agentSessionsDetail(acc, shift)}</div>
     </details>`;
   }).join('');
   const online = accounts.filter(a => a.online).length;
-  return `<div class="sessions-toolbar">
+  return `${agentSessionsFiltersHtml()}<div class="sessions-toolbar">
       <span class="sessions-summary"><b>${accounts.length}</b> compte${accounts.length > 1 ? 's' : ''} · <b class="on">${online}</b> en ligne</span>
       <input type="search" class="sessions-search" placeholder="Rechercher un compte" aria-label="Rechercher un compte" data-sessions-search>
     </div>
@@ -265,8 +286,9 @@ async function agentSessionsRenderInto(container, title) {
       <button type="button" class="admin-workflow-drill" data-sessions-refresh>Actualiser</button>
     </div>
     ${rows === null ? '' : agentSessionsRangeBar()}
-    ${content}
+    <div data-sessions-table>${content}</div>
   </section>`;
+  agentSessionsBindTable(container, rows);
   container.querySelector('[data-sessions-refresh]')?.addEventListener('click', () => agentSessionsRenderInto(container, title));
   container.querySelectorAll('[data-sessions-period]').forEach(b => b.addEventListener('click', () => {
     agentSessionsRange.period = b.dataset.sessionsPeriod;
@@ -278,12 +300,20 @@ async function agentSessionsRenderInto(container, title) {
     if (f && t) { agentSessionsRange.from = f; agentSessionsRange.to = t; agentSessionsRenderInto(container, title); }
   }));
   container.querySelector('[data-sessions-csv]')?.addEventListener('click', () => agentSessionsCsv(rows || []));
-  const search = container.querySelector('[data-sessions-search]');
+}
+// Filtres / tri / recherche : la liste se recalcule sans recharger les connexions.
+function agentSessionsBindTable(container, rows) {
+  const box = container.querySelector('[data-sessions-table]');
+  if (!box || !rows) return;
+  const rerender = () => { box.innerHTML = agentSessionsTable(rows); agentSessionsBindTable(container, rows); };
+  box.querySelectorAll('[data-sessions-pole]').forEach(b => b.addEventListener('click', () => { agentSessionsRange.pole = b.dataset.sessionsPole; rerender(); }));
+  box.querySelector('[data-sessions-sort]')?.addEventListener('change', e => { agentSessionsRange.sort = e.target.value; rerender(); });
+  const search = box.querySelector('[data-sessions-search]');
   search?.addEventListener('input', () => {
     const q = search.value.trim().toLowerCase();
     let shown = 0;
-    container.querySelectorAll('.sessions-account').forEach(item => { const match = !q || item.dataset.sessionsName.includes(q); item.hidden = !match; if (match) shown++; });
-    container.querySelector('.sessions-noresult').hidden = shown > 0;
+    box.querySelectorAll('.sessions-account').forEach(item => { const match = !q || item.dataset.sessionsName.includes(q); item.hidden = !match; if (match) shown++; });
+    box.querySelector('.sessions-noresult').hidden = shown > 0;
   });
 }
 

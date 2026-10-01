@@ -722,8 +722,23 @@ async function svLoadTimelineSessions(agents) {
   catch (_) { svTimelineSessions = { day: svTodayKey(), rows: [], loading: false }; }
   if (document.getElementById('sv-rep-timeline')) svRenderTimeline(agents);
 }
-function svRenderTimeline(agents) {
-  if (svTimelineSessions.day !== svTodayKey()) svLoadTimelineSessions(agents);
+// Filtres de l'activité du jour : pôle et agent (mémorisés pour la session).
+const svTlFilter = { pole: 'all', agent: 'all' };
+function svTimelineFiltersHtml(all) {
+  const poles = [['all', 'Tous les pôles'], ['fo', 'FO'], ['bo', 'BO'], ['reconf', 'Reconf']];
+  const pool = all.filter(a => svTlFilter.pole === 'all' || a.pole === svTlFilter.pole);
+  return `<select class="form-input" data-tl-filter="pole" aria-label="Pôle">${poles.map(([v, l]) => `<option value="${v}" ${svTlFilter.pole === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    <select class="form-input" data-tl-filter="agent" aria-label="Agent"><option value="all">Tous les agents${svTlFilter.pole === 'all' ? '' : ' du pôle'}</option>${pool.map(a => `<option value="${a.id}" ${svTlFilter.agent === a.id ? 'selected' : ''}>${escHtml(a.name)}</option>`).join('')}</select>`;
+}
+function svRenderTimeline(allAgents) {
+  const box = document.getElementById('sv-rep-timeline-filters');
+  if (svTlFilter.agent !== 'all' && !allAgents.some(a => a.id === svTlFilter.agent && (svTlFilter.pole === 'all' || a.pole === svTlFilter.pole))) svTlFilter.agent = 'all';
+  if (box) {
+    box.innerHTML = svTimelineFiltersHtml(allAgents);
+    box.querySelectorAll('[data-tl-filter]').forEach(sel => sel.onchange = () => { svTlFilter[sel.dataset.tlFilter] = sel.value; if (sel.dataset.tlFilter === 'pole') svTlFilter.agent = 'all'; svRenderTimeline(allAgents); });
+  }
+  const agents = allAgents.filter(a => (svTlFilter.pole === 'all' || a.pole === svTlFilter.pole) && (svTlFilter.agent === 'all' || a.id === svTlFilter.agent));
+  if (svTimelineSessions.day !== svTodayKey()) svLoadTimelineSessions(allAgents);
   const dayStartH = 7, dayEndH = 23;
   const dayStartMin = dayStartH * 60, totalMin = (dayEndH - dayStartH) * 60;
   const nowMin = (() => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); })();
@@ -767,7 +782,7 @@ function svRenderTimeline(agents) {
     </div>`;
   }).join('');
   const scale = `<div class="sv-tl-row sv-tl-scale"><span></span><div>${Array.from({ length: (dayEndH - dayStartH) / 2 + 1 }, (_, i) => `<span>${dayStartH + i * 2}h</span>`).join('')}</div><span>Attente flux</span></div>`;
-  el.innerHTML = scale + (rows || '<div class="sv-empty">Aucun agent.</div>');
+  el.innerHTML = scale + (rows || `<div class="sv-empty">${allAgents.length ? 'Aucun agent pour ce filtre.' : 'Aucun agent.'}</div>`);
 }
 
 // ---- GRILLE D'ÉCOUTE ----
@@ -778,20 +793,98 @@ function svPopulateReviewAgentFilters() {
   const coachFilterEl = document.getElementById('sv-coaching-agent-filter');
   if (coachFilterEl && coachFilterEl.options.length <= 1) coachFilterEl.innerHTML = opts;
 }
+// Grille d'écoute en 3 niveaux : Kanban des pôles (résumé par agent) → mosaïque des agents du pôle
+// (résumé détaillé) → détails complets d'un agent (courbe + toutes ses grilles).
+const svRvState = { level: 'poles', pole: '', agent: '' };
+const SV_RV_POLES = [['fo', 'Front Office', '#2563EB'], ['bo', 'Back Office', '#7C3AED'], ['reconf', 'Reconfirmation', '#16A34A'], ['', 'Sans pôle', '#64748B']];
+function svRvTone(pct) { return pct === null ? '' : pct >= 70 ? 'good' : pct >= 50 ? 'warn' : 'bad'; }
+function svRvAvg(list) { return list.length ? Math.round(list.reduce((s, r) => s + svReviewPct(r), 0) / list.length) : null; }
+function svRvAgentStats(a) {
+  const list = svAgentReviews(a.id); // du plus ancien au plus récent
+  const last = list[list.length - 1] || null, prev = list[list.length - 2] || null;
+  const lastPct = last ? svReviewPct(last) : null;
+  const pillars = SV_GRID.map(p => {
+    const vals = list.map(r => r.pilierResults?.[p.key]?.pct).filter(v => v !== null && v !== undefined);
+    return { key: p.key, label: p.label.replace(/^\d+\.\s*/, ''), pct: vals.length ? Math.round(vals.reduce((x, y) => x + y, 0) / vals.length) : null };
+  });
+  return { a, list, last, lastPct, avg: svRvAvg(list), delta: last && prev ? lastPct - svReviewPct(prev) : null,
+    si: list.filter(r => r.siTriggered).length, unread: list.filter(r => r.sharedWithAgent && !r.agentAckAt).length,
+    shared: list.filter(r => r.sharedWithAgent).length, pillars,
+    weakest: pillars.filter(p => p.pct !== null).sort((x, y) => x.pct - y.pct)[0] || null };
+}
+function svRvGo(pole, agent = '') {
+  svRvState.level = agent ? 'agent' : pole === null ? 'poles' : 'pole';
+  svRvState.pole = pole || ''; svRvState.agent = agent;
+  const f = document.getElementById('sv-review-agent-filter'); if (f) f.value = agent || '__all';
+  svRenderReviews();
+}
+function svRvSpark(list) {
+  if (list.length < 2) return '';
+  const w = 120, h = 30, pts = list.slice(-8).map((r, i, arr) => [4 + i / Math.max(1, arr.length - 1) * (w - 8), h - 4 - svReviewPct(r) / 100 * (h - 8)]);
+  return `<svg class="sv-rv-spark" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${pts.at(-1)[0].toFixed(1)}" cy="${pts.at(-1)[1].toFixed(1)}" r="2.6" fill="currentColor"/></svg>`;
+}
+function svRvBreadcrumb() {
+  const pole = SV_RV_POLES.find(p => p[0] === svRvState.pole);
+  const agent = svRvState.agent ? TEAM.find(t => t.id === svRvState.agent) : null;
+  if (svRvState.level === 'poles') return '';
+  return `<nav class="sv-rv-crumb" aria-label="Fil d’Ariane"><button type="button" onclick="svRvGo(null)">Tous les pôles</button>${pole ? `<span>›</span>${agent ? `<button type="button" onclick="svRvGo('${pole[0]}')">${pole[1]}</button>` : `<b>${pole[1]}</b>`}` : ''}${agent ? `<span>›</span><b>${escHtml(agent.name)}</b>` : ''}</nav>`;
+}
 function svRenderReviews() {
   svPopulateReviewAgentFilters();
-  const agentF = document.getElementById('sv-review-agent-filter').value;
-  let list = [...qualityReviews];
-  if (agentF !== '__all') list = list.filter(r => r.agentId === agentF);
-  list.sort((a, b) => (b.date || 0) - (a.date || 0));
-  document.getElementById('sv-review-count-badge').textContent = `${list.length} grille(s)`;
-
-  const chartWrap = document.getElementById('sv-review-chart-wrap');
-  if (agentF !== '__all' && list.length >= 2) {
-    chartWrap.innerHTML = svBuildScoreChart(list.slice().reverse());
-  } else { chartWrap.innerHTML = ''; }
-
+  const filter = document.getElementById('sv-review-agent-filter');
+  const agentF = filter.value;
+  // Le sélecteur d'agent mène directement au niveau « détails ».
+  if (agentF !== '__all' && agentF !== svRvState.agent) { svRvState.agent = agentF; svRvState.pole = TEAM.find(t => t.id === agentF)?.pole || ''; svRvState.level = 'agent'; }
+  if (agentF === '__all' && svRvState.level === 'agent') { svRvState.agent = ''; svRvState.level = 'pole'; }
   const container = document.getElementById('sv-reviews-list');
+  const chartWrap = document.getElementById('sv-review-chart-wrap');
+  chartWrap.innerHTML = '';
+  if (svRvState.level === 'agent' && svRvState.agent) { svRenderReviewDetails(svRvState.agent, container, chartWrap); return; }
+  const agents = agentsOnly();
+  const stats = agents.map(svRvAgentStats);
+  document.getElementById('sv-review-count-badge').textContent = `${qualityReviews.length} grille(s)`;
+  if (svRvState.level !== 'pole') {
+    // Niveau 1 : Kanban des pôles
+    const cols = SV_RV_POLES.filter(([k]) => k || stats.some(x => !x.a.pole)).map(([key, label, color]) => {
+      const inPole = stats.filter(x => (x.a.pole || '') === key);
+      const reviews = inPole.flatMap(x => x.list);
+      const avg = svRvAvg(reviews);
+      const evaluated = inPole.filter(x => x.list.length).length;
+      const unread = inPole.reduce((n, x) => n + x.unread, 0);
+      const rows = inPole.slice().sort((x, y) => (y.lastPct ?? -1) - (x.lastPct ?? -1)).map(x => `<button type="button" class="sv-rv-mini" onclick="svRvGo('${key}','${x.a.id}')">
+          <span class="mini-avatar" style="background:${safeColor(x.a.color)}20;color:${safeColor(x.a.color)}">${escHtml(x.a.initials || '??')}</span>
+          <span class="sv-rv-mini-name">${escHtml(x.a.name)}<small>${x.list.length ? `${x.list.length} grille${x.list.length > 1 ? 's' : ''}${x.last?.date ? ' · ' + new Date(x.last.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : ''}` : 'jamais évalué'}</small></span>
+          <b class="sv-rv-score ${svRvTone(x.lastPct)}">${x.lastPct === null ? '—' : x.lastPct + '%'}</b></button>`).join('') || '<p class="sv-rv-empty">Aucun agent dans ce pôle.</p>';
+      return `<section class="sv-rv-col" style="--c:${color}">
+        <header class="sv-rv-col-head"><div><span class="sv-rv-col-tag">${key ? escHtml(key.toUpperCase()) : '—'}</span><h3>${label}</h3></div>
+          <button type="button" class="dr-edit-btn" onclick="svRvGo('${key}')">Ouvrir →</button></header>
+        <div class="sv-rv-col-kpis"><div><b class="sv-rv-score ${svRvTone(avg)}">${avg === null ? '—' : avg + '%'}</b><span>score moyen</span></div><div><b>${reviews.length}</b><span>grilles</span></div><div><b>${evaluated}/${inPole.length}</b><span>agents évalués</span></div><div><b class="${unread ? 'sv-rv-warn' : ''}">${unread}</b><span>retours non lus</span></div></div>
+        <div class="sv-rv-col-list">${rows}</div>
+      </section>`;
+    }).join('');
+    container.innerHTML = `<div class="sv-rv-kanban">${cols}</div>`;
+    if (!qualityReviews.length) container.insertAdjacentHTML('afterbegin', svEmptyState('headset', 'Aucune grille d’écoute', 'Évalue un appel ou un échange avec « + Nouvelle grille ».', '#0EA5E9'));
+    return;
+  }
+  // Niveau 2 : mosaïque des agents du pôle
+  const pole = SV_RV_POLES.find(p => p[0] === svRvState.pole) || SV_RV_POLES[3];
+  const inPole = stats.filter(x => (x.a.pole || '') === svRvState.pole).sort((x, y) => (y.avg ?? -1) - (x.avg ?? -1));
+  container.innerHTML = svRvBreadcrumb() + `<div class="sv-rv-mosaic" style="--c:${pole[2]}">${inPole.map(x => `<button type="button" class="sv-rv-tile" onclick="svRvGo('${svRvState.pole}','${x.a.id}')">
+      <div class="sv-rv-tile-head"><span class="mini-avatar" style="background:${safeColor(x.a.color)}20;color:${safeColor(x.a.color)}">${escHtml(x.a.initials || '??')}</span>
+        <span class="sv-rv-tile-name">${escHtml(x.a.name)}<small>${x.list.length} grille${x.list.length > 1 ? 's' : ''}${x.last?.date ? ' · dernière le ' + new Date(x.last.date).toLocaleDateString('fr-FR') : ''}</small></span>
+        <b class="sv-rv-score big ${svRvTone(x.lastPct)}">${x.lastPct === null ? '—' : x.lastPct + '%'}</b></div>
+      ${x.list.length ? `<div class="sv-rv-tile-row"><span>Moyenne <b>${x.avg}%</b></span>${x.delta !== null ? `<span class="${x.delta >= 0 ? 'dr-up' : 'dr-down'}">${x.delta >= 0 ? '▲' : '▼'} ${Math.abs(x.delta)} pts</span>` : ''}<span class="sv-rv-spark-wrap ${svRvTone(x.lastPct)}">${svRvSpark(x.list)}</span></div>
+      <div class="sv-rv-pillars">${x.pillars.map(p => `<div title="${escHtml(p.label)} : ${p.pct === null ? 'non mesuré' : p.pct + '%'}"><span>${escHtml(p.label)}</span><i><u class="${svRvTone(p.pct)}" style="width:${p.pct ?? 0}%"></u></i><b>${p.pct === null ? '—' : p.pct + '%'}</b></div>`).join('')}</div>
+      <div class="sv-rv-tile-foot">${x.weakest ? `<span>À travailler : <b>${escHtml(x.weakest.label)}</b></span>` : ''}${x.si ? `<span class="sv-rv-warn">🚫 ${x.si} SI</span>` : ''}<span>${x.shared} partagée${x.shared > 1 ? 's' : ''}${x.unread ? ` · <b class="sv-rv-warn">${x.unread} non lue${x.unread > 1 ? 's' : ''}</b>` : ''}</span></div>`
+      : '<p class="sv-rv-empty">Pas encore de grille d’écoute pour cet agent.</p>'}
+      <span class="sv-rv-tile-cta">Voir le détail →</span>
+    </button>`).join('') || '<p class="sv-rv-empty">Aucun agent dans ce pôle.</p>'}</div>`;
+}
+// Niveau 3 : détails complets d'un agent.
+function svRenderReviewDetails(agentId, container, chartWrap) {
+  const list = qualityReviews.filter(r => r.agentId === agentId).sort((a, b) => (b.date || 0) - (a.date || 0));
+  document.getElementById('sv-review-count-badge').textContent = `${list.length} grille(s)`;
+  chartWrap.innerHTML = svRvBreadcrumb() + (list.length >= 2 ? svBuildScoreChart(list.slice().reverse()) : '');
   if (!list.length) { container.innerHTML = svEmptyState('headset', 'Aucune grille d’écoute', 'Évalue un appel ou un échange avec « + Nouvelle grille ».', '#0EA5E9'); return; }
   container.innerHTML = list.map(r => {
     const pct = svReviewPct(r);
@@ -1093,6 +1186,9 @@ async function svRenderOneOnOnePrep() {
     const notes = svOpenNotes(a.id), review = svLatestReview(a.id), coaching = svLatestCoaching(a.id);
     return { a, notes, review, coaching };
   }).sort((x, y) => y.notes.length - x.notes.length || x.a.name.localeCompare(y.a.name, 'fr'));
+  const pending = rows.reduce((n, r) => n + r.notes.length, 0), concerned = rows.filter(r => r.notes.length).length;
+  const meta = document.getElementById('sv-acc-coaching-meta');
+  if (meta) meta.innerHTML = pending ? `<b>${pending}</b> note${pending > 1 ? 's' : ''} en attente · ${concerned} agent${concerned > 1 ? 's' : ''}` : 'Aucune note en attente';
   el.innerHTML = `<div class="dr-table-wrap"><table class="dr-table cn-prep">
     <thead><tr><th>Agent</th><th>Notes en attente</th><th>Dernière écoute</th><th>Dernier 1:1</th><th></th></tr></thead>
     <tbody>${rows.map(({ a, notes, review, coaching }) => `<tr>
