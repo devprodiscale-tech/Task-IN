@@ -875,7 +875,46 @@ function drPaintGoals() {
       <span class="dr-goal-count"><b class="dr-up">${reached}</b> atteint${reached > 1 ? 's' : ''} · <b class="${below ? 'dr-down' : ''}">${below}</b> sous la tendance</span>
     </div>
     ${body}
+    ${me ? '<div id="dr-my-reviews" class="dr-my-reviews"></div>' : ''}
   </section>`;
+  if (me) drRenderMyReviews();
+}
+
+// ---------- Mes écoutes (agent) : grilles partagées par l’évaluateur + son retour ----------
+const DR_PILLARS = { accueillir: 'Accueillir', comprendre: 'Comprendre', construire: 'Construire', accompagner: 'Accompagner', cloturer: 'Clôturer' };
+const DR_CHANNELS = { inbound: 'Appel entrant', outbound: 'Appel sortant', chat: 'Chat', email: 'E-mail', ticket: 'Ticket' };
+async function drRenderMyReviews(force = false) {
+  const el = drEl('dr-my-reviews');
+  if (!el || currentUser?.role !== 'agent') return;
+  if (!drState.myReviews || force) {
+    try {
+      drState.myReviews = await dispatchRest(`coaching_reviews?select=id,channel,created_at,data&agent_id=eq.${currentUser.id}&order=created_at.desc&limit=20`);
+    } catch (e) { el.innerHTML = `<p class="dr-muted">Écoutes indisponibles : ${escHtml(e.message)}</p>`; return; }
+  }
+  const list = drState.myReviews.filter(r => r.data?.sharedWithAgent);
+  const fresh = list.filter(r => !r.data?.agentAckAt).length;
+  el.innerHTML = `<div class="dr-mr-head"><h3>Mes écoutes</h3>${fresh ? `<span class="dr-status is-warn">${fresh} nouvelle${fresh > 1 ? 's' : ''}</span>` : ''}<small>Les grilles d’écoute que ton superviseur a partagées avec toi.</small></div>
+    ${list.length ? `<div class="dr-mr-list">${list.map(r => {
+      const d = r.data || {}, pct = Math.round(Number(d.totalScorePct ?? 0));
+      const tone = d.siTriggered ? 'is-bad' : pct >= 70 ? 'is-good' : pct >= 50 ? 'is-warn' : 'is-bad';
+      const pillars = Object.entries(d.pilierResults || {}).filter(([, v]) => v && v.pct !== null && v.pct !== undefined);
+      return `<article class="dr-mr-card ${d.agentAckAt ? '' : 'is-new'}">
+        <div class="dr-mr-top"><span>${escHtml(DR_CHANNELS[r.channel] || 'Échange')} · ${new Date(d.date || r.created_at).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' })}${d.contactReason ? ' · ' + escHtml(d.contactReason) : ''}</span><b class="dr-mr-score ${tone}">${pct} %</b></div>
+        ${d.siTriggered ? '<p class="dr-mr-si">Situation inacceptable relevée : score ramené à 0 %.</p>' : ''}
+        ${pillars.length ? `<div class="dr-mr-pillars">${pillars.map(([k, v]) => `<span>${escHtml(DR_PILLARS[k] || k)} <b>${Math.round(v.pct)} %</b></span>`).join('')}</div>` : ''}
+        ${d.agentFeedback ? `<p class="dr-mr-fb"><b>Retour de ton superviseur :</b> ${escHtml(d.agentFeedback)}</p>` : ''}
+        <div class="dr-mr-foot">${d.agentAckAt ? `<small>✓ Lu le ${new Date(d.agentAckAt).toLocaleDateString('fr-FR')}</small>` : `<button type="button" class="btn btn-primary" onclick="drAckReview('${r.id}', this)">J’ai pris connaissance</button>`}</div>
+      </article>`;
+    }).join('')}</div>` : '<p class="dr-muted">Aucune écoute partagée pour le moment.</p>'}`;
+}
+async function drAckReview(id, btn) {
+  btn.disabled = true;
+  try {
+    const rows = await dispatchRest('rpc/taskin_review_ack', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ p_id: id }) });
+    const r = drState.myReviews.find(x => x.id === id);
+    if (r) r.data = { ...(r.data || {}), agentAckAt: rows?.[0]?.data?.agentAckAt || Date.now() };
+    drRenderMyReviews();
+  } catch (e) { btn.disabled = false; alert('Confirmation impossible : ' + e.message); }
 }
 
 function drMyGoalHtml(g) {

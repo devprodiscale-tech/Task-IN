@@ -159,6 +159,7 @@ async function svLoadSupervisionData() {
   // la lire deux fois affichait chaque cas en double. Une seule lecture.
   const [cases, rev, coach] = await Promise.all([
     svFetchCollection('escalations'), svFetchCollection('qualityReviews'), svFetchCollection('coachingSheets'),
+    currentUser && currentUser.role !== 'agent' ? svLoadNotes(true) : null,
     typeof loadActiveTimers === 'function' ? loadActiveTimers() : null,
   ]);
   escalations = cases.map(e => svNormalizeEscalation(e, 'escalations'));
@@ -638,6 +639,7 @@ function svRenderReporting() {
     </div>`;
   }).join('') : svEmptyState('headset', 'Pas encore de grille d’écoute', 'L’écart à la moyenne apparaîtra dès les premières évaluations.', '#0EA5E9');
 
+  svRenderOneOnOnePrep();
   svRenderTimeline(agents);
 }
 function svRenderTimeline(agents) {
@@ -721,6 +723,8 @@ function svRenderReviews() {
       <div class="sv-score-bar" style="margin-bottom:8px"><div class="sv-score-fill" style="width:${pct}%;background:${pct>=70?'var(--green)':pct>=50?'var(--amber)':'var(--red)'}"></div></div>
       ${r.contactReason ? `<div style="font-size:12.5px;color:var(--text2)"><strong>Motif :</strong> ${docEsc(r.contactReason)}</div>` : ''}
       ${r.pilierResults ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${SV_GRID.map(p => { const pr = r.pilierResults[p.key]; return pr && pr.pct !== null ? `<span class="count-badge" style="margin-left:0">${p.label.replace(/^\d+\.\s*/,'')} ${pr.pct}%</span>` : ''; }).join('')}</div>` : ''}
+      ${r.agentFeedback ? `<div class="sv-review-fb"><b>Retour à l’agent :</b> ${docEsc(r.agentFeedback)}</div>` : ''}
+      <div class="sv-review-share-state">${r.sharedWithAgent ? (r.agentAckAt ? `✓ Partagée · lue par l’agent le ${new Date(r.agentAckAt).toLocaleDateString('fr-FR')}` : '↗ Partagée avec l’agent · pas encore lue') : 'Non partagée avec l’agent'}${(coachingNotes || []).some(n => n.ref_id === r.id) ? ' · 📝 note 1:1' : ''}</div>
     </div>`;
   }).join('');
 }
@@ -752,6 +756,9 @@ function svOpenReviewModal() {
   document.getElementById('sv-review-contactdate').value = new Date().toISOString().slice(0, 10);
   document.getElementById('sv-review-contactid').value = '';
   document.getElementById('sv-review-reason').value = '';
+  document.getElementById('sv-review-feedback').value = '';
+  document.getElementById('sv-review-share').checked = true;
+  document.getElementById('sv-review-private').value = '';
   document.getElementById('sv-review-error').textContent = '';
   svGridValues = {};
   document.getElementById('sv-review-grid').innerHTML = SV_GRID.map(pilier => `
@@ -802,11 +809,15 @@ async function svSaveReview() {
     totalScorePct: result.totalPct,
     rawScorePct: result.rawPct,
     siTriggered: result.siTriggered,
+    agentFeedback: document.getElementById('sv-review-feedback').value.trim(),
+    sharedWithAgent: document.getElementById('sv-review-share').checked,
     createdAt: Date.now(),
   };
+  const privateNote = document.getElementById('sv-review-private').value.trim();
   try {
     const id = await svCreateDoc('qualityReviews', obj);
     qualityReviews.push({ id, ...obj });
+    if (privateNote) await svAddNote(agentId, 'review', privateNote, id).catch(e => console.warn('Note 1:1 non enregistrée :', e.message));
     svCloseReviewModal();
     svRenderReviews();
   } catch (e) { document.getElementById('sv-review-error').textContent = 'Erreur : ' + e.message; }
@@ -850,6 +861,9 @@ function svOpenCoachingModal(id, prefillAgentId) {
   document.getElementById('sv-coaching-delete-btn').style.display = c ? 'inline-flex' : 'none';
   svCoachingObjectifs = c?.objectifs ? JSON.parse(JSON.stringify(c.objectifs)) : [];
   svRenderObjectifRows();
+  const agentSel = document.getElementById('sv-coaching-agent');
+  agentSel.onchange = () => svRenderCoachingPending(agentSel.value);
+  svRenderCoachingPending(agentSel.value);
   document.getElementById('sv-coaching-overlay').classList.remove('hidden');
 }
 function svRenderObjectifRows() {
@@ -888,8 +902,13 @@ async function svSaveCoaching() {
     } else {
       const id = await svCreateDoc('coachingSheets', obj);
       coachingSheets.push({ id, ...obj });
+      svEditingCoachingId = id;
     }
+    const covered = [...document.querySelectorAll('#sv-coaching-pending input[data-note]:checked')].map(i => i.dataset.note);
+    await Promise.all(covered.map(id => svSetNoteStatus(id, 'done', svEditingCoachingId).catch(e => console.warn('Note non clôturée :', e.message))));
     svCloseCoachingModal();
+    if (typeof pilPaint === 'function' && document.getElementById('pilotage-panel') && !document.getElementById('pilotage-panel').classList.contains('hidden')) pilPaint();
+    if (document.getElementById('sv-rep-coaching')) svRenderOneOnOnePrep();
     svRenderCoaching();
   } catch (e) { document.getElementById('sv-coaching-error').textContent = 'Erreur : ' + e.message; }
 }
@@ -900,4 +919,106 @@ async function svDeleteCoaching() {
   coachingSheets = coachingSheets.filter(x => x.id !== svEditingCoachingId);
   svCloseCoachingModal();
   svRenderCoaching();
+}
+
+
+// ---- NOTES DE COACHING (privées, préparation des 1:1) ----
+// Prises sur une écoute, la fiche 360° ou le reporting ; jamais visibles par l’agent (table coaching_notes).
+let coachingNotes = null;
+const SV_NOTE_SOURCE = { review: 'Écoute', pilotage: 'Fiche 360°', reporting: 'Reporting', other: 'Note' };
+async function svLoadNotes(force = false) {
+  if (coachingNotes && !force) return coachingNotes;
+  try { coachingNotes = await dispatchRest('coaching_notes?select=*&order=created_at.desc&limit=2000'); }
+  catch (e) { console.warn('Notes de coaching indisponibles :', e.message); coachingNotes = []; }
+  return coachingNotes;
+}
+function svOpenNotes(agentId) { return (coachingNotes || []).filter(n => n.agent_id === agentId && n.status === 'open'); }
+async function svAddNote(agentId, source, body, refId = null) {
+  const [row] = await dispatchRest('coaching_notes', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ agent_id: agentId, source, body, ref_id: refId }) });
+  coachingNotes = [row, ...(coachingNotes || [])];
+  return row;
+}
+async function svSetNoteStatus(id, status, sheetId = null) {
+  await dispatchRest(`coaching_notes?id=eq.${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ status, sheet_id: sheetId, updated_at: new Date().toISOString() }) });
+  const n = (coachingNotes || []).find(x => x.id === id);
+  if (n) Object.assign(n, { status, sheet_id: sheetId });
+}
+async function svDeleteNote(id) {
+  await dispatchRest(`coaching_notes?id=eq.${id}`, { method: 'DELETE' });
+  coachingNotes = (coachingNotes || []).filter(x => x.id !== id);
+}
+function svNoteMeta(n) { return `${SV_NOTE_SOURCE[n.source] || 'Note'} · ${new Date(n.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} · ${escHtml(svAgentName(n.author_id))}`; }
+
+// Bloc réutilisable : ajouter / traiter les notes d’un agent, puis préparer le 1:1.
+async function svRenderNotesBox(target, agentId, source) {
+  const el = typeof target === 'string' ? document.getElementById(target) : target;
+  if (!el || !agentId) return;
+  if (!coachingNotes) { el.innerHTML = '<p class="dr-muted">Chargement des notes…</p>'; await svLoadNotes(); }
+  const notes = svOpenNotes(agentId);
+  el.innerHTML = `<div class="cn-box">
+    <div class="cn-head"><b>Notes pour le prochain 1:1</b><small>privées · jamais visibles par l’agent</small></div>
+    <div class="cn-add"><textarea class="form-input" rows="2" maxlength="4000" placeholder="Ce que tu veux aborder au prochain point avec l’agent…"></textarea><button type="button" class="btn btn-primary">Ajouter</button></div>
+    ${notes.length ? `<ul class="cn-list">${notes.map(n => `<li><small>${svNoteMeta(n)}</small><p>${escHtml(n.body)}</p><span class="cn-actions"><button type="button" class="dr-edit-btn" data-done="${n.id}">✓ Abordée</button><button type="button" class="dr-edit-btn" data-del="${n.id}">Supprimer</button></span></li>`).join('')}</ul>` : '<p class="dr-muted cn-empty">Aucune note en attente pour cet agent.</p>'}
+    <button type="button" class="btn btn-ghost cn-prepare">Préparer le 1:1 (${notes.length} note${notes.length > 1 ? 's' : ''}) →</button>
+  </div>`;
+  const rerender = () => svRenderNotesBox(el, agentId, source);
+  const area = el.querySelector('.cn-add textarea');
+  el.querySelector('.cn-add button').onclick = async () => {
+    const body = area.value.trim();
+    if (!body) { area.focus(); return; }
+    try { await svAddNote(agentId, source, body); rerender(); } catch (e) { alert('Note non enregistrée : ' + e.message); }
+  };
+  el.querySelectorAll('[data-done]').forEach(b => b.onclick = async () => { try { await svSetNoteStatus(b.dataset.done, 'done'); rerender(); } catch (e) { alert(e.message); } });
+  el.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { if (!confirm('Supprimer cette note ?')) return; try { await svDeleteNote(b.dataset.del); rerender(); } catch (e) { alert(e.message); } });
+  el.querySelector('.cn-prepare').onclick = () => svOpenCoachingModal(null, agentId);
+}
+
+// Dans la fiche 1:1 : les notes en attente + le dernier retour d’écoute, cochées par défaut.
+async function svRenderCoachingPending(agentId) {
+  const el = document.getElementById('sv-coaching-pending');
+  if (!el) return;
+  if (!agentId) { el.innerHTML = ''; return; }
+  await svLoadNotes();
+  const notes = svOpenNotes(agentId);
+  const review = svLatestReview(agentId);
+  if (!notes.length && !review) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="cn-pending">
+    <div class="cn-head"><b>À aborder pendant ce 1:1</b><small>les notes cochées seront marquées « abordées » à l’enregistrement</small></div>
+    ${review ? `<p class="cn-review">Dernière écoute : <b>${svReviewPct(review)} %</b> le ${review.date ? new Date(review.date).toLocaleDateString('fr-FR') : '—'}${review.agentFeedback ? ` · retour donné : « ${docEsc(review.agentFeedback)} »` : ''}</p>` : ''}
+    ${notes.map(n => `<label class="cn-check"><input type="checkbox" data-note="${n.id}" checked><span><small>${svNoteMeta(n)}</small>${escHtml(n.body)}</span></label>`).join('')}
+    ${notes.length ? '<button type="button" class="dr-edit-btn" id="sv-coaching-insert">Insérer les notes cochées dans l’entretien</button>' : ''}
+  </div>`;
+  document.getElementById('sv-coaching-insert')?.addEventListener('click', () => {
+    const ta = document.getElementById('sv-coaching-notes');
+    const lines = [...el.querySelectorAll('input[data-note]:checked')].map(i => '• ' + (coachingNotes.find(n => n.id === i.dataset.note)?.body || ''));
+    ta.value = (ta.value ? ta.value.replace(/\s*$/, '\n') : '') + lines.join('\n');
+  });
+}
+
+// Reporting superviseur : un tableau par agent pour préparer les 1:1.
+async function svRenderOneOnOnePrep() {
+  const el = document.getElementById('sv-rep-coaching');
+  if (!el) return;
+  await svLoadNotes();
+  const agents = agentsOnly();
+  if (!agents.length) { el.innerHTML = '<div class="sv-empty">Aucun agent.</div>'; return; }
+  const rows = agents.map(a => {
+    const notes = svOpenNotes(a.id), review = svLatestReview(a.id), coaching = svLatestCoaching(a.id);
+    return { a, notes, review, coaching };
+  }).sort((x, y) => y.notes.length - x.notes.length || x.a.name.localeCompare(y.a.name, 'fr'));
+  el.innerHTML = `<div class="dr-table-wrap"><table class="dr-table cn-prep">
+    <thead><tr><th>Agent</th><th>Notes en attente</th><th>Dernière écoute</th><th>Dernier 1:1</th><th></th></tr></thead>
+    <tbody>${rows.map(({ a, notes, review, coaching }) => `<tr>
+      <td><strong>${escHtml(a.name)}</strong></td>
+      <td>${notes.length ? `<b>${notes.length}</b> <small class="dr-muted">${escHtml(notes[0].body.slice(0, 60))}${notes[0].body.length > 60 ? '…' : ''}</small>` : '<span class="dr-muted">—</span>'}</td>
+      <td>${review ? `${svReviewPct(review)} % <small class="dr-muted">${review.date ? new Date(review.date).toLocaleDateString('fr-FR') : ''}</small>` : '<span class="dr-muted">aucune</span>'}</td>
+      <td>${coaching?.date ? new Date(coaching.date).toLocaleDateString('fr-FR') : '<span class="dr-muted">aucun</span>'}</td>
+      <td class="dr-row-action"><button type="button" class="dr-edit-btn" data-cn-toggle="${a.id}">Notes</button> <button type="button" class="dr-edit-btn" data-cn-prep="${a.id}">Préparer le 1:1</button></td>
+    </tr><tr class="cn-row hidden" data-cn-row="${a.id}"><td colspan="5"><div data-cn-box="${a.id}"></div></td></tr>`).join('')}</tbody></table></div>`;
+  el.querySelectorAll('[data-cn-toggle]').forEach(b => b.onclick = () => {
+    const row = el.querySelector(`[data-cn-row="${b.dataset.cnToggle}"]`);
+    row.classList.toggle('hidden');
+    if (!row.classList.contains('hidden')) svRenderNotesBox(el.querySelector(`[data-cn-box="${b.dataset.cnToggle}"]`), b.dataset.cnToggle, 'reporting');
+  });
+  el.querySelectorAll('[data-cn-prep]').forEach(b => b.onclick = () => svOpenCoachingModal(null, b.dataset.cnPrep));
 }

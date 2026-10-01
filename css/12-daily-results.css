@@ -380,3 +380,45 @@ body:not(.admin-shell-active) #pilotage-panel .dr-shell{margin:0}
 .pil-view-form{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
 .pil-view-form .form-input{width:230px;max-width:100%;padding:5px 9px;font-size:12px}
 .pil-view-form label{display:inline-flex;align-items:center;gap:4px;color:var(--text2)}
+
+/* Notes de coaching (privées) */
+.cn-box,.cn-pending{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:12px 14px}
+.cn-pending{margin:4px 0 12px;background:var(--surface2)}
+.cn-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:8px}
+.cn-head small{color:var(--text2);font-size:11.5px}
+.cn-add{display:flex;gap:8px;align-items:flex-start}
+.cn-add textarea{flex:1;resize:vertical;min-height:44px}
+.cn-list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.cn-list li{border-left:3px solid var(--bloom);background:var(--surface2);border-radius:8px;padding:8px 10px}
+.cn-list li small,.cn-check small{display:block;color:var(--text2);font-size:11px;margin-bottom:2px}
+.cn-list li p{margin:0 0 6px;white-space:pre-wrap;font-size:13px}
+.cn-actions{display:flex;gap:6px}
+.cn-empty{margin:10px 0 0}
+.cn-prepare{margin-top:10px}
+.cn-check{display:flex;gap:8px;align-items:flex-start;padding:6px 0;font-size:13px;border-top:1px dashed var(--border)}
+.cn-check input{margin-top:3px}
+.cn-review{margin:0 0 6px;font-size:12.5px;color:var(--text2)}
+.cn-row td{background:var(--surface2)}
+.sv-review-feedback{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.sv-review-feedback small{font-weight:400;color:var(--text2)}
+.sv-share-toggle{display:flex;align-items:center;gap:6px;font-size:12.5px;margin:-2px 0 10px}
+.sv-review-fb{margin-top:8px;font-size:12.5px;color:var(--text);background:var(--surface2);border-radius:8px;padding:7px 10px}
+.sv-review-share-state{margin-top:6px;font-size:11.5px;color:var(--text2)}
+/* Mes écoutes (agent) */
+.dr-my-reviews{padding:20px 24px 22px;border-top:1px solid var(--border)}
+.dr-mr-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:10px}
+.dr-mr-head h3{margin:0;font-size:15px}
+.dr-mr-head small{flex-basis:100%;color:var(--text2);font-size:12px}
+.dr-mr-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
+.dr-mr-card{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--surface)}
+.dr-mr-card.is-new{border-color:var(--ocean);box-shadow:0 0 0 3px var(--ocean-dim)}
+.dr-mr-top{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text2)}
+.dr-mr-score{font-size:20px;font-family:var(--display);white-space:nowrap}
+.dr-mr-score.is-good{color:var(--green)}.dr-mr-score.is-warn{color:var(--amber)}.dr-mr-score.is-bad{color:var(--red)}
+.dr-mr-si{margin:6px 0 0;color:var(--red);font-size:12.5px;font-weight:700}
+.dr-mr-pillars{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.dr-mr-pillars span{font-size:11.5px;background:var(--surface2);border-radius:999px;padding:3px 9px}
+.dr-mr-fb{margin:10px 0 0;font-size:13px;white-space:pre-wrap}
+.dr-mr-foot{margin-top:10px;display:flex;justify-content:flex-end}
+.dr-mr-foot small{color:var(--green);font-weight:700}
+@media (max-width:640px){.cn-add{flex-direction:column}.cn-add button{align-self:flex-end}.dr-mr-list{grid-template-columns:1fr}}

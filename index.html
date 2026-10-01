@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="css/09-supervisor.css?v=20260930c">
 <link rel="stylesheet" href="css/10-interfaces.css?v=20260930purge2">
 <link rel="stylesheet" href="css/11-form-controls.css?v=20260930a">
-<link rel="stylesheet" href="css/12-daily-results.css?v=20261002b">
+<link rel="stylesheet" href="css/12-daily-results.css?v=20261002c">
 </head>
 <body>
 
@@ -828,6 +828,11 @@
           <div id="sv-rep-deviation"></div>
         </div>
 
+        <div class="sv-card" style="cursor:default;margin-bottom:14px">
+          <div class="sv-card-title" style="margin-bottom:4px">Préparation des 1:1 <span style="font-weight:400;font-size:11.5px;color:var(--text2)">notes privées, dernière écoute, dernier point</span></div>
+          <div id="sv-rep-coaching"></div>
+        </div>
+
         <div class="sv-card" style="cursor:default">
           <div class="sv-card-title" style="margin-bottom:10px">Activité de la journée <span style="font-weight:400;font-size:11.5px;color:var(--text2)">(8h–18h)</span></div>
           <div id="sv-rep-timeline"></div>
@@ -970,6 +975,12 @@
 
       <div id="sv-review-grid"></div>
 
+      <div class="sv-review-feedback">
+        <div class="form-row"><label class="form-label" for="sv-review-feedback">Retour pour l’agent <small>(visible par l’agent si la grille est partagée)</small></label><textarea class="form-input" id="sv-review-feedback" rows="3" placeholder="Points forts, axes d’amélioration, exemple concret à retenir…"></textarea></div>
+        <label class="sv-share-toggle"><input type="checkbox" id="sv-review-share" checked> Partager la grille et ce retour avec l’agent</label>
+        <div class="form-row"><label class="form-label" for="sv-review-private">Note privée pour le prochain 1:1 <small>(jamais visible par l’agent)</small></label><textarea class="form-input" id="sv-review-private" rows="2" placeholder="Ce que tu veux aborder en coaching…"></textarea></div>
+      </div>
+
       <div class="form-row" id="sv-review-error" style="color:var(--red);font-size:12px;margin-top:10px"></div>
     </div>
     <div class="modal-footer">
@@ -996,6 +1007,7 @@
         <div id="sv-coaching-objectifs-list"></div>
         <button class="btn btn-ghost" onclick="svAddObjectifRow()" style="margin-top:6px">+ Ajouter un objectif</button>
       </div>
+      <div id="sv-coaching-pending"></div>
       <div class="form-row"><label class="form-label">Notes de l'entretien</label><textarea class="form-input" id="sv-coaching-notes" rows="4"></textarea></div>
       <div class="form-row"><label class="form-label">Prochain point (optionnel)</label><input class="form-input" type="date" id="sv-coaching-next"></div>
       <div class="form-row" id="sv-coaching-error" style="color:var(--red);font-size:12px"></div>
@@ -1337,7 +1349,7 @@
 
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260930blocb" defer></script>
-<script src="js/00-core-init.js?v=20261002b" defer></script>
+<script src="js/00-core-init.js?v=20261002c" defer></script>
 <script src="js/01-core-auth-network.js?v=20261001f" defer></script>
 <script src="js/02-time-data.js?v=20260930sup" defer></script>
 <script src="js/03-dashboard-render.js?v=20261002b" defer></script>

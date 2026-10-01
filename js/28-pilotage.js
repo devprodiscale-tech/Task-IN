@@ -298,6 +298,7 @@ function pilPaint() {
     ${pilState.custom && !pilState.agent ? pilCustomHtml(sel) : ''}
     ${body}
   </section>`;
+  if (c && pilState.agent && typeof svRenderNotesBox === 'function') svRenderNotesBox('pil-notes', pilState.agent, 'pilotage');
   if (c && !pilState.agent && typeof taskinHeatmapRender === 'function') {
     const hmPeriod = { '7d': '7d', '28d': '28d', month: 'month', 'prev-month': 'prev-month', custom: 'custom' }[pilState.period];
     hmState.pilotage = { ...(hmState.pilotage || { agent: 'all', source: 'all', measure: 'count' }), period: hmPeriod, from: pilState.from, to: pilState.to, pole: pilState.pole };
@@ -380,6 +381,7 @@ function pilAgentHtml(c, agentId) {
   return `<div class="pil-section"><div class="pil-agent-head"><span class="dr-avatar" style="--c:${safeColor(row.agent.color)}">${escHtml(row.agent.initials || '??')}</span><div><strong>${escHtml(row.agent.name)}</strong><small>${escHtml(poleLabel(row.agent.pole) || 'Pôle non défini')}${row.agent.shift ? ' · shift ' + escHtml(row.agent.shift) : ''}</small></div>
       <div class="pil-agent-links"><button type="button" class="dr-edit-btn" onclick="switchTab('results')">Résultats</button><button type="button" class="dr-edit-btn" onclick="switchTab('missed')">Appels manqués</button></div></div>
     ${fams}</div>
+    <div class="pil-section"><h3>Coaching</h3><div id="pil-notes"></div></div>
     <div class="pil-section"><h3>Jour par jour</h3>${daily ? `<div class="dr-table-wrap"><table class="dr-table"><thead><tr><th>Jour</th><th>Traitements</th><th>Actions OSC</th><th>Appels OSC</th><th>Objectif</th><th>Appels manqués</th><th>Connecté</th></tr></thead><tbody>${daily}</tbody></table></div>` : '<p class="dr-muted">Aucune activité sur la période.</p>'}</div>
     <div class="pil-section"><h3>Cas complexes ouverts <small>${openCases.length}</small></h3>${openCases.length ? `<ul class="pil-list">${openCases.map(x => `<li><b>${escHtml(x.data?.title || 'Sans titre')}</b> <small>${escHtml(x.status)}${x.data?.difficulty ? ' · ' + escHtml((typeof SV_DIFFICULTY_LABEL !== 'undefined' && SV_DIFFICULTY_LABEL[x.data.difficulty]) || x.data.difficulty) : ''}</small></li>`).join('')}</ul>` : '<p class="dr-muted">Aucun cas ouvert.</p>'}</div>`;
 }
