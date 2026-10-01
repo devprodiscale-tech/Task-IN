@@ -1,6 +1,6 @@
 # Task’in — suivi du projet
 
-Dernière mise à jour : 1er octobre 2026 (session du 30 septembre – 1er octobre).
+Dernière mise à jour : 1er octobre 2026 (fin de journée).
 
 ## Où en est le code
 
@@ -10,16 +10,17 @@ Dernière mise à jour : 1er octobre 2026 (session du 30 septembre – 1er octob
 | A · Résultats OSC (saisie quotidienne, captures, import CSV) | **main** | migration 011 appliquée |
 | B · Objectifs du jour (J-1 + progression) et « Mes résultats » agent | **main** | migration 012 appliquée |
 | C · Dispatch déclaré par l’agent | **main** | migration 012 appliquée |
-| D · Cas complexes : type de difficulté, synthèse, signalement agent, correctif des doublons | branche, **pas poussé** | migration 013 appliquée |
-| E · Reporting hebdomadaire (bilan, points d’attention, message équipe, CSV, impression) | branche, **pas poussé** | — |
-| F · Appels manqués (journal partagé, « Je rappelle », statistiques, message client, CSV) | branche, **pas poussé** | migration 014 appliquée |
+| D · Cas complexes : type de difficulté, synthèse, signalement agent, correctif des doublons | **main** | migration 013 appliquée |
+| E · Reporting hebdomadaire (bilan, points d’attention, message équipe, CSV, impression) | **main** | — |
+| F · Appels manqués (journal partagé, « Je rappelle », statistiques, message client, CSV) | **main** | migration 014 appliquée |
+| Appels manqués : l’agent ne modifie que ses lignes (rappel d’un collègue via fonction serveur) | **main** | migration 015 appliquée |
+| Objectifs fixes par pôle modifiables par le superviseur | branche, **pas poussé** | — |
+| Import de l’historique du Google Sheet (262 appels, juin–septembre) | branche, **pas poussé** | migration 016 + données importées |
+| Slides de reporting automatiques (.pptx / Google Slides) | branche, **pas poussé** | — |
 
-Branche de travail : `claude/happy-tesla-dgja39`. D, E et F sont 3 commits locaux, en avance sur GitHub.
-GitHub refusait l’écriture depuis la session (erreur 403) : rien n’est perdu, il faut pousser dès que
-l’accès GitHub est reconnecté, puis mettre sur `main` quand c’est validé.
-
-Les migrations 013 et 014 sont déjà en base : elles ajoutent une règle d’accès et une table, sans rien
-casser pour la version en ligne actuelle.
+Branche de travail : `claude/happy-tesla-dgja39`. Les lignes « pas poussé » sont des commits locaux
+en attente du prochain push groupé. Les migrations sont déjà en base et compatibles avec la version en ligne
+(seul effet visible avant le push : les lignes importées du Sheet affichent « — » au lieu du prénom).
 
 ## Où trouver chaque fonction
 
@@ -39,12 +40,23 @@ casser pour la version en ligne actuelle.
 - **Appels manqués** : objectifs client repris du Sheet : ≤ 3 manqués, ≥ 90 % rappelés, 0 appel perdu.
 - **Dispatch** : la priorité reste les appels, même dispatché partout.
 
+## Décisions prises le 1er octobre
+
+- **Reconf** : traité en tout dernier, après la mise en production (pas de dispatch : un volume de
+  prestations à reconfirmer, 60/jour en basse saison et 80/jour en haute saison selon Nicolas ; tâches :
+  appel sortant, appel entrant, suivi email presta, suivi email hôtel, traitement ticket).
+- Le superviseur peut modifier les objectifs fixes par pôle.
+- Appels manqués : un agent ne modifie que ses propres lignes.
+- Reporting : slides générées automatiquement, en complément des Google Sheets envoyés au management.
+- Après le MVP : documentation des fonctionnalités pour le management, puis vidéo de démo
+  (voir `docs/guide-video-demo.md`) avec données fictives supprimées avant le déploiement.
+
 ## À faire ensuite
 
 1. Reconnecter GitHub, pousser la branche, puis « push » sur `main` après validation.
-2. Donner la **liste des dispatchs Reconf** (liste provisoire : Ringover, Email, Pre-reconfirmation, Break coverage).
+2. Reconf : à la fin, après la mise en production (voir décisions).
 3. Tester en réel : saisir deux jours de résultats OSC, un appel manqué, un signalement de difficulté.
-4. Option : importer l’historique du Google Sheet des appels manqués (juin → septembre) dans Task’in.
+4. Relier les lignes importées du Sheet aux comptes de Crystella, Gaëlle, Patrick, Yannis et Tina dès leur création (requête dans `migration/016_missed_calls_sheet_import.sql`).
 5. Sprint suivant (revue globale) : heatmap 7h–23h par heure, filtres complets dans Stat et Reporting
    (période libre, pôle, agent, canal), courbe d’évolution, statut « attente flux » hors shift.
 6. Avant la production : nettoyer les données de démonstration (`migration/demo_cleanup.sql`) ;
