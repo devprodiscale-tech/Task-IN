@@ -620,3 +620,31 @@ a.sv-ticket-link:hover{background:var(--ocean-dim)}
 .dr-mine-history h3{margin:4px 0 10px;font-size:15px}
 .dr-mine-history h3 small{font-weight:500;color:var(--text2);font-size:12px;margin-left:6px}
 @media (max-width:640px){.dr-mine .dr-me{margin:12px}.dr-mine-history{padding:4px 12px 14px}}
+
+/* In SLA / out SLA : barres empilées et infobulle au survol (tous les graphiques d'activité) */
+:root{--sla-in:#1F9D55;--sla-out:#E5484D}
+:root[data-theme="dark"]{--sla-in:#3CCB7F;--sla-out:#FF6B6B}
+.ops-bar-on{background:var(--sla-in)!important}
+.ops-bar-late{background:var(--sla-out)!important}
+.ops-legend-dot{background:var(--sla-in)!important}
+.ops-legend-dot.late{background:var(--sla-out)!important}
+.ops-legend-hint{color:var(--text3);font-style:italic}
+.sla-stack{display:flex!important;flex-direction:column;justify-content:flex-end;gap:1px;overflow:hidden;background:none!important;opacity:1!important}
+.sla-stack .sla-seg{display:block;width:100%;flex:none}
+.sla-stack .sla-in{background:var(--sla-in);border-radius:0 0 2px 2px}
+.sla-stack .sla-out{background:var(--sla-out);order:-1;border-radius:4px 4px 0 0}
+.sla-stack .sla-seg:only-child,.sla-stack .sla-in[style*="height:100%"]{border-radius:4px 4px 2px 2px}
+[data-sla-in]{cursor:default;outline:none}
+[data-sla-in]:focus-visible{box-shadow:0 0 0 2px var(--ocean);border-radius:6px}
+[data-sla-in]:hover .sla-stack{filter:brightness(1.06)}
+.sla-tip{position:fixed;z-index:9999;display:grid;gap:3px;min-width:190px;padding:9px 11px;border:1px solid var(--border);border-radius:10px;background:var(--surface);box-shadow:0 8px 22px rgba(15,23,42,.18);color:var(--text);font-size:12px;pointer-events:none}
+.sla-tip[hidden]{display:none}
+.sla-tip span{display:flex;align-items:center;gap:6px;color:var(--text2);padding:1px 4px;border-radius:6px}
+.sla-tip span strong{color:var(--text)}
+.sla-tip span.is-on{background:var(--surface2);color:var(--text);font-weight:600}
+.sla-tip i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.sla-tip i.sla-in{background:var(--sla-in)}
+.sla-tip i.sla-out{background:var(--sla-out)}
+.sla-tip small{color:var(--text3);font-size:10.5px}
+.ops-bar-stack .ops-bar-on{order:2;border-radius:0 0 3px 3px}
+.ops-bar-stack .ops-bar-late{order:1;border-radius:3px 3px 0 0}

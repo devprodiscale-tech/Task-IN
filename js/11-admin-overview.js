@@ -32,7 +32,8 @@ function adminOverviewMetricData(period) {
   const daily = Array.from({length: 7}, (_, index) => {
     const date = new Date(); date.setHours(0,0,0,0); date.setDate(date.getDate() - (6 - index));
     const key = date.toDateString();
-    return { label: date.toLocaleDateString('fr-FR',{weekday:'short'}).replace('.',''), count: periodEntries.filter(e => new Date(e.startTimeStr).toDateString() === key).length };
+    const dayEntries = periodEntries.filter(e => new Date(e.startTimeStr).toDateString() === key);
+    return { label: date.toLocaleDateString('fr-FR',{weekday:'short'}).replace('.',''), long: date.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}), count: dayEntries.length, sla: typeof taskinSlaSplit === 'function' ? taskinSlaSplit(dayEntries) : null };
   });
   return { periodEntries, todayAgents, totalSeconds, avgMinutes: periodEntries.length ? Math.round(totalSeconds / periodEntries.length / 60) : 0, sourceRows, daily };
 }
@@ -66,7 +67,7 @@ function adminOverviewActivityRows(periodEntries) {
 }
 function adminOverviewBarChart(daily) {
   const max = Math.max(1, ...daily.map(item => item.count));
-  return daily.map(item => `<div class="admin-overview-bar-col"><span class="admin-overview-bar-value">${item.count || ''}</span><i style="height:${Math.max(5, Math.round(item.count / max * 100))}%"></i><small>${adminOverviewEscape(item.label)}</small></div>`).join('');
+  return daily.map(item => `<div class="admin-overview-bar-col" ${item.sla ? taskinSlaAttrs(`${item.long} · ${item.count} traitement${item.count > 1 ? 's' : ''}`, item.sla) : ''}><span class="admin-overview-bar-value">${item.count || ''}</span><i class="${item.sla && item.count ? 'sla-stack' : ''}" style="height:${Math.max(5, Math.round(item.count / max * 100))}%">${item.sla && item.count ? taskinSlaSegments(item.sla) : ''}</i><small>${adminOverviewEscape(item.label)}</small></div>`).join('');
 }
 function adminOverviewDonut(sourceRows) {
   const total = sourceRows.reduce((sum, [, count]) => sum + count, 0);

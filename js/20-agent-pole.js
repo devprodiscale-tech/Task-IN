@@ -207,7 +207,7 @@ function agentRenderPoleHistory() {
   entries.filter(e => e.agent === currentUser.id && (!pole.metricSource || e.source === pole.metricSource)).forEach(e => {
     const d = getEntryDate(e.startTimeStr); if (!d) return;
     const day = days.find(x => x.date.toDateString() === d.toDateString());
-    if (day) { day.count++; day.sec += e.durationSec; }
+    if (day) { day.count++; day.sec += e.durationSec; (day.list = day.list || []).push(e); }
   });
   const max = Math.max(...days.map(d => d.count), 1);
   container.innerHTML = days.map((d, i) => {
@@ -215,9 +215,10 @@ function agentRenderPoleHistory() {
     const label = isToday ? 'Auj.' : d.date.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
     const pct = d.count ? Math.max(d.count / max * 100, 10) : 3;
     const tip = `${d.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} : ${agentPlural(d.count, pole.unit)}${d.count ? ` · ${agentMin(d.sec)} min` : ''}`;
-    return `<div class="agent-hbar-col" title="${tip}">
+    const sla = typeof taskinSlaSplit === 'function' ? taskinSlaSplit(d.list || []) : null;
+    return `<div class="agent-hbar-col" ${sla ? taskinSlaAttrs(tip, sla) : `title="${tip}"`}>
       <span class="agent-hbar-val">${d.count || ''}</span>
-      <div class="agent-hbar ${isToday ? 'today' : ''} ${d.count ? 'has-data' : ''}" style="height:${pct}%"></div>
+      <div class="agent-hbar ${isToday ? 'today' : ''} ${d.count ? 'has-data' : ''} ${sla && d.count ? 'sla-stack' : ''}" style="height:${pct}%">${sla && d.count ? taskinSlaSegments(sla) : ''}</div>
       <span class="agent-hbar-label"><b>${label}</b><small>${d.date.getDate()}</small></span>
     </div>`;
   }).join('');

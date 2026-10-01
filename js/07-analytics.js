@@ -123,16 +123,17 @@ function renderAgentHistory() {
   entries.filter(e => e.agent === currentUser.id).forEach(e => {
     const d = getEntryDate(e.startTimeStr);
     const bucket = buckets.find(b => b.date.toDateString() === d.toDateString());
-    if (bucket) bucket.count++;
+    if (bucket) { bucket.count++; (bucket.list = bucket.list || []).push(e); }
   });
   const max = Math.max(...buckets.map(b => b.count), 1);
   container.innerHTML = buckets.map((b, i) => {
     const isToday = i === 6;
     const pct = Math.max((b.count / max) * 100, b.count > 0 ? 8 : 2);
     const label = b.date.toLocaleDateString('fr-FR', { weekday: 'short' }).slice(0, 2);
-    return `<div class="agent-hbar-col" title="${b.date.toLocaleDateString('fr-FR')} — ${b.count} tâche(s)">
+    const sla = typeof taskinSlaSplit === 'function' ? taskinSlaSplit(b.list || []) : null;
+    return `<div class="agent-hbar-col" ${sla ? taskinSlaAttrs(`${b.date.toLocaleDateString('fr-FR')} · ${b.count} tâche(s)`, sla) : `title="${b.date.toLocaleDateString('fr-FR')} — ${b.count} tâche(s)"`}>
       <span class="agent-hbar-val">${b.count > 0 ? b.count : ''}</span>
-      <div class="agent-hbar ${isToday ? 'today' : ''} ${b.count > 0 ? 'has-data' : ''}" style="height:${pct}%"></div>
+      <div class="agent-hbar ${isToday ? 'today' : ''} ${b.count > 0 ? 'has-data' : ''} ${sla && b.count ? 'sla-stack' : ''}" style="height:${pct}%">${sla && b.count ? taskinSlaSegments(sla) : ''}</div>
       <span class="agent-hbar-label">${label}</span>
     </div>`;
   }).join('');

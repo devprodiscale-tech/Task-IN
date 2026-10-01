@@ -122,6 +122,44 @@ function opsIsOnTime(entry) {
   return target > 0 && entry.durationSec <= target;
 }
 
+// ---------- In SLA / out SLA au survol (tous les graphiques d'activité, tous les rôles) ----------
+// SLA = durée du traitement ≤ DMT cible de son canal (Paramètres › DMT). Chaque barre porte ses chiffres
+// (data-sla-*) ; ses deux zones (data-sla-zone) mettent en avant « in » ou « out » selon la zone survolée.
+function taskinSlaSplit(list) { const inSla = list.filter(opsIsOnTime).length; return { in: inSla, out: list.length - inSla }; }
+function taskinSlaAttrs(label, split) { return `data-sla-label="${opsEscape(label)}" data-sla-in="${split.in}" data-sla-out="${split.out}" tabindex="0"`; }
+function taskinSlaSegments(split) {
+  const total = split.in + split.out;
+  const inPct = total ? Math.round(split.in / total * 100) : 0;
+  return `<b class="sla-seg sla-in" data-sla-zone="in" style="height:${inPct}%"></b><b class="sla-seg sla-out" data-sla-zone="out" style="height:${total ? 100 - inPct : 0}%"></b>`;
+}
+(function taskinSlaTooltip() {
+  let tip = null;
+  const show = (col, zone, x, y) => {
+    if (!tip) { tip = document.createElement('div'); tip.className = 'sla-tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
+    const n = Number(col.dataset.slaIn) || 0, m = Number(col.dataset.slaOut) || 0, total = n + m;
+    const pct = v => total ? Math.round(v / total * 100) : 0;
+    tip.innerHTML = `<b>${col.dataset.slaLabel || ''}</b>${total ? `<span class="${zone === 'in' ? 'is-on' : ''}"><i class="sla-in"></i>In SLA <strong>${n}</strong> · ${pct(n)} %</span><span class="${zone === 'out' ? 'is-on' : ''}"><i class="sla-out"></i>Out SLA <strong>${m}</strong> · ${pct(m)} %</span><small>SLA : durée ≤ DMT cible du canal</small>` : '<small>Aucun traitement</small>'}`;
+    tip.hidden = false;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = `${Math.min(window.innerWidth - w - 8, Math.max(8, x + 14))}px`;
+    tip.style.top = `${Math.max(8, y - h - 12)}px`;
+  };
+  const hide = () => { if (tip) tip.hidden = true; };
+  document.addEventListener('mousemove', e => {
+    const col = e.target.closest?.('[data-sla-in]');
+    if (!col) { hide(); return; }
+    show(col, e.target.closest('[data-sla-zone]')?.dataset.slaZone || '', e.clientX, e.clientY);
+  });
+  document.addEventListener('focusin', e => {
+    const col = e.target.closest?.('[data-sla-in]');
+    if (!col) return;
+    const r = col.getBoundingClientRect();
+    show(col, '', r.left + r.width / 2, r.top);
+  });
+  document.addEventListener('focusout', hide);
+  document.addEventListener('scroll', hide, true);
+})();
+
 function setOpsVizPeriod(period, btn) {
   opsVizPeriod = period;
   document.querySelectorAll('.ops-viz-period').forEach(b => b.classList.toggle('active', b.dataset.opsPeriod === period));
@@ -162,11 +200,11 @@ function opsVizTemplate(prefix, list) {
     const onPct = bucket.total ? Math.round(bucket.onTime / bucket.total * 100) : 0;
     const latePct = bucket.total ? 100 - onPct : 0;
     const dateLabel = bucket.date.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'});
-    return `<div class="ops-bar-col ${isToday ? 'today' : ''}" title="${dateLabel} — ${bucket.total} entrée(s)">
+    return `<div class="ops-bar-col ${isToday ? 'today' : ''}" ${taskinSlaAttrs(`${dateLabel} · ${bucket.total} traitement${bucket.total > 1 ? 's' : ''}`, { in: bucket.onTime, out: bucket.late })}>
       <span class="ops-bar-total">${bucket.total || ''}</span>
       <div class="ops-bar-stack" style="height:${height}%">
-        <div class="ops-bar-on" style="height:${onPct}%"></div>
-        <div class="ops-bar-late" style="height:${latePct}%"></div>
+        <div class="ops-bar-on" data-sla-zone="in" style="height:${onPct}%"></div>
+        <div class="ops-bar-late" data-sla-zone="out" style="height:${latePct}%"></div>
       </div>
       <span class="ops-bar-label">${bucket.date.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}</span>
     </div>`;
@@ -180,8 +218,8 @@ function opsVizTemplate(prefix, list) {
   }).join('') : '<tr><td colspan="5" class="ops-empty-cell">Aucun agent disponible</td></tr>';
   return `<div class="ops-viz-shell">
     <div class="ops-viz-header"><div><div class="ops-viz-title">Performance opérationnelle</div><div class="ops-viz-subtitle">Activité, conformité SLA et débit moyen par agent</div></div><div class="ops-viz-controls"><button class="ops-viz-period ${opsVizPeriod === 'day' ? 'active' : ''}" data-ops-period="day" onclick="setOpsVizPeriod('day',this)">Jour</button><button class="ops-viz-period ${opsVizPeriod === 'week' ? 'active' : ''}" data-ops-period="week" onclick="setOpsVizPeriod('week',this)">14 j</button><button class="ops-viz-period ${opsVizPeriod === 'month' ? 'active' : ''}" data-ops-period="month" onclick="setOpsVizPeriod('month',this)">30 j</button></div></div>
-    <div class="ops-viz-kpis"><div class="ops-viz-kpi"><div class="ops-viz-kpi-label">Entrées traitées</div><div class="ops-viz-kpi-value blue">${total}</div></div><div class="ops-viz-kpi"><div class="ops-viz-kpi-label">Dans la DMT cible</div><div class="ops-viz-kpi-value green">${onTimeRate}%</div></div><div class="ops-viz-kpi"><div class="ops-viz-kpi-label">Hors DMT cible</div><div class="ops-viz-kpi-value pink">${lateTotal}</div></div><div class="ops-viz-kpi"><div class="ops-viz-kpi-label">DMT moyenne</div><div class="ops-viz-kpi-value muted">${total ? avgDmt + ' min' : '—'}</div></div></div>
-    <div class="ops-viz-chart"><div class="ops-viz-chart-title">Traitements par jour · ${label}</div><div class="ops-bars">${bars}</div><div class="ops-viz-legend"><span class="ops-legend-item"><span class="ops-legend-dot"></span>Dans la DMT cible</span><span class="ops-legend-item"><span class="ops-legend-dot late"></span>Hors DMT cible</span></div></div>
+    <div class="ops-viz-kpis"><div class="ops-viz-kpi"><div class="ops-viz-kpi-label">Entrées traitées</div><div class="ops-viz-kpi-value blue">${total}</div></div><div class="ops-viz-kpi"><div class="ops-viz-kpi-label">In SLA · dans la DMT cible</div><div class="ops-viz-kpi-value green">${onTimeRate}%</div></div><div class="ops-viz-kpi"><div class="ops-viz-kpi-label">Out SLA · hors DMT cible</div><div class="ops-viz-kpi-value pink">${lateTotal}</div></div><div class="ops-viz-kpi"><div class="ops-viz-kpi-label">DMT moyenne</div><div class="ops-viz-kpi-value muted">${total ? avgDmt + ' min' : '—'}</div></div></div>
+    <div class="ops-viz-chart"><div class="ops-viz-chart-title">Traitements par jour · ${label}</div><div class="ops-bars">${bars}</div><div class="ops-viz-legend"><span class="ops-legend-item"><span class="ops-legend-dot"></span>In SLA (dans la DMT cible)</span><span class="ops-legend-item"><span class="ops-legend-dot late"></span>Out SLA (hors DMT cible)</span><span class="ops-legend-item ops-legend-hint">survole une barre pour le détail</span></div></div>
     <div class="ops-viz-bottom"><div class="ops-throughput"><div class="ops-gauge"><svg viewBox="0 0 148 92" aria-label="Jauge de débit"><path class="ops-gauge-track" d="M 12 82 A 62 62 0 0 1 136 82"></path><path class="ops-gauge-fill" d="M 12 82 A 62 62 0 0 1 136 82" pathLength="195" stroke-dasharray="${Math.round(circumference * gaugePct / 100)} 195"></path></svg><div class="ops-gauge-value">${throughput}</div><div class="ops-gauge-label">entrées / agent / jour</div></div><div class="ops-throughput-copy"><strong>${gaugePct}% de l’objectif</strong>Objectif : ${target} entrées par agent et par jour${agentTargets.length && new Set(agentTargets).size > 1 ? ' (moyenne des pôles)' : ''}<br>${agentList.length} agent(s) suivi(s)</div></div><div class="ops-team-table-wrap"><table class="ops-team-table"><thead><tr><th>Agent</th><th>Total</th><th>Progression</th><th>DMT cible</th><th>DMT</th></tr></thead><tbody>${teamRows}</tbody></table></div></div>
   </div>`;
 }
