@@ -111,7 +111,33 @@ async function fetchAccountProfile(uid) {
   return supabase.getCurrentProfile();
 }
 
+// Changement de compte dans le même onglet (déconnexion puis connexion) : aucun écran ni aucune donnée
+// du compte précédent ne doit rester, en particulier pour un agent après un admin ou un superviseur.
+const TASKIN_RENDERED_PANELS = ['admin-overview-panel', 'admin-settings-panel', 'admin-agent-sessions-panel', 'admin-workflow-panel', 'admin-exports-panel', 'admin-stat-panel', 'daily-results-panel', 'missed-calls-panel', 'pilotage-panel', 'admin-quality-panel', 'admin-training-panel'];
+const TASKIN_STATIC_PANELS = ['supervision-panel', 'team-live-panel', 'admin-panel', 'leaderboard-panel', 'documentation-panel', 'training-panel'];
+function taskinResetWorkspace() {
+  TASKIN_RENDERED_PANELS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('hidden'); el.innerHTML = ''; el.removeAttribute('data-admin-ready');
+  });
+  TASKIN_STATIC_PANELS.forEach(id => document.getElementById(id)?.classList.add('hidden'));
+  // Listes et tableaux remplis dans Supervision (cas, écoutes, coaching, reporting, connexions).
+  document.querySelectorAll('#supervision-panel [id$="-list"], #supervision-panel [id^="sv-rep-"], #sv-view-sessions, #sv-workflow-panel, #sv-ov-focus-card').forEach(el => { el.innerHTML = ''; });
+  document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(el => el.classList.add('hidden'));
+  // Données gardées en mémoire par les modules chargés à la demande.
+  try { if (typeof escalations !== 'undefined') escalations = []; } catch (_) {}
+  try { if (typeof qualityReviews !== 'undefined') qualityReviews = []; } catch (_) {}
+  try { if (typeof coachingSheets !== 'undefined') coachingSheets = []; } catch (_) {}
+  try { if (typeof coachingNotes !== 'undefined') coachingNotes = null; } catch (_) {}
+  try { if (typeof pilState !== 'undefined') Object.assign(pilState, { data: null, views: null, agent: '', activeView: '', key: '' }); } catch (_) {}
+  try { if (typeof expState !== 'undefined') { expState.mounts.clear(); Object.assign(expState, { agents: null, presets: null, activePreset: '', comment: '', busy: '' }); } } catch (_) {}
+  try { if (typeof drState !== 'undefined') Object.assign(drState, { rows: new Map(), byDay: new Map(), goals: new Map(), subs: new Map(), mySub: undefined, myReviews: null, mode: 'entry', day: '' }); } catch (_) {}
+  try { if (typeof mcState !== 'undefined' && mcState) mcState.rows = []; } catch (_) {}
+}
+
 function enterApp(user) {
+  taskinResetWorkspace();
   currentUser = user;
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -337,6 +363,7 @@ async function logout() {
   if (typeof taskinExtensionSignOut === 'function') taskinExtensionSignOut();
   if (window.taskinDataProviders?.supabase?.enabled()) window.taskinDataProviders.supabase.signOut();
   currentUser = null; entries = [];
+  taskinResetWorkspace();
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-email').value = ''; document.getElementById('login-password').value = '';
