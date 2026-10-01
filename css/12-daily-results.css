@@ -422,3 +422,13 @@ body:not(.admin-shell-active) #pilotage-panel .dr-shell{margin:0}
 .dr-mr-foot{margin-top:10px;display:flex;justify-content:flex-end}
 .dr-mr-foot small{color:var(--green);font-weight:700}
 @media (max-width:640px){.cn-add{flex-direction:column}.cn-add button{align-self:flex-end}.dr-mr-list{grid-template-columns:1fr}}
+
+/* Connexions : plage de dates libre et présence par jour */
+.sessions-period{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0 0 14px}
+.sessions-period-label{color:var(--text2);font-size:12px}
+.sessions-period [data-sessions-csv]{margin-left:auto}
+.sessions-day h4 .sessions-day-sum{display:inline;margin-left:10px;text-transform:none;letter-spacing:0;font-weight:500;font-size:12px;color:var(--text2)}
+.sessions-day h4 .sessions-day-sum b{color:var(--text)}
+.sessions-day h4 em{margin-left:6px}
+.sessions-day em.ok{color:var(--green)}
+@media (max-width:640px){.sessions-period [data-sessions-csv]{margin-left:0}.sessions-day h4 .sessions-day-sum{display:block;margin:4px 0 0}}

@@ -242,10 +242,14 @@ async function loadAccounts() {
   const supabase = window.taskinDataProviders?.supabase;
   if (!supabase?.enabled()) return;
   try {
-    TEAM = (await supabase.listProfiles(200) || []).map(profile => ({
+    // Les shifts saisis dans Réglages › Team’s shift sont rangés dans le réglage « account_shifts ».
+    const [profiles, shiftsRow] = await Promise.all([supabase.listProfiles(200), supabase.getSetting('account_shifts').catch(() => null)]);
+    const shifts = shiftsRow?.value && typeof shiftsRow.value === 'object' ? shiftsRow.value : {};
+    TEAM = (profiles || []).map(profile => ({
       id: profile.id, name: profile.name || 'Sans nom', email: profile.email || '',
       color: safeColor(profile.color, '#2B4C7E'), initials: profile.initials || '??',
-      role: profile.role || 'agent', pole: profile.pole || null, photo: safePhoto(profile.photo)
+      role: profile.role || 'agent', pole: profile.pole || null, photo: safePhoto(profile.photo),
+      shift: typeof shifts[profile.id] === 'string' ? shifts[profile.id] : ''
     }));
     teamById = new Map(TEAM.map(member => [member.id, member]));
   } catch (e) { window.taskinLastLoadError = e; console.error('loadAccounts Supabase:', e); }
