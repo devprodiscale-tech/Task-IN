@@ -496,16 +496,25 @@ function renderRoleTabs(role) {
   if(context) context.textContent=supervisor?'Équipe en direct':'Learning & Knowledge';
   if(eyebrow) eyebrow.textContent=supervisor?'SUPERVISION':'FORMATION';
   if (supervisor) {
-    const subViews=[['overview','Vue d’ensemble'],['escalations','Cas complexes'],['reviews','Grille d’écoute'],['coaching','Coaching 1:1'],['reporting','Reporting'],['sessions','Connexions']];
-    const workspaceViews=[['pilotage','Pilotage 360°'],['results','Résultats'],['missed','Appels manqués'],['team','Équipe'],['leaderboard','Classement'],['documentation','Documentation']];
-    const items=[...subViews,...workspaceViews];
-    rail.innerHTML=items.map(([view,label])=>{
+    const subViews=[['overview','Vue d’ensemble'],['escalations','Tickets & cas'],['reviews','Grille d’écoute'],['coaching','Coaching 1:1'],['reporting','Reporting'],['sessions','Connexions']];
+    // Onglets regroupés par familles métier : on sait toujours où l'on est.
+    const groups=[
+      ['En direct',['overview','team','sessions']],
+      ['Performance',['pilotage','results','leaderboard','reporting']],
+      ['Qualité & coaching',['reviews','coaching']],
+      ['Tickets & appels',['escalations','missed']],
+      ['Ressources',['documentation']],
+    ];
+    const labels=Object.fromEntries([...subViews,['pilotage','Pilotage 360°'],['results','Résultats'],['missed','Appels manqués'],['team','Équipe'],['leaderboard','Classement'],['documentation','Documentation']]);
+    rail.classList.add('role-tabs-grouped');
+    rail.innerHTML=groups.map(([group,views])=>`<div class="rt-group" role="group" aria-label="${group}"><span class="rt-group-label">${group}</span><div class="rt-group-tabs">${views.map(view=>{
       const isSubView=subViews.some(([id])=>id===view);
       return isSubView
-        ? `<button type="button" class="role-tab sv-tab-btn" id="sv-tab-${view}" data-role-tab="${view}">${roleTabLabel(view, label)}</button>`
-        : `<button type="button" class="role-tab" data-role-tab="${view}">${roleTabLabel(view, label)}</button>`;
-    }).join('');
+        ? `<button type="button" class="role-tab sv-tab-btn" id="sv-tab-${view}" data-role-tab="${view}">${roleTabLabel(view, labels[view])}</button>`
+        : `<button type="button" class="role-tab" data-role-tab="${view}">${roleTabLabel(view, labels[view])}</button>`;
+    }).join('')}</div></div>`).join('');
   } else {
+    rail.classList.remove('role-tabs-grouped');
     rail.innerHTML=(roleTabItems[role]||[]).map(([view,label])=>`<button type="button" class="role-tab" data-role-tab="${view}">${roleTabLabel(view, label)}</button>`).join('');
   }
   rail.querySelectorAll('[data-role-tab]').forEach(button => {
@@ -534,6 +543,12 @@ function setRoleTabActive(view){
     link.classList.toggle('active', active);
     link.setAttribute('aria-selected', active ? 'true' : 'false');
   });
+  // Famille de l'onglet actif mise en avant.
+  document.querySelectorAll('#role-tabs .rt-group').forEach(g => g.classList.toggle('active', !!g.querySelector('.role-tab.active')));
+  // Fil d'Ariane : « SUPERVISION · PERFORMANCE » au-dessus du titre.
+  const eyebrow = document.getElementById('role-page-eyebrow');
+  const family = document.querySelector('#role-tabs .rt-group.active .rt-group-label')?.textContent;
+  if (eyebrow && currentUser?.role === 'supervisor') eyebrow.textContent = family ? `SUPERVISION · ${family.toUpperCase()}` : 'SUPERVISION';
 }
 
 // Pages de détail ouvertes depuis l’espace Admin : elles gardent leur rubrique

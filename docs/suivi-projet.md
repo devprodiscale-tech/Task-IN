@@ -63,7 +63,7 @@ Ensuite seulement : injection des données fictives (5 FO, 3 BO, 3 Reconf) pour 
 | S5 | Classement agents : KPI au choix et tri | ✅ fait (+ correctif : classement ouvert avant le module Supervision) |
 | S6 | Admin › Paramètres › Comptes : changer le pôle FO / BO / Reconf | ✅ fait |
 | S7 | Extension : synchro plus rapide, avis de mise à jour, installation simplifiée | ✅ fait (v1.12.0 ; installation en 1 clic = Chrome Web Store, voir `docs/extension-chrome-web-store.md`) |
-| S8 | Visuel métier et organisation des onglets superviseur | à faire |
+| S8 | Visuel métier et organisation des onglets superviseur | ✅ fait (5 familles ; fusions possibles proposées dans `docs/organisation-interface.md`) |
 | S9 | Push sur `main` puis injection des données fictives | à faire |
 
 Après la mise en production : module Planning (puis présence vs planning), Reconf, documentation management.
