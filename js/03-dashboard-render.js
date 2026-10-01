@@ -787,7 +787,9 @@ function renderSupervisorBanner(activeTimers) {
 function findLongestIdleAgent(agents, activeIds) {
   const idle = agents.filter(a => !activeIds.has(a.id));
   if (!idle.length) return null;
-  return `${idle[0].name} inactif`;
+  const waiting = idle.filter(a => typeof taskinIdleLabel !== 'function' || taskinIdleLabel(a) === 'Attente flux');
+  if (!waiting.length) return 'Les autres agents sont hors shift ou pas connectés';
+  return waiting.length === 1 ? `${waiting[0].name} en attente de flux` : `${waiting.length} agents en attente de flux`;
 }
 
 function renderAdminBanner() {
@@ -815,7 +817,7 @@ function renderTeamLiveList(activeTimers) {
     }
     return `<div class="team-row" onclick="viewAgentDetail('${a.id}')" style="cursor:pointer">
       <div class="mini-avatar" style="background:var(--border2);color:var(--text2)">${escHtml(a.initials)}</div>
-      <div class="team-row-info"><div class="team-row-name">${escHtml(a.name)}</div><div class="team-row-role" style="color:var(--text3)">Inactif</div></div>
+      <div class="team-row-info"><div class="team-row-name">${escHtml(a.name)}</div><div class="team-row-role" style="color:var(--text3)">${typeof taskinIdleLabel === 'function' ? taskinIdleLabel(a) : 'Inactif'}</div></div>
       <span class="team-row-timer" style="color:var(--text3)">—</span></div>`;
   }).join('');
 }

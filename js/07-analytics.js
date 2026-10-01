@@ -71,7 +71,7 @@ function renderMosaicKpis(activeTimers) {
         </div>
         <div style="flex:1;min-width:0">
           <div class="mosaic-agent-name">${escHtml(a.name)}</div>
-          <div class="mosaic-agent-task">${isActive ? escHtml(t.desc || t.source) : 'Inactif'}</div>
+          <div class="mosaic-agent-task">${isActive ? escHtml(t.desc || t.source) : (typeof taskinIdleLabel === 'function' ? taskinIdleLabel(a) : 'Inactif')}</div>
         </div>
         ${isActive ? `<span class="mosaic-timer">${timerStr}</span>` : ''}
       </div>

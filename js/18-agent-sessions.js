@@ -57,6 +57,42 @@ function agentSessionsShift(user) {
   if (!m) return raw ? { label: raw } : null;
   return { label: raw, start: Number(m[1]) * 60 + Number(m[2] || 0), end: Number(m[3]) * 60 + Number(m[4] || 0) };
 }
+// Statut d'un agent sans traitement en cours : dans son shift → « Attente flux » (il attend le flux,
+// il n'est pas inactif) ; en dehors → « Hors shift ». Sans shift renseigné : plage d'activité 7h–23h.
+function taskinShiftWindow(agent) {
+  const shift = agentSessionsShift(agent);
+  return shift?.start !== undefined ? { start: shift.start, end: shift.end, known: true } : { start: 7 * 60, end: 23 * 60, known: false };
+}
+function taskinInShift(agent, date = new Date()) {
+  const w = taskinShiftWindow(agent), m = date.getHours() * 60 + date.getMinutes();
+  return w.end > w.start ? m >= w.start && m < w.end : m >= w.start || m < w.end; // shift de nuit
+}
+// Présence du jour : 1re connexion (agent_sessions, rafraîchie toutes les 2 min) ou 1er traitement.
+const taskinTodayLogins = { day: '', at: 0, ids: null, loading: false };
+function taskinDayKey(d = new Date()) { return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
+async function taskinRefreshTodayLogins() {
+  if (taskinTodayLogins.loading || typeof dispatchRest !== 'function' || !currentUser || currentUser.role === 'agent') return;
+  if (taskinTodayLogins.day === taskinDayKey() && Date.now() - taskinTodayLogins.at < 120000) return;
+  taskinTodayLogins.loading = true;
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  try {
+    const rows = await dispatchRest(`agent_sessions?select=agent_id&event=eq.login&created_at=gte.${encodeURIComponent(start.toISOString())}&limit=5000`);
+    Object.assign(taskinTodayLogins, { day: taskinDayKey(), at: Date.now(), ids: new Set((rows || []).map(r => r.agent_id)) });
+  } catch (_) { Object.assign(taskinTodayLogins, { day: taskinDayKey(), at: Date.now(), ids: null }); }
+  taskinTodayLogins.loading = false;
+}
+function taskinSeenToday(agent) {
+  if (typeof entries !== 'undefined' && entries.some(e => e.agent === agent.id && typeof isToday === 'function' && isToday(e.startTimeStr))) return true;
+  if (taskinTodayLogins.day === taskinDayKey() && taskinTodayLogins.ids) return taskinTodayLogins.ids.has(agent.id);
+  return null; // inconnu (connexions pas encore lues)
+}
+function taskinIdleLabel(agent, date = new Date()) {
+  taskinRefreshTodayLogins();
+  if (!taskinInShift(agent, date)) return 'Hors shift';
+  return taskinSeenToday(agent) === false ? 'Pas connecté' : 'Attente flux';
+}
+window.taskinIdleLabel = taskinIdleLabel;
+
 function agentSessionsHm(min) { return `${Math.floor(min / 60)}h${String(Math.round(min % 60)).padStart(2, '0')}`; }
 function agentSessionsGap(min) { const r = Math.round(min); return r === 0 ? 'à l’heure' : r > 0 ? `+${r} min` : `${r} min`; }
 

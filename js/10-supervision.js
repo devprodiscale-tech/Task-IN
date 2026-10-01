@@ -674,6 +674,7 @@ function svRenderReporting() {
   ].join('');
 
   if (typeof taskinHeatmapRender === 'function') taskinHeatmapRender('sv-rep-activity-heatmap', { id: 'reporting', preset: { period: '28d' } });
+  if (typeof taskinTrendRender === 'function') taskinTrendRender('sv-rep-trend', { id: 'reporting-trend' });
   const agents = agentsOnly();
   const heatEl = document.getElementById('sv-rep-heatmap');
   heatEl.innerHTML = agents.map(a => {
@@ -708,44 +709,64 @@ function svRenderReporting() {
   // Exports pour le management : tout en bas du Reporting.
   if (typeof loadModule === 'function') loadModule('29-exports.js').then(() => window.taskinExportsMount?.('sv-rep-exports')).catch(e => console.warn('Exports indisponibles :', e.message));
 }
+// Journée 7h–23h : tâches chronométrées ; dans le shift, ce qui n'est pas logué = « Attente flux »
+// (l'agent attend le flux, il n'est pas en faute) ; en dehors du shift, la plage est grisée.
+// Connexions du jour (agent_sessions) : l'attente flux ne commence qu'à la première présence de l'agent.
+let svTimelineSessions = { day: '', rows: null, loading: false };
+function svTodayKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
+async function svLoadTimelineSessions(agents) {
+  if (svTimelineSessions.loading || typeof dispatchRest !== 'function') return;
+  svTimelineSessions.loading = true;
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  try { svTimelineSessions = { day: svTodayKey(), rows: await dispatchRest(`agent_sessions?select=agent_id,event,created_at&created_at=gte.${encodeURIComponent(start.toISOString())}&order=created_at.asc&limit=5000`), loading: false }; }
+  catch (_) { svTimelineSessions = { day: svTodayKey(), rows: [], loading: false }; }
+  if (document.getElementById('sv-rep-timeline')) svRenderTimeline(agents);
+}
 function svRenderTimeline(agents) {
-  const dayStartH = 8, dayEndH = 18;
+  if (svTimelineSessions.day !== svTodayKey()) svLoadTimelineSessions(agents);
+  const dayStartH = 7, dayEndH = 23;
   const dayStartMin = dayStartH * 60, totalMin = (dayEndH - dayStartH) * 60;
+  const nowMin = (() => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); })();
   const el = document.getElementById('sv-rep-timeline');
+  const hm = m => `${Math.floor(m / 60)}h${String(Math.round(m % 60)).padStart(2, '0')}`;
+  const segment = (from, to, cls, title = '') => {
+    const a = Math.max(from, dayStartMin), b = Math.min(to, dayStartMin + totalMin);
+    if (b <= a) return '';
+    const left = (a - dayStartMin) / totalMin * 100, width = Math.max(0.4, (b - a) / totalMin * 100);
+    return `<div class="sv-tl-seg ${cls}" style="left:${left}%;width:${width}%"${title ? ` title="${title}"` : ''}></div>`;
+  };
   const rows = agents.map(a => {
-    const todays = entries.filter(e => e.agent === a.id && isToday(e.startTimeStr))
-      .map(e => {
-        const d = getEntryDate(e.startTimeStr);
-        const startMin = d.getHours() * 60 + d.getMinutes();
-        return { startMin, endMin: startMin + e.durationSec / 60 };
-      }).sort((x, y) => x.startMin - y.startMin);
-    if (!todays.length) return `<div style="display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin-bottom:6px">
-      <span style="font-size:12px">${escHtml(a.name)}</span>
-      <div style="position:relative;height:16px;background:var(--surface2);border-radius:6px"></div>
-    </div>`;
-    // Chaque segment est borné à la plage 8h–18h : rien ne déborde sur le nom de l'agent.
-    const segment = (from, to, style, title = '') => {
-      const a = Math.max(from, dayStartMin), b = Math.min(to, dayStartMin + totalMin);
-      if (b <= a) return '';
-      const left = (a - dayStartMin) / totalMin * 100, width = Math.max(0.5, (b - a) / totalMin * 100);
-      return `<div style="position:absolute;left:${left}%;width:${width}%;height:100%;${style};border-radius:4px"${title ? ` title="${title}"` : ''}></div>`;
-    };
-    let blocks = '';
-    todays.forEach((t, i) => {
-      blocks += segment(t.startMin, t.endMin, 'background:var(--ocean)');
-      if (i < todays.length - 1) {
-        const gapMin = todays[i + 1].startMin - t.endMin;
-        if (gapMin > 15) blocks += segment(t.endMin, todays[i + 1].startMin, 'background:var(--red)', `Trou de ${Math.round(gapMin)} min`);
-      }
-    });
-    return `<div style="display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin-bottom:6px">
-      <span style="font-size:12px">${escHtml(a.name)}</span>
-      <div style="position:relative;height:16px;background:var(--surface2);border-radius:6px;overflow:hidden">${blocks}</div>
+    const tasks = entries.filter(e => e.agent === a.id && isToday(e.startTimeStr)).map(e => {
+      const d = getEntryDate(e.startTimeStr); const startMin = d.getHours() * 60 + d.getMinutes();
+      return { startMin, endMin: startMin + e.durationSec / 60 };
+    }).sort((x, y) => x.startMin - y.startMin);
+    const w = typeof taskinShiftWindow === 'function' ? taskinShiftWindow(a) : { start: dayStartMin, end: dayStartMin + totalMin, known: false };
+    const shiftEnd = w.end > w.start ? w.end : 24 * 60;
+    let blocks = segment(dayStartMin, w.start, 'is-off', 'Hors shift') + segment(shiftEnd, dayStartMin + totalMin, 'is-off', 'Hors shift');
+    // Attente flux : creux de plus de 5 min, dans le shift, à partir de la première présence du jour
+    // (1re connexion ou 1re tâche) et jusqu'à maintenant (ou la fin du shift). Agent absent : rien.
+    const firstLogin = (svTimelineSessions.rows || []).find(r => r.agent_id === a.id && r.event === 'login');
+    const presence = [firstLogin ? (d => d.getHours() * 60 + d.getMinutes())(new Date(firstLogin.created_at)) : null, tasks[0]?.startMin ?? null].filter(v => v !== null);
+    const firstSeen = presence.length ? Math.min(...presence) : null;
+    const from = firstSeen === null ? null : w.known ? Math.max(w.start, firstSeen) : firstSeen;
+    const until = Math.min(shiftEnd, nowMin, w.known ? shiftEnd : (tasks.length ? Math.max(...tasks.map(t => t.endMin)) : 0));
+    let waiting = 0;
+    if (from !== null) {
+      let cursor = from;
+      [...tasks, { startMin: until, endMin: until }].forEach(t => {
+        const gapEnd = Math.min(t.startMin, until);
+        if (gapEnd - cursor >= 5) { blocks += segment(cursor, gapEnd, 'is-wait', `Attente flux · ${hm(cursor)} → ${hm(gapEnd)} (${Math.round(gapEnd - cursor)} min)`); waiting += gapEnd - cursor; }
+        cursor = Math.max(cursor, t.endMin);
+      });
+    }
+    tasks.forEach(t => { blocks += segment(t.startMin, t.endMin, 'is-task', `Tâche · ${hm(t.startMin)} → ${hm(t.endMin)}`); });
+    return `<div class="sv-tl-row">
+      <span class="sv-tl-name">${escHtml(a.name)}<small>${w.known ? `shift ${hm(w.start)}–${hm(w.end)}` : 'shift non renseigné'}</small></span>
+      <div class="sv-tl-track">${blocks}${nowMin > dayStartMin && nowMin < dayStartMin + totalMin ? `<i class="sv-tl-now" style="left:${(nowMin - dayStartMin) / totalMin * 100}%"></i>` : ''}</div>
+      <span class="sv-tl-sum" title="Temps en attente de flux aujourd’hui">${firstSeen === null ? '<small>pas de connexion</small>' : waiting ? hm(waiting) : '—'}</span>
     </div>`;
   }).join('');
-  const scale = `<div style="display:grid;grid-template-columns:90px 1fr;gap:8px;font-size:10px;color:var(--text2);margin-bottom:6px">
-    <div></div><div style="display:flex;justify-content:space-between">${Array.from({length:(dayEndH-dayStartH)/2+1},(_,i)=>`<span>${dayStartH+i*2}h</span>`).join('')}</div>
-  </div>`;
+  const scale = `<div class="sv-tl-row sv-tl-scale"><span></span><div>${Array.from({ length: (dayEndH - dayStartH) / 2 + 1 }, (_, i) => `<span>${dayStartH + i * 2}h</span>`).join('')}</div><span>Attente flux</span></div>`;
   el.innerHTML = scale + (rows || '<div class="sv-empty">Aucun agent.</div>');
 }
 

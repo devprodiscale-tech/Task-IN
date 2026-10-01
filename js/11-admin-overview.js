@@ -51,8 +51,10 @@ function adminOverviewTeamRows(activeTimers) {
   return agents.map(agent => {
     const timer = timerByAgent.get(agent.id), history = agentEntries.get(agent.id) || [], todayHistory = history.filter(entry => isToday(entry.startTimeStr));
     const totalMinutes = Math.round(todayHistory.reduce((sum, entry) => sum + Number(entry.durationSec || 0), 0) / 60);
-    const status = timer ? 'En activité' : todayHistory.length ? 'Présent aujourd’hui' : 'En attente';
-    const statusClass = timer ? 'live' : todayHistory.length ? 'seen' : 'idle';
+    // Sans traitement en cours : « Attente flux » pendant le shift, « Hors shift » en dehors.
+    const idleLabel = typeof taskinIdleLabel === 'function' ? taskinIdleLabel(agent) : 'En attente';
+    const status = timer ? 'En activité' : idleLabel;
+    const statusClass = timer ? 'live' : idleLabel === 'Attente flux' ? 'seen' : 'idle';
     const detail = timer ? `${adminOverviewSourceLabel(timer.source)} · ${adminOverviewFormatElapsed(timer.startTime)}` : todayHistory.length ? `${todayHistory.length} traitement${todayHistory.length > 1 ? 's' : ''} · ${totalMinutes} min` : 'Aucune activité enregistrée';
     return `<button class="admin-overview-team-row" type="button" data-admin-agent-id="${adminOverviewEscape(agent.id)}">${adminOverviewAvatar(agent, Boolean(timer))}<span class="admin-overview-team-copy"><strong>${adminOverviewEscape(agent.name || 'Sans nom')}</strong><small>${adminOverviewEscape(detail)}</small></span><span class="admin-overview-status ${statusClass}"><i></i>${status}</span><span class="admin-overview-chevron">→</span></button>`;
   }).join('');

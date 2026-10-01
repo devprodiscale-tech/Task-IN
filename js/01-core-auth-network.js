@@ -401,6 +401,8 @@ async function refreshApp() {
     loadDMT(),
     loadGoals(),
     loadEntries(false),
+    // Présence du jour (statuts « Attente flux » / « Pas connecté ») lue avant le premier affichage.
+    typeof taskinRefreshTodayLogins === 'function' ? taskinRefreshTodayLogins() : null,
   ]);
   if (typeof mergeTaskinLocalAccounts === 'function') mergeTaskinLocalAccounts();
   populateFilters();

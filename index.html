@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="css/09-supervisor.css?v=20260930c">
 <link rel="stylesheet" href="css/10-interfaces.css?v=20260930purge2">
 <link rel="stylesheet" href="css/11-form-controls.css?v=20260930a">
-<link rel="stylesheet" href="css/12-daily-results.css?v=20261002d">
+<link rel="stylesheet" href="css/12-daily-results.css?v=20261002e">
 </head>
 <body>
 
@@ -812,6 +812,11 @@
         </div>
 
         <div class="sv-card" style="cursor:default;margin-bottom:14px">
+          <div class="sv-card-title" style="margin-bottom:10px">Courbe d’évolution <span style="font-weight:400;font-size:11.5px;color:var(--text2)">traitements de l’équipe dans le temps, ou un agent comparé à l’équipe</span></div>
+          <div id="sv-rep-trend"></div>
+        </div>
+
+        <div class="sv-card" style="cursor:default;margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
             <div class="sv-card-title sv-card-title-icon" style="margin:0;--c:#7C3AED"><svg class="sv-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/></svg>Score qualité par agent (dernière écoute)</div>
             <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--text2)">
@@ -834,11 +839,12 @@
         </div>
 
         <div class="sv-card" style="cursor:default">
-          <div class="sv-card-title" style="margin-bottom:10px">Activité de la journée <span style="font-weight:400;font-size:11.5px;color:var(--text2)">(8h–18h)</span></div>
+          <div class="sv-card-title" style="margin-bottom:10px">Activité de la journée <span style="font-weight:400;font-size:11.5px;color:var(--text2)">(7h–23h)</span></div>
           <div id="sv-rep-timeline"></div>
-          <div style="display:flex;align-items:center;gap:14px;font-size:11px;color:var(--text2);margin-top:10px">
-            <span><span style="width:10px;height:10px;background:var(--ocean);border-radius:2px;display:inline-block;margin-right:4px"></span>Tâche active</span>
-            <span><span style="width:10px;height:10px;background:var(--red);border-radius:2px;display:inline-block;margin-right:4px"></span>Trou d'activité &gt; 15 min</span>
+          <div class="sv-tl-legend">
+            <span><i class="is-task"></i>Tâche chronométrée</span>
+            <span><i class="is-wait"></i>Attente flux (dans le shift, rien de logué)</span>
+            <span><i class="is-off"></i>Hors shift</span>
           </div>
         </div>
 
@@ -1353,28 +1359,28 @@
 
 <script src="js/00-supabase-config.js?v=20260901" defer></script>
 <script src="js/00-data-provider.js?v=20260930blocb" defer></script>
-<script src="js/00-core-init.js?v=20261002d" defer></script>
-<script src="js/01-core-auth-network.js?v=20261002d" defer></script>
+<script src="js/00-core-init.js?v=20261002e" defer></script>
+<script src="js/01-core-auth-network.js?v=20261002e" defer></script>
 <script src="js/02-time-data.js?v=20260930sup" defer></script>
-<script src="js/03-dashboard-render.js?v=20261002c" defer></script>
+<script src="js/03-dashboard-render.js?v=20261002e" defer></script>
 <script src="js/04-admin.js?v=20261002c" defer></script>
-<script src="js/11-admin-overview.js?v=20261002a" defer></script>
+<script src="js/11-admin-overview.js?v=20261002e" defer></script>
 <script src="js/12-admin-workflow.js?v=20260930sup" defer></script>
-<script src="js/13-admin-stat.js?v=20261002b" defer></script>
+<script src="js/13-admin-stat.js?v=20261002e" defer></script>
 <script src="js/14-admin-quality.js?v=20260918" defer></script>
 <script src="js/15-admin-training.js?v=20260918" defer></script>
 <script src="js/16-admin-settings.js?v=20260930purge" defer></script>
 <script src="js/17-admin-local-features.js?v=20260930sec" defer></script>
 <script src="js/06-ui-modals.js?v=20260930t" defer></script>
-<script src="js/07-analytics.js?v=20261001h" defer></script>
+<script src="js/07-analytics.js?v=20261002e" defer></script>
 <script src="js/08-analytics-advanced.js?v=20260930ui" defer></script>
-<script src="js/18-agent-sessions.js?v=20261002c" defer></script>
+<script src="js/18-agent-sessions.js?v=20261002e" defer></script>
 <script src="js/19-extension-bridge.js?v=20260930u" defer></script>
 <script src="js/20-agent-pole.js?v=20261001f" defer></script>
 <script src="js/21-agent-purge.js?v=20260930a" defer></script>
 <script src="js/23-agent-dispatch.js?v=20261002d" defer></script>
 <script src="js/24-agent-difficulty.js?v=20261002d" defer></script>
-<script src="js/27-heatmap.js?v=20261001a" defer></script>
+<script src="js/27-heatmap.js?v=20261002e" defer></script>
 <script src="js/00-landing.js?v=20260930d" defer></script>
 <script src="js/99-init.js?v=20260827" defer></script>
 </body>
