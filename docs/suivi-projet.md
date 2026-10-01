@@ -34,7 +34,21 @@ Chaque ligne est cochée dès qu’elle est terminée, testée et poussée.
 | G4 | Exports : stats à cocher, période, agents (multi-sélection) → Google Sheet + Google Slides. Superviseur : en bas de Reporting ; admin : en bas de Supervision | ✅ fait (.xlsx 8 onglets + .pptx, modèles enregistrables) |
 | G5 | Agent : saisie de ses stats OSC en fin de shift, heure de saisie signalée, capture avec l’heure visible et filtre OSC « Aujourd’hui » | ✅ fait (migration 019, rappel à la déconnexion) |
 | G6 | Dispatch client dans le pop-up de l’extension (pas dans le reste de l’extension) | ✅ fait (extension v1.11.0, à réinstaller) |
-| G7 | Bilan avant déploiement ; s’il ne reste rien : injection des données fictives pour la vidéo | à faire |
+| G7 | Bilan avant déploiement ; s’il ne reste rien : injection des données fictives pour la vidéo | ✅ bilan fait : il reste des points (ci-dessous), données fictives pas encore injectées |
+
+### Reste avant le déploiement (bilan G7)
+
+| # | Point | Qui |
+|---|---|---|
+| R1 | Tickets de retour agents : type, références, lien vers l’outil client, description guidée, capture, détection des doublons, fiche soignée côté superviseur | code |
+| R2 | Panneau « Supervision » encore visible pour un agent après une déconnexion admin / superviseur dans le même onglet (mis en pause à ta demande ; les données restent protégées par la base) | code |
+| R3 | Statut « attente flux » hors shift et courbe d’évolution (reste du sprint « revue globale ») | code |
+| R4 | Mettre `main` à jour avec G1 → G6 (sur ta consigne « push ») | toi |
+| R5 | Supabase : activer la protection contre les mots de passe divulgués (Authentication › Policies) ; Vercel : `SUPABASE_URL` sans `/rest/v1`, `GEMINI_API_KEY`, `TASKIN_ALLOWED_ORIGIN` | toi |
+| R6 | Agents : réinstaller l’extension v1.11.0 (dispatch dans le pop-up) | toi / agents |
+| R7 | Test réel : une déclaration agent, une reprise superviseur, une grille partagée, un export | toi |
+
+Ensuite seulement : injection des données fictives (5 FO, 3 BO, 3 Reconf) pour la vidéo, puis nettoyage avant ouverture aux agents.
 
 Après la mise en production : module Planning (puis présence vs planning), Reconf, documentation management.
 
@@ -42,9 +56,13 @@ Après la mise en production : module Planning (puis présence vs planning), Rec
 
 - **Admin** : Statistiques → sélecteur en haut « Pilotage 360° | Analyse | Résultats OSC | Appels manqués ».
   Dans Résultats OSC : « Saisie OSC | Objectifs & tendance | Semaine ».
-- **Superviseur** : onglets « Pilotage 360° », « Résultats », « Appels manqués », « Cas complexes ».
-- **Agent** : barre « Mon dispatch client » (+ « Signaler une difficulté ») sur l’accueil,
-  onglets « Mes résultats » et « Appels manqués ».
+- **Superviseur** : onglets « Pilotage 360° » (vues enregistrées, fiche 360° + notes 1:1), « Résultats » (déclarations
+  des agents à reprendre), « Appels manqués », « Cas complexes », « Grille d’écoute » (retour partagé avec l’agent),
+  « Coaching 1:1 » (notes à aborder), « Reporting » (préparation des 1:1, **Exports tout en bas**), « Connexions » (dates au choix).
+- **Admin** : Supervision → **Exports tout en bas** ; Connexions : dates au choix, écart au shift, export CSV.
+- **Agent** : barre « Mon dispatch client » (+ « Signaler une difficulté ») sur l’accueil et dans le pop-up de
+  l’extension ; onglet « Mes résultats » : objectif du jour, **déclaration des chiffres OSC de fin de shift**,
+  **Mes écoutes** ; onglet « Appels manqués ».
 
 ## Règles métier retenues
 
