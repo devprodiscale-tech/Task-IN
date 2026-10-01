@@ -16,11 +16,24 @@ Réglages OBS : 1920×1080, 30 i/s, format MP4. Une seule source « Capture de f
 
 ## 2. Préparer la démo (la veille)
 
-1. **Données de démonstration** : je génère un jeu fictif complet (5 agents FO, 3 BO, 3 Reconf) :
-   résultats OSC sur 3 semaines, objectifs, dispatchs, appels manqués, cas complexes, signalements, grilles
-   d’écoute. Toutes les lignes sont marquées « démo » et un script les efface en une fois.
-2. **Comptes** : un compte admin, un compte superviseur et un compte agent FO de démonstration, connectés
-   dans 3 profils Chrome différents (pas besoin de se déconnecter pendant la vidéo).
+1. **Données de démonstration** (déjà injectées) : 12 comptes fictifs et 3 semaines d’activité,
+   scripts dans `migration/demo/` :
+   - `demo_v2_1_accounts.sql` : les comptes ;
+   - `demo_v2_2_data.sql` : l’activité (traitements, connexions, chiffres OSC, objectifs, dispatch,
+     appels manqués, tickets agents, écoutes partagées, fiches 1:1, notes de coaching). **À relancer le
+     matin du tournage** (4 étapes, éditeur SQL Supabase) pour que « Aujourd’hui » soit rempli ;
+   - `demo_v2_cleanup.sql` : efface tout (comptes + données), sans toucher aux vrais comptes.
+2. **Comptes** (mot de passe commun `TaskinDemo#2026`), un par profil Chrome :
+   | Rôle | E-mail | Pôle · shift |
+   |---|---|---|
+   | Superviseur | `sarah.sup@demo-taskin.invalid` | — |
+   | Agent | `mialy.r@demo-taskin.invalid` (meilleure FO) | FO · 7 h – 16 h |
+   | Agent | `toky.a@` · `fanja.h@` | FO · 7 h – 16 h |
+   | Agent | `hasina.m@` (pas connectée aujourd’hui) · `lova.t@` | FO · 13 h – 22 h |
+   | Agent | `nirina.s@` · `tiana.v@` · `rado.f@` | BO · 8 h – 17 h |
+   | Agent | `voahirana.k@` · `sitraka.b@` · `ony.l@` | Reconf · 9 h – 18 h |
+
+   L’admin reste votre compte habituel.
 3. **Navigateur propre** : zoom à 100 %, onglets inutiles fermés, barre de favoris masquée
    (Ctrl+Maj+B), notifications Windows coupées (mode « Ne pas déranger »).
 4. **Thème** : clair (plus lisible en vidéo).
@@ -55,6 +68,7 @@ beaucoup plus simple à reprendre en cas d’erreur.
 
 ## 5. Après la vidéo : nettoyage avant le déploiement
 
-1. Supprimer toutes les données de démonstration (script fourni avec le jeu de démo).
-2. Supprimer les comptes de démonstration.
+1. Lancer `migration/demo/demo_v2_cleanup.sql` dans l’éditeur SQL Supabase : il supprime les 12 comptes
+   `@demo-taskin.invalid` et toutes leurs données, et retire leurs shifts des réglages.
+2. Ancien jeu (C4, rattaché aux comptes de test) : `migration/demo_cleanup.sql`.
 3. Vérifier dans Task’in que les tableaux sont vides de données fictives avant d’ouvrir l’accès aux agents.
