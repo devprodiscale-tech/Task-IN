@@ -1,6 +1,6 @@
 # Task’in — suivi du projet
 
-Dernière mise à jour : 1er octobre 2026 (fin de journée).
+Dernière mise à jour : 1er octobre 2026.
 
 ## Où en est le code
 
@@ -17,14 +17,32 @@ Dernière mise à jour : 1er octobre 2026 (fin de journée).
 | Objectifs fixes par pôle modifiables par le superviseur | **main** | — |
 | Import de l’historique du Google Sheet (262 appels, juin–septembre) | **main** | migration 016 + données importées |
 | Slides de reporting automatiques (.pptx / Google Slides) | **main** | — |
+| Heatmaps 7h–23h (composant commun) + bouton « Objectifs par pôle » | **main** | — |
+| Pilotage 360° : équipe → agents → fiche agent, KPI personnalisables | **main** | — |
 
 Branche de travail : `claude/happy-tesla-dgja39`, mise sur `main` le 1er octobre (tout est en ligne).
 
+## Plan d’action en cours (validé le 1er octobre)
+
+Chaque ligne est cochée dès qu’elle est terminée, testée et poussée.
+
+| # | Chantier | Statut |
+|---|---|---|
+| G1 | Vues enregistrées du Pilotage 360° (filtres + KPI sous un nom) | ✅ fait (migration 017) |
+| G2 | Notes de coaching : sur la grille d’écoute (visible par l’agent) et sur le reporting / fiche 360° (préparation du 1:1) | à faire |
+| G3 | Connexions : choix des dates à la main (comparaison au planning après le module Planning, post-prod) | à faire |
+| G4 | Exports : stats à cocher, période, agents (multi-sélection) → Google Sheet + Google Slides. Superviseur : en bas de Reporting ; admin : en bas de Supervision | à faire |
+| G5 | Agent : saisie de ses stats OSC en fin de shift, heure de saisie signalée, capture avec l’heure visible et filtre OSC « Aujourd’hui » | à faire |
+| G6 | Dispatch client dans le pop-up de l’extension (pas dans le reste de l’extension) | à faire |
+| G7 | Bilan avant déploiement ; s’il ne reste rien : injection des données fictives pour la vidéo | à faire |
+
+Après la mise en production : module Planning (puis présence vs planning), Reconf, documentation management.
+
 ## Où trouver chaque fonction
 
-- **Admin** : Statistiques → sélecteur en haut « Analyse | Résultats OSC | Appels manqués ».
+- **Admin** : Statistiques → sélecteur en haut « Pilotage 360° | Analyse | Résultats OSC | Appels manqués ».
   Dans Résultats OSC : « Saisie OSC | Objectifs & tendance | Semaine ».
-- **Superviseur** : onglets « Résultats », « Appels manqués », « Cas complexes ».
+- **Superviseur** : onglets « Pilotage 360° », « Résultats », « Appels manqués », « Cas complexes ».
 - **Agent** : barre « Mon dispatch client » (+ « Signaler une difficulté ») sur l’accueil,
   onglets « Mes résultats » et « Appels manqués ».
 

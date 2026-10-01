@@ -35,7 +35,7 @@ const PIL_KPIS = [
 ];
 const PIL_DEFAULT = ['treatments', 'actions', 'calls', 'dmt', 'actionsPerDay', 'goalRate', 'recallRate', 'quality', 'openCases', 'connected'];
 
-let pilState = { period: '28d', pole: 'all', from: '', to: '', agent: '', sort: 'actions', dir: -1, data: null, loading: false, error: '', custom: false };
+let pilState = { period: '28d', pole: 'all', from: '', to: '', agent: '', sort: 'actions', dir: -1, data: null, loading: false, error: '', custom: false, views: null, activeView: '', saving: false };
 
 function pilEl(id) { return document.getElementById(id); }
 function pilDay(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
@@ -220,17 +220,62 @@ function pilFiltersHtml() {
 }
 
 function pilSet(key, value) {
-  pilState[key] = value;
+  pilState[key] = value; pilState.activeView = '';
   if (key === 'period' && value === 'custom' && !pilState.from) { pilState.to = pilDay(new Date()); pilState.from = pilShift(pilState.to, -13); }
   if (key === 'pole') { pilPaint(); return; }
   pilLoad();
 }
-function pilSetCustom() { const f = pilEl('pil-from').value, t = pilEl('pil-to').value; if (f && t) { pilState.from = f; pilState.to = t; pilLoad(); } }
+function pilSetCustom() { const f = pilEl('pil-from').value, t = pilEl('pil-to').value; if (f && t) { pilState.from = f; pilState.to = t; pilState.activeView = ''; pilLoad(); } }
 
 async function renderPilotage() {
   if (!pilEl('pilotage-panel') || !currentUser) return;
   pilState.agent = '';
+  if (!pilState.views) pilLoadViews();
   await pilLoad();
+}
+
+// ---------- Vues enregistrées (table taskin_saved_views, scope « pilotage ») ----------
+async function pilLoadViews() {
+  try { pilState.views = await pilFetch('taskin_saved_views?select=id,owner_id,name,config,shared&scope=eq.pilotage&order=name.asc'); }
+  catch (_) { pilState.views = []; }
+  if (!pilState.loading) pilPaint();
+}
+function pilViewsHtml() {
+  const views = pilState.views || [];
+  const chips = views.map(v => `<span class="pil-view ${pilState.activeView === v.id ? 'active' : ''}"><button type="button" onclick="pilApplyView('${v.id}')" title="${v.shared ? 'Vue partagée avec l’encadrement' : 'Vue personnelle'}">${v.shared ? '👥 ' : ''}${escHtml(v.name)}</button>${v.owner_id === currentUser?.id || currentUser?.role === 'admin' || currentUser?.role === 'supervisor' ? `<button type="button" class="pil-view-x" onclick="pilDeleteView('${v.id}')" aria-label="Supprimer la vue ${escHtml(v.name)}">×</button>` : ''}</span>`).join('');
+  const form = pilState.saving ? `<span class="pil-view-form"><input type="text" class="form-input" id="pil-view-name" maxlength="60" placeholder="Nom de la vue (ex. Bilan BO mensuel)" onkeydown="if(event.key==='Enter')pilSaveView()"><label><input type="checkbox" id="pil-view-shared"> Partager avec l’encadrement</label><button type="button" class="btn btn-primary" onclick="pilSaveView()">Enregistrer</button><button type="button" class="btn btn-ghost" onclick="pilState.saving=false;pilPaint()">Annuler</button></span>`
+    : '<button type="button" class="dr-edit-btn" onclick="pilState.saving=true;pilPaint();setTimeout(()=>pilEl(\'pil-view-name\')?.focus(),0)">＋ Enregistrer cette vue</button>';
+  return `<div class="pil-views"><b>Mes vues</b>${chips || '<small class="dr-muted">Aucune vue enregistrée : règle les filtres et les KPI puis enregistre-les sous un nom.</small>'}${form}</div>`;
+}
+function pilViewConfig() { return { period: pilState.period, from: pilState.from, to: pilState.to, pole: pilState.pole, kpis: pilSelected(), sort: pilState.sort, dir: pilState.dir }; }
+async function pilSaveView() {
+  const name = (pilEl('pil-view-name')?.value || '').trim();
+  if (!name) { pilEl('pil-view-name')?.focus(); return; }
+  const shared = !!pilEl('pil-view-shared')?.checked;
+  try {
+    const [row] = await dispatchRest('taskin_saved_views', { method: 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ scope: 'pilotage', name, shared, config: pilViewConfig() }) });
+    pilState.views = [...(pilState.views || []), row].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    pilState.activeView = row.id; pilState.saving = false;
+  } catch (e) { alert('Enregistrement impossible : ' + e.message); }
+  pilPaint();
+}
+function pilApplyView(id) {
+  const v = (pilState.views || []).find(x => x.id === id);
+  if (!v) return;
+  const c = v.config || {};
+  Object.assign(pilState, { period: c.period || '28d', from: c.from || '', to: c.to || '', pole: c.pole || 'all', sort: c.sort || 'actions', dir: c.dir || -1, agent: '', activeView: id });
+  if (Array.isArray(c.kpis) && c.kpis.length) { try { localStorage.setItem(pilPrefsKey(), JSON.stringify(c.kpis)); } catch (_) {} }
+  pilLoad();
+}
+async function pilDeleteView(id) {
+  const v = (pilState.views || []).find(x => x.id === id);
+  if (!v || !confirm(`Supprimer la vue « ${v.name} » ?`)) return;
+  try {
+    await dispatchRest(`taskin_saved_views?id=eq.${id}`, { method: 'DELETE' });
+    pilState.views = pilState.views.filter(x => x.id !== id);
+    if (pilState.activeView === id) pilState.activeView = '';
+  } catch (e) { alert('Suppression impossible : ' + e.message); }
+  pilPaint();
 }
 
 function pilPaint() {
@@ -249,7 +294,7 @@ function pilPaint() {
         <p>${pilState.agent ? 'Tous les indicateurs de l’agent comparés à l’équipe et à la période précédente.' : 'Les indicateurs de toutes les sources Task’in, de l’équipe jusqu’à chaque agent. Clique sur un agent pour ouvrir sa fiche 360°.'}</p></div>
       <div class="dr-head-actions">${pilState.agent ? '<button type="button" class="btn btn-ghost" onclick="pilOpenAgent(\'\')">← Équipe</button>' : '<button type="button" class="btn btn-ghost" onclick="pilToggleCustom()">⚙ Personnaliser les KPI</button>'}</div>
     </div>
-    <div class="dr-toolbar">${pilFiltersHtml()}</div>
+    <div class="dr-toolbar">${pilFiltersHtml()}${pilState.agent ? '' : pilViewsHtml()}</div>
     ${pilState.custom && !pilState.agent ? pilCustomHtml(sel) : ''}
     ${body}
   </section>`;
@@ -307,6 +352,7 @@ function pilToggleKpi(input) {
   // Garde l'ordre du catalogue.
   sel = PIL_KPIS.map(k => k.key).filter(k => sel.includes(k));
   try { localStorage.setItem(pilPrefsKey(), JSON.stringify(sel)); } catch (_) {}
+  pilState.activeView = '';
   pilPaint();
 }
 function pilResetKpis() { try { localStorage.removeItem(pilPrefsKey()); } catch (_) {} pilPaint(); }
