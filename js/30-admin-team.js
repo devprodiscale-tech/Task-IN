@@ -2,21 +2,16 @@
 // Pôle : répartition des traitements de la période entre ses agents. Agent : répartition par canal.
 // Annuaire : toutes les personnes enregistrées (tous rôles), avec une fiche détaillée au clic.
 
-const tpState = { period: 'today', sessions: null, sessionsAt: 0, loading: false, dirRole: 'all', dirOpen: false };
+const tpState = { period: 'today', from: '', to: '', sessions: null, sessionsAt: 0, loading: false, dirRole: 'all', dirOpen: false };
 const TP_POLES = [['fo', 'Front Office', '#2563EB'], ['bo', 'Back Office', '#7C3AED'], ['reconf', 'Reconfirmation', '#16A34A']];
 const TP_ROLES = { admin: 'Admin', supervisor: 'Superviseur', formateur: 'Formateur', agent: 'Agent' };
 const TP_SOURCES = { inbound: 'Appel entrant', outbound: 'Appel sortant', chat: 'Chat', email: 'E-mail', ticket: 'Ticket', manual: 'Manuel' };
 
 function tpEsc(v) { return typeof escHtml === 'function' ? escHtml(v) : String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-function tpRange() {
-  const from = new Date(); from.setHours(0, 0, 0, 0);
-  if (tpState.period === '7d') from.setDate(from.getDate() - 6);
-  if (tpState.period === 'month') from.setDate(1);
-  return from;
-}
+function tpRange() { return taskinPeriodBounds(tpState.period, tpState.from, tpState.to); }
 function tpEntries() {
-  const from = tpRange();
-  return (typeof entries !== 'undefined' ? entries : []).filter(e => getEntryDate(e.startTimeStr) >= from);
+  const b = tpRange();
+  return (typeof entries !== 'undefined' ? entries : []).filter(e => { const d = getEntryDate(e.startTimeStr); return d >= b.start && d <= b.end; });
 }
 function tpHm(min) { return `${Math.floor(min / 60)}h${String(Math.round(min % 60)).padStart(2, '0')}`; }
 
@@ -69,7 +64,7 @@ function taskinTeamPolesRender(activeTimers) {
   const live = new Set((tpState.timers || []).map(t => t.agentId));
   const list = tpEntries();
   const agents = (TEAM || []).filter(u => u.role === 'agent');
-  const periodLabel = { today: "aujourd’hui", '7d': '7 derniers jours', month: 'ce mois' }[tpState.period];
+  const periodLabel = { today: "aujourd’hui", '7d': '7 derniers jours', month: 'ce mois' }[tpState.period] || taskinPeriodLabel('custom', tpState.from, tpState.to);
   const poles = [...TP_POLES, ...(agents.some(a => !a.pole) ? [['', 'Sans pôle', '#64748B']] : [])];
   const cards = poles.map(([key, label, color]) => {
     const inPole = agents.filter(a => (a.pole || '') === key);
@@ -108,11 +103,12 @@ function taskinTeamPolesRender(activeTimers) {
         <td class="dr-row-action"><button type="button" class="dr-edit-btn" data-tp-person="${tpEsc(u.id)}">Fiche</button></td></tr>`; }).join('')}
       </tbody></table></div></div></details>`;
   el.innerHTML = `<div class="tp-head"><div><span class="admin-overview-section-label">Équipe · par pôle</span><h2>Répartition du travail</h2><p>Donut du pôle : part de chaque agent dans les traitements. Donut de l’agent : ses canaux.</p></div>
-      <div class="aq-poles tp-periods">${[['today', "Aujourd’hui"], ['7d', '7 jours'], ['month', 'Ce mois']].map(([k, l]) => `<button type="button" class="${tpState.period === k ? 'active' : ''}" data-tp-period="${k}">${l}</button>`).join('')}</div></div>
+      <div class="aq-poles tp-periods">${[['today', "Aujourd’hui"], ['7d', '7 jours'], ['month', 'Ce mois'], ['custom', 'Période…']].map(([k, l]) => `<button type="button" class="${tpState.period === k ? 'active' : ''}" data-tp-period="${k}">${l}</button>`).join('')}${tpState.period === 'custom' ? taskinCustomRangeHtml('data-tp-range', tpState.from, tpState.to) : ''}</div></div>
     <div class="tp-poles">${cards}</div>
     <div class="tp-src-legend">${Object.entries(TP_SOURCES).map(([k, l]) => `<span><i style="background:${taskinSourceColor(k)}"></i>${l}</span>`).join('')}<em>Période : ${periodLabel}</em></div>
     ${directory}`;
-  el.querySelectorAll('[data-tp-period]').forEach(b => b.onclick = () => { tpState.period = b.dataset.tpPeriod; taskinTeamPolesRender(); });
+  el.querySelectorAll('[data-tp-period]').forEach(b => b.onclick = () => { tpState.period = b.dataset.tpPeriod; if (tpState.period === 'custom' && !tpState.from) Object.assign(tpState, taskinDefaultCustom()); taskinTeamPolesRender(); });
+  el.querySelectorAll('[data-tp-range]').forEach(i => i.onchange = () => { tpState[i.dataset.tpRange] = i.value; if (typeof taskinEnsureEntriesFrom === 'function' && tpState.from) taskinEnsureEntriesFrom(tpState.from).then(added => { if (added) taskinTeamPolesRender(); }).catch(() => {}); taskinTeamPolesRender(); });
   el.querySelectorAll('[data-tp-role]').forEach(b => b.onclick = () => { tpState.dirRole = b.dataset.tpRole; taskinTeamPolesRender(); });
   el.querySelectorAll('[data-tp-person]').forEach(b => b.onclick = () => tpOpenPerson(b.dataset.tpPerson));
 }

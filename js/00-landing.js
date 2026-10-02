@@ -266,11 +266,35 @@
     pwd.type=show?'text':'password'; $('lp-eye').textContent=show?'Masquer':'Afficher';
     $('lp-eye').setAttribute('aria-label',show?'Masquer le mot de passe':'Afficher le mot de passe');
   });
+  // Mot de passe oublié : même fenêtre, champ mot de passe masqué, lien envoyé par e-mail.
+  function setMode(mode,focus=true){
+    const forgot=mode==='forgot';
+    login.dataset.mode=forgot?'forgot':'login';
+    $('lp-pwd-field').hidden=forgot; $('lp-forgot').hidden=forgot; $('lp-back').hidden=!forgot;
+    $('lp-loginTitle').textContent=forgot?'Mot de passe oublié':'Connexion';
+    $('lp-loginTitle').nextElementSibling.textContent=forgot?'Recevez un lien de réinitialisation par e-mail.':'Accédez à votre espace Task’in.';
+    $('lp-submit').innerHTML=forgot?'Envoyer le lien &nbsp;→':'Se connecter &nbsp;→';
+    $('login-error').textContent=''; $('login-ok').hidden=true; $('login-ok').textContent='';
+    if(focus) email.focus({preventScroll:true});
+  }
+  document.querySelectorAll('[data-lp-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.lpMode)));
+  async function sendReset(){
+    const btn=$('lp-submit'), ok=$('login-ok');
+    btn.disabled=true; btn.textContent='Envoi…';
+    try{
+      await window.taskinDataProviders.supabase.requestPasswordReset(email.value.trim(), location.origin+location.pathname);
+      // Message neutre : ne révèle pas si un compte existe pour cette adresse.
+      ok.textContent='Si un compte existe pour cette adresse, un e-mail contenant un lien de réinitialisation vient d’être envoyé. Pense à vérifier les indésirables.';
+      ok.hidden=false;
+    }catch(e){ $('login-error').textContent=e.message||'Envoi impossible.'; }
+    finally{ btn.disabled=false; btn.innerHTML='Envoyer le lien &nbsp;→'; }
+  }
   login.addEventListener('submit',async e=>{
     e.preventDefault();
     const err=$('login-error'), btn=$('lp-submit');
     err.textContent='';
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){err.textContent='Adresse e-mail invalide.';email.focus();return}
+    if(login.dataset.mode==='forgot') return sendReset();
     if(!pwd.value){err.textContent='Veuillez saisir votre mot de passe.';pwd.focus();return}
     btn.disabled=true; btn.textContent='Connexion…';
     try{ if(typeof doLogin==='function') await doLogin(); }
@@ -301,5 +325,25 @@
   screen.addEventListener('scroll',()=>header.classList.toggle('lp-scrolled',screen.scrollTop>24),{passive:true});
 
   // API utilisée par l'app (déconnexion) et par la présentation
-  window.taskinLanding={ openLogin, showWelcome(){ screen.scrollTop=0; closeLogin(false); email.value=''; pwd.value=''; $('login-error').textContent=''; }, discover };
+  // Retour du lien e-mail : formulaire « nouveau mot de passe » centré, puis entrée dans l'app.
+  const recovery=$('lp-recovery');
+  function showRecovery(){ recovery.hidden=false; backdrop.hidden=false; requestAnimationFrame(()=>backdrop.classList.add('lp-open')); setTimeout(()=>$('recovery-password').focus(),50); }
+  function showLinkError(message){ openLogin(); setMode('forgot'); $('login-error').textContent=message; }
+  recovery.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const err=$('recovery-error'), btn=$('recovery-submit'), a=$('recovery-password').value, b=$('recovery-confirm').value;
+    err.textContent='';
+    if(a.length<8){err.textContent='Au moins 8 caractères.';return}
+    if(a!==b){err.textContent='Les deux mots de passe ne correspondent pas.';return}
+    btn.disabled=true; btn.textContent='Enregistrement…';
+    try{
+      await window.taskinDataProviders.supabase.updatePassword(a);
+      recovery.hidden=true; backdrop.classList.remove('lp-open'); backdrop.hidden=true;
+      if(typeof tryRestoreSession==='function'&&await tryRestoreSession()){ screen.style.display='none'; if(typeof showToast==='function') showToast('Mot de passe mis à jour.'); }
+      else { openLogin(); $('login-error').textContent='Mot de passe mis à jour : connecte-toi.'; }
+    }catch(e){ err.textContent=/session|401|expired|jwt/i.test(e.message||'')?'Ce lien a expiré : demande un nouveau lien.':(e.message||'Enregistrement impossible.'); }
+    finally{ btn.disabled=false; btn.innerHTML='Enregistrer et me connecter &nbsp;→'; }
+  });
+
+  window.taskinLanding={ openLogin, setMode, showRecovery, showLinkError, showWelcome(){ screen.scrollTop=0; closeLogin(false); setMode('login',false); email.value=''; pwd.value=''; $('login-error').textContent=''; }, discover };
 })();

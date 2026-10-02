@@ -318,10 +318,15 @@ function populateDonutAgentSelect() {
 }
 
 function renderEvolutionChart() {
-  const scope = document.getElementById('chart-scope').value; const period = document.getElementById('chart-period').value; const days = period === 'week' ? 7 : 30;
+  const scopeEl = document.getElementById('chart-scope'), periodEl = document.getElementById('chart-period');
+  // Période : 7 / 30 derniers jours ou dates libres (bornées à 92 jours pour garder un graphique lisible).
+  const bounds = periodEl.value === 'custom' && typeof taskinSelectBounds === 'function' ? taskinSelectBounds(periodEl) : null;
+  if (bounds && typeof taskinEnsureEntriesFrom === 'function' && !periodEl.dataset.loadedFrom?.startsWith(bounds.from)) { periodEl.dataset.loadedFrom = bounds.from; taskinEnsureEntriesFrom(bounds.from).then(() => renderEvolutionChart()).catch(() => {}); }
+  const endDay = bounds ? new Date(bounds.end) : new Date(); endDay.setHours(0,0,0,0);
+  const days = bounds ? Math.min(92, Math.round((endDay - new Date(bounds.start).setHours(0,0,0,0)) / 864e5) + 1) : periodEl.value === 'week' ? 7 : 30;
   const buckets = [];
-  for (let i = days - 1; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0); buckets.push({ date: d, totalSec: 0 }); }
-  const scoped = scope === 'team' ? entries : entries.filter(e => e.agent === scope);
+  for (let i = days - 1; i >= 0; i--) { const d = new Date(endDay); d.setDate(d.getDate() - i); d.setHours(0,0,0,0); buckets.push({ date: d, totalSec: 0 }); }
+  const scoped = entries.filter(e => typeof taskinAgentPass === 'function' ? taskinAgentPass(scopeEl, e.agent) : (scopeEl.value === 'team' || e.agent === scopeEl.value));
   scoped.forEach(e => { const d = getEntryDate(e.startTimeStr); const bucket = buckets.find(b => b.date.toDateString() === d.toDateString()); if (bucket) bucket.totalSec += e.durationSec; });
   const maxSec = Math.max(...buckets.map(b=>b.totalSec), 60); const showEvery = days > 14 ? Math.ceil(days/12) : 1;
   const barsHtml = buckets.map((b,i) => {

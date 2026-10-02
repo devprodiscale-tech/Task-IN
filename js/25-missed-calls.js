@@ -84,7 +84,7 @@ async function renderMissedCalls() {
 function mcFiltered() {
   const [from, to] = mcPeriod();
   return mcState.rows.filter(r => r.call_date >= from && r.call_date <= to
-    && (mcState.agent === '__all' || mcAgentKey(r) === mcState.agent)
+    && (mcState.agent === '__all' ? (!mcState.pole || (r.agent_id && taskinPoleOfAgent(r.agent_id) === mcState.pole)) : mcAgentKey(r) === mcState.agent)
     && (mcState.cause === '__all' || r.cause === mcState.cause));
 }
 
@@ -98,7 +98,8 @@ function mcFiltersHtml() {
   return `<div class="mc-filters">
     <div class="dr-poles">${ranges.map(([k, l]) => `<button type="button" class="${mcState.range === k ? 'active' : ''}" onclick="mcSetRange('${k}')">${l}</button>`).join('')}</div>
     ${mcState.range === 'custom' ? `<span class="mc-custom"><input type="date" class="form-input" id="mc-from" value="${mcState.from}" max="${mcToday()}" onchange="mcSetCustom()"> → <input type="date" class="form-input" id="mc-to" value="${mcState.to}" max="${mcToday()}" onchange="mcSetCustom()"></span>` : ''}
-    <select class="form-input mc-select" onchange="mcState.agent=this.value;mcPaint()"><option value="__all">Tous les agents</option>${mcAgents().map(a => `<option value="${a.id}" ${mcState.agent === a.id ? 'selected' : ''}>${escHtml(a.name)}</option>`).join('')}${[...new Set(mcState.rows.filter(r => !r.agent_id && r.agent_name).map(r => r.agent_name))].sort().map(n => `<option value="name:${escHtml(n)}" ${mcState.agent === 'name:' + n ? 'selected' : ''}>${escHtml(n)} (Sheet)</option>`).join('')}</select>
+    ${currentUser?.role === 'agent' ? '' : `<select class="form-input mc-select" aria-label="Pôle" onchange="mcState.pole=this.value;if(mcState.pole&&mcState.agent!=='__all'&&taskinPoleOfAgent(mcState.agent)!==mcState.pole)mcState.agent='__all';mcPaint()">${TASKIN_POLE_CHOICES.map(([v, l]) => `<option value="${v}" ${(mcState.pole || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`}
+    <select class="form-input mc-select" onchange="mcState.agent=this.value;mcPaint()"><option value="__all">Tous les agents${mcState.pole ? ' du pôle' : ''}</option>${mcAgents().filter(a => !mcState.pole || a.pole === mcState.pole).map(a => `<option value="${a.id}" ${mcState.agent === a.id ? 'selected' : ''}>${escHtml(a.name)}</option>`).join('')}${[...new Set(mcState.rows.filter(r => !r.agent_id && r.agent_name).map(r => r.agent_name))].sort().map(n => `<option value="name:${escHtml(n)}" ${mcState.agent === 'name:' + n ? 'selected' : ''}>${escHtml(n)} (Sheet)</option>`).join('')}</select>
     <select class="form-input mc-select" onchange="mcState.cause=this.value;mcPaint()"><option value="__all">Toutes les causes</option>${MC_CAUSES.map(c => `<option ${mcState.cause === c ? 'selected' : ''}>${escHtml(c)}</option>`).join('')}</select>
   </div>`;
 }

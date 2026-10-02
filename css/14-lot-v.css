@@ -1,0 +1,46 @@
+/* Lot V : mot de passe oublié, identité Task’in sur l’accueil, filtres harmonisés, classement par pôle. */
+
+/* ---- Mot de passe oublié ---- */
+#login-screen .lp-login [hidden]{display:none!important}
+.lp-forgot-link{display:block;margin:2px 0 4px auto;padding:2px 0;border:0;background:none;color:var(--blue);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:transparent;transition:text-decoration-color .2s}
+.lp-forgot-link:hover{text-decoration-color:currentColor}
+.lp-forgot-link:focus-visible{outline:3px solid rgba(37,99,235,.4);outline-offset:2px;border-radius:4px}
+.lp-back-link{margin:10px auto 0;color:#475569}
+.lp-ok{margin:10px 0 0;padding:10px 12px;border-radius:10px;background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);color:#166534;font-size:12.5px;line-height:1.45}
+.lp-login[data-mode="forgot"] .lp-err:empty{min-height:0;margin:0}
+.lp-recovery{position:fixed;z-index:3;top:50%;left:50%;width:min(400px,calc(100vw - 32px));padding:24px 22px 18px;border-radius:20px;background:#fff;border:1px solid rgba(148,163,184,.3);box-shadow:0 28px 60px rgba(11,35,58,.25);transform:translate(-50%,-50%)}
+.lp-recovery .lp-head{margin-bottom:14px}
+.lp-recovery .lp-head img{width:44px;height:44px;border-radius:14px}
+.lp-recovery h2{font-size:19px}
+.admin-settings-account-reset{height:34px;padding:0 12px;border:1px solid var(--border2);background:var(--surface);color:var(--ocean);border-radius:8px;font:700 12px var(--font);cursor:pointer;white-space:nowrap}
+.admin-settings-account-reset:hover:not(:disabled){background:var(--ocean-dim)}
+.admin-settings-account-reset:disabled{opacity:.75;cursor:default}
+
+/* ---- Accueil : identité Task’in (bleu océan, marine du logo, violet), au lieu du bleu roi et de l’ambre ---- */
+#login-screen .lp-scene{background:
+  radial-gradient(circle at 82% 8%,rgba(139,92,246,.07),transparent 34%),
+  radial-gradient(circle at 8% 42%,rgba(37,99,235,.07),transparent 36%),
+  radial-gradient(circle at 50% 110%,rgba(11,35,58,.08),transparent 50%),
+  linear-gradient(160deg,#f8fafc 0%,#eef2f8 55%,#f1f3fb 100%)}
+#login-screen .lp-login-btn{background:var(--navy);box-shadow:0 10px 22px rgba(11,35,58,.28)}
+#login-screen .lp-login-btn:hover,#login-screen .lp-login-btn[aria-expanded="true"]{background:var(--blue);box-shadow:0 14px 28px rgba(37,99,235,.32)}
+#login-screen .lp-wordmark span:nth-child(n+5){background:linear-gradient(135deg,#2563EB,#8B5CF6);-webkit-background-clip:text;background-clip:text;color:transparent}
+#login-screen .lp-tagline{border-color:rgba(139,92,246,.28);background:rgba(139,92,246,.07);color:#5B21B6}
+#login-screen .lp-primary{background:linear-gradient(135deg,#2563EB,#1D4ED8)}
+
+/* ---- Filtres harmonisés : pôle à côté de l’agent, période libre ---- */
+.taskin-pole-filter{min-width:0}
+.taskin-range{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.taskin-range input[type="date"]{width:auto;min-width:132px;height:34px;padding:4px 8px}
+.taskin-range > span{color:var(--text3);font-size:12px}
+#lb-range,#matrix-range{display:inline-flex}
+.admin-workflow-periods,.admin-stat-periods,.admin-overview-controls,.tp-periods{flex-wrap:wrap;align-items:center}
+.admin-workflow-logs .admin-workflow-card-head label + label{margin-left:8px}
+
+/* ---- Classement : groupes par pôle ---- */
+.lb-pole-row td{padding:12px 14px 6px!important;background:var(--surface2);border-top:2px solid var(--border)}
+.lb-pole-row b{font-size:12px;letter-spacing:.04em;text-transform:uppercase;margin-right:10px}
+.lb-pole-row span{color:var(--text3);font-size:11.5px}
+.lb-pole-row em{float:right;font-style:normal;font-weight:700;font-size:12px;color:var(--text2)}
+.lb-pole-fo b{color:#2563EB}.lb-pole-bo b{color:#7C3AED}.lb-pole-reconf b{color:#16A34A}.lb-pole-none b{color:var(--text2)}
+.lb-score small{display:block;color:var(--text3);font-size:10.5px;font-weight:600}

@@ -1,9 +1,15 @@
 // ===== P2 : LEADERBOARD =====
 let lbPeriod = 'day';
+// Période libre du classement (« Période… ») : dates De / À propres au classement.
+let lbCustom = { from: '', to: '' };
 // Classement : l'encadrant choisit les KPI qui le composent et le critère de tri.
-// Score global = moyenne, sur les KPI cochés, d'une note 0–100 par KPI (100 = meilleur agent de la
-// période, 0 = le moins bon ; sens « plus haut » ou « plus bas » propre à chaque KPI).
+// Les évaluations (production et qualité) diffèrent d'une équipe à l'autre : chaque agent est donc noté
+// PAR RAPPORT AUX AGENTS DE SON PÔLE, KPI par KPI (note 0–100 : 100 = meilleur du pôle sur la période,
+// 0 = le moins bon ; sens « plus haut » ou « plus bas » propre à chaque KPI). Score global = moyenne des
+// notes. « Production » compte les canaux propres au pôle (FO : entrants, chat, e-mails ; BO : tickets,
+// e-mails ; Reconf : appels sortants) ; le FRT ne s'applique pas au BO (pas de première réponse).
 const LB_KPIS = [
+  { key: 'prod', label: 'Production du pôle', better: 'high', fmt: v => String(v) },
   { key: 'volume', label: 'Traitements', better: 'high', fmt: v => String(v) },
   { key: 'time', label: 'Temps traité', better: 'high', fmt: v => `${Math.floor(v / 60)}h${String(Math.round(v % 60)).padStart(2, '0')}` },
   { key: 'dmt', label: 'DMT moy.', better: 'low', fmt: v => `${v} min` },
@@ -12,7 +18,12 @@ const LB_KPIS = [
   { key: 'quality', label: 'Score qualité', better: 'high', fmt: v => `${v} %` },
   { key: 'actions', label: 'Actions OSC', better: 'high', fmt: v => String(v) },
 ];
-const LB_DEFAULT = ['volume', 'dmt', 'sla', 'quality'];
+const LB_DEFAULT = ['prod', 'dmt', 'sla', 'quality'];
+const LB_POLE_ORDER = ['fo', 'bo', 'reconf', ''];
+function lbPoleKey(a) { return ['fo', 'bo', 'reconf'].includes(a?.pole) ? a.pole : ''; }
+function lbPoleName(k) { return { fo: 'Front Office', bo: 'Back Office', reconf: 'Reconfirmation' }[k] || 'Sans pôle'; }
+// Canaux de production d'un pôle (tous les canaux pour un agent sans pôle).
+function lbProdSources(k) { return (typeof AGENT_POLES !== 'undefined' && AGENT_POLES[k]?.primary) || null; }
 let lbSortKey = 'score';
 let lbSortAsc = false;
 let lbOscCache = { key: '', rows: [] };
@@ -46,6 +57,8 @@ function lbSetSort(value) {
 
 function setLbPeriod(p, btn) {
   lbPeriod = p;
+  if (p === 'custom' && !lbCustom.from) lbCustom = taskinDefaultCustom();
+  lbPaintRange();
   // Synchroniser aussi l'accordéon Vue Globale
   supPeriod = p;
   document.querySelectorAll('.sup-period-btn').forEach(b => b.classList.toggle('active', b.dataset.p === p));
@@ -53,6 +66,18 @@ function setLbPeriod(p, btn) {
   document.querySelectorAll('.lb-period-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   renderLeaderboard();
+}
+
+function lbPaintRange() {
+  const box = document.getElementById('lb-range');
+  if (!box) return;
+  box.innerHTML = lbPeriod === 'custom' ? taskinCustomRangeHtml('data-lb-range', lbCustom.from, lbCustom.to) : '';
+  box.querySelectorAll('[data-lb-range]').forEach(i => i.addEventListener('change', async () => {
+    lbCustom[i.dataset.lbRange] = i.value;
+    if (typeof taskinEnsureEntriesFrom === 'function' && lbCustom.from) await taskinEnsureEntriesFrom(lbCustom.from).catch(() => false);
+    renderSupKpis();
+    renderLeaderboard();
+  }));
 }
 
 function sortLeaderboard(key) {
@@ -67,6 +92,7 @@ function lbRange() {
   const now = new Date(), from = new Date(now);
   const fromVal = document.getElementById('filter-date-from')?.value, toVal = document.getElementById('filter-date-to')?.value;
   if (typeof dateFilterApplied !== 'undefined' && dateFilterApplied && (fromVal || toVal)) return { from: fromVal || '2000-01-01', to: toVal || day(now) };
+  if (lbPeriod === 'custom') { const b = taskinPeriodBounds('custom', lbCustom.from, lbCustom.to); return { from: b.from, to: b.to }; }
   if (lbPeriod === 'week') from.setDate(now.getDate() - (now.getDay() + 6) % 7);
   else if (lbPeriod === 'month') from.setDate(1);
   else if (lbPeriod === 'all') { const f = new Date(now); f.setDate(f.getDate() - 62); return { from: day(f), to: day(now) }; }
@@ -89,8 +115,10 @@ function getLbEntries() {
   }
   // Sinon : filtre par période standard (défaut = jour)
   const now = new Date();
+  const custom = lbPeriod === 'custom' ? taskinPeriodBounds('custom', lbCustom.from, lbCustom.to) : null;
   return entries.filter(e => {
     const d = getEntryDate(e.startTimeStr);
+    if (custom) return d >= custom.start && d <= custom.end;
     if (lbPeriod === 'day')   return isToday(e.startTimeStr);
     if (lbPeriod === 'week')  return isThisWeek(e.startTimeStr);
     if (lbPeriod === 'month') return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
@@ -133,33 +161,45 @@ async function renderLeaderboard() {
       }
       return acc;
     }, []);
+    // Qualité : moyenne des grilles de la période (sinon la dernière grille connue).
+    const lbr = lbRange();
+    const inPeriod = (typeof svAgentReviews === 'function' ? svAgentReviews(a.id) : []).filter(r => { const d = r.date ? TASKIN_DAY(new Date(r.date)) : ''; return d >= lbr.from && d <= lbr.to; });
     const review = svLatestReview(a.id);
+    const quality = inPeriod.length ? Math.round(inPeriod.reduce((s, r) => s + svReviewPct(r), 0) / inPeriod.length) : review ? svReviewPct(review) : null;
+    const pk = lbPoleKey(a), prodSrc = lbProdSources(pk);
     const osc = lbOscCache.rows.filter(x => x.agent_id === a.id && x.actions !== null && x.actions !== undefined);
     const sla = ae.length && typeof taskinSlaSplit === 'function' ? Math.round(taskinSlaSplit(ae).in / ae.length * 100) : null;
-    return { agent: a, values: {
+    return { agent: a, pole: pk, qualityCount: inPeriod.length, values: {
+      prod: prodSrc ? ae.filter(e => prodSrc.includes(e.source)).length : ae.length,
       volume: ae.length,
       time: ae.length ? Math.round(ae.reduce((s, e) => s + e.durationSec, 0) / 60) : 0,
       dmt: ae.length ? Math.floor(ae.reduce((s, e) => s + e.durationSec, 0) / ae.length / 60) : null,
-      frt: frt.length ? Math.floor(frt.reduce((s, v) => s + v, 0) / frt.length / 60) : null,
+      frt: pk === 'bo' ? null : frt.length ? Math.floor(frt.reduce((s, v) => s + v, 0) / frt.length / 60) : null,
       sla,
-      quality: review ? svReviewPct(review) : null,
+      quality,
       actions: osc.length ? osc.reduce((s, x) => s + Number(x.actions || 0), 0) : null,
     } };
   });
-  // Note 0–100 par KPI coché, puis score global = moyenne des notes disponibles.
+  // Note 0–100 par KPI coché, calculée DANS CHAQUE PÔLE, puis score global = moyenne des notes disponibles.
+  // Un agent seul dans son pôle n'a pas de point de comparaison : pas de note (affiché « seul du pôle »).
   const kpis = LB_KPIS.filter(k => sel.includes(k.key));
-  kpis.forEach(k => {
-    const vals = rows.map(r => r.values[k.key]).filter(v => v !== null && v !== undefined);
+  const groups = {};
+  rows.forEach(r => (groups[r.pole] = groups[r.pole] || []).push(r));
+  Object.values(groups).forEach(group => kpis.forEach(k => {
+    const vals = group.map(r => r.values[k.key]).filter(v => v !== null && v !== undefined);
     const lo = Math.min(...vals), hi = Math.max(...vals);
-    rows.forEach(r => {
+    group.forEach(r => {
       const v = r.values[k.key];
       r.notes = r.notes || {};
-      r.notes[k.key] = v === null || v === undefined || !vals.length ? null : hi === lo ? 100 : Math.round((k.better === 'high' ? (v - lo) / (hi - lo) : (hi - v) / (hi - lo)) * 100);
+      r.alone = group.length < 2;
+      r.notes[k.key] = v === null || v === undefined || vals.length < 2 ? null : hi === lo ? 100 : Math.round((k.better === 'high' ? (v - lo) / (hi - lo) : (hi - v) / (hi - lo)) * 100);
     });
-  });
+  }));
   rows.forEach(r => { const n = Object.values(r.notes || {}).filter(v => v !== null); r.score = n.length ? Math.round(n.reduce((a, b) => a + b, 0) / n.length) : null; });
 
+  const byPole = lbPole === 'all';
   rows.sort((a, b) => {
+    if (byPole && a.pole !== b.pole) return LB_POLE_ORDER.indexOf(a.pole) - LB_POLE_ORDER.indexOf(b.pole);
     if (lbSortKey === 'name') return lbSortAsc ? a.agent.name.localeCompare(b.agent.name) : b.agent.name.localeCompare(a.agent.name);
     const va = lbSortKey === 'score' ? a.score : a.values[lbSortKey], vb = lbSortKey === 'score' ? b.score : b.values[lbSortKey];
     if (va === null || va === undefined) return 1;
@@ -175,7 +215,7 @@ async function renderLeaderboard() {
     cfg.innerHTML = `<div class="lb-config-kpis lb-config-poles"><b>Type d'agent</b>${poles.map(([k, l]) => `<button type="button" class="lb-kpi ${lbPole === k ? 'active' : ''}" aria-pressed="${lbPole === k}" onclick="lbSetPole('${k}')">${l}<small>${(n => `${n} agent${n > 1 ? 's' : ''}`)(k === 'all' ? agentsOnly().length : agentsOnly().filter(a => a.pole === k).length)}</small></button>`).join('')}</div>
       <div class="lb-config-kpis"><b>KPI du classement</b>${LB_KPIS.map(k => `<button type="button" class="lb-kpi ${sel.includes(k.key) ? 'active' : ''}" aria-pressed="${sel.includes(k.key)}" onclick="lbToggleKpi('${k.key}')">${k.label}<small>${k.better === 'high' ? '↑ mieux' : '↓ mieux'}</small></button>`).join('')}</div>
       <label class="lb-config-sort">Trier par <select class="form-input" onchange="lbSetSort(this.value)">${sortOptions.flatMap(([k, l]) => [[`${k}:desc`, `${l} · décroissant`], [`${k}:asc`, `${l} · croissant`]]).map(([v, l]) => `<option value="${v}" ${v === `${lbSortKey}:${lbSortAsc ? 'asc' : 'desc'}` ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <small class="lb-config-help">Score global : moyenne des notes 0–100 obtenues sur chaque KPI coché (100 = meilleur agent de la période${lbPole === 'all' ? '' : ' dans ce pôle'}). Seuls les comptes agents sont classés.</small>`;
+      <small class="lb-config-help">Chaque équipe a ses propres évaluations : un agent est noté uniquement par rapport aux agents de son pôle, KPI par KPI (note 0–100, 100 = meilleur du pôle sur la période). Score global : moyenne des notes des KPI cochés. « Production du pôle » ne compte que les canaux de l’équipe (FO : entrants, chat, e-mails · BO : tickets, e-mails · Reconf : appels sortants). Seuls les comptes agents sont classés.</small>`;
   }
   const head = document.getElementById('lb-head');
   const arrow = key => lbSortKey === key ? (lbSortAsc ? '↑' : '↓') : '↕';
@@ -186,13 +226,23 @@ async function renderLeaderboard() {
   if (!rows.length) { body.innerHTML = `<tr><td colspan="${kpis.length + 3}"><div class="empty">${lbPole === 'all' ? 'Aucun agent.' : 'Aucun agent dans ce pôle.'}</div></td></tr>`; return; }
   const tone = note => note === null || note === undefined ? '' : note >= 67 ? 'good' : note >= 34 ? 'warn' : 'bad';
   // Podium : pastilles or / argent / bronze dessinées en CSS (plus d'emojis).
-  body.innerHTML = rows.map((r, i) => {
-    const rank = i + 1;
+  const rankIn = {}, poleCount = {};
+  rows.forEach(r => { poleCount[r.pole] = (poleCount[r.pole] || 0) + 1; });
+  let lastPole = null;
+  body.innerHTML = rows.map(r => {
+    rankIn[r.pole] = (rankIn[r.pole] || 0) + 1;
+    const rank = byPole ? rankIn[r.pole] : rows.indexOf(r) + 1;
+    let groupHead = '';
+    if (byPole && r.pole !== lastPole) {
+      lastPole = r.pole;
+      const scored = rows.filter(x => x.pole === r.pole && x.score !== null);
+      groupHead = `<tr class="lb-pole-row lb-pole-${r.pole || 'none'}"><td colspan="${kpis.length + 3}"><b>${lbPoleName(r.pole)}</b><span>${poleCount[r.pole]} agent${poleCount[r.pole] > 1 ? 's' : ''} · classement interne au pôle</span>${scored.length ? `<em>Score moyen ${Math.round(scored.reduce((s, x) => s + x.score, 0) / scored.length)}</em>` : ''}</td></tr>`;
+    }
     const rankDisplay = `<span class="lb-rank-badge${rank <= 3 ? ' lb-podium-' + rank : ''}">${rank}</span>`;
-    return `<tr>
+    return `${groupHead}<tr>
       <td>${rankDisplay}</td>
       <td><div class="agent-cell"><div class="mini-avatar" style="background:${r.agent.color}20;color:${r.agent.color}">${escHtml(r.agent.initials)}</div>${escHtml(r.agent.name)}${lbPole === 'all' && r.agent.pole && typeof poleLabel === 'function' ? ` <em class="dr-pole dr-pole-${escHtml(r.agent.pole)}">${poleLabel(r.agent.pole)}</em>` : ''}</div></td>
-      <td><span class="lb-score"><b>${r.score ?? '—'}</b>${r.score !== null ? `<i style="width:${r.score}%"></i>` : ''}</span></td>
+      <td><span class="lb-score" ${r.alone ? 'title="Seul agent de son pôle : pas de comparaison possible"' : ''}><b>${r.score ?? '—'}</b>${r.score !== null ? `<i style="width:${r.score}%"></i>` : r.alone ? '<small>seul du pôle</small>' : ''}</span></td>
       ${kpis.map(k => { const v = r.values[k.key]; return `<td><span class="lb-val ${tone(r.notes?.[k.key])}" title="Note ${r.notes?.[k.key] ?? '—'}/100">${v === null || v === undefined ? '—' : k.fmt(v)}</span></td>`; }).join('')}
     </tr>`;
   }).join('');
@@ -200,10 +250,21 @@ async function renderLeaderboard() {
 
 // ===== P3 : MATRICE CANAUX =====
 let matrixPeriod = 'day';
+let matrixCustom = { from: '', to: '' };
 let matrixChannel = 'all';
 
 function setMatrixPeriod(p, btn) {
   matrixPeriod = p;
+  if (p === 'custom' && !matrixCustom.from) matrixCustom = taskinDefaultCustom();
+  const box = document.getElementById('matrix-range');
+  if (box) {
+    box.innerHTML = p === 'custom' ? taskinCustomRangeHtml('data-matrix-range', matrixCustom.from, matrixCustom.to) : '';
+    box.querySelectorAll('[data-matrix-range]').forEach(i => i.addEventListener('change', async () => {
+      matrixCustom[i.dataset.matrixRange] = i.value;
+      if (typeof taskinEnsureEntriesFrom === 'function' && matrixCustom.from) await taskinEnsureEntriesFrom(matrixCustom.from).catch(() => false);
+      renderChannelMatrix();
+    }));
+  }
   document.querySelectorAll('.matrix-toggle').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderChannelMatrix();
@@ -220,6 +281,7 @@ function getMatrixEntries() {
   const now = new Date();
   return entries.filter(e => {
     const d = getEntryDate(e.startTimeStr);
+    if (matrixPeriod === 'custom') { const b = taskinPeriodBounds('custom', matrixCustom.from, matrixCustom.to); return d >= b.start && d <= b.end; }
     if (matrixPeriod === 'day') return isToday(e.startTimeStr);
     if (matrixPeriod === 'week') return isThisWeek(e.startTimeStr);
     if (matrixPeriod === 'month') return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();

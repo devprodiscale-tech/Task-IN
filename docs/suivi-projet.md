@@ -1,6 +1,6 @@
 # Task’in — suivi du projet
 
-Dernière mise à jour : 1er octobre 2026 (soir).
+Dernière mise à jour : 2 octobre 2026 (Lot V).
 
 ## Où en est le code
 
@@ -90,9 +90,19 @@ Ensuite seulement : injection des données fictives (5 FO, 3 BO, 3 Reconf) pour 
 | U8 | Admin · Connexions : filtre pôle, tri dernier connecté (récent ↔ ancien) | ✅ fait |
 | U9 | Admin · Paramètres : bloc unique « Procédures » ; API IA multiples (+) ; donut d’usage IA ; comportement par API (quoi / où / quand) ; UI de l’objectif journalier ; rangs des types de traitement (synchro extension) ; Team shift en 3 vues (agent, pôle, emploi du temps filtrable) | ✅ fait (migration 025 : clés IA côté serveur ; à faire de ton côté : brancher une 1re API dans Paramètres › API IA) |
 
+### Lot V (demandé le 2 octobre) — prêt pour la prod
+
+| # | Point | Statut |
+|---|---|---|
+| V1 | Mot de passe oublié : lien envoyé directement à l’adresse de l’agent (accueil + bouton admin par compte), formulaire « Nouveau mot de passe » au retour du lien | ✅ fait — **à brancher de ton côté : SMTP + URL de redirection Supabase** (`docs/mise-en-production.md`) |
+| V2 | Accueil : couleurs Task’in (bleu océan, marine du logo, violet) au lieu du bleu roi / ambre Onspot ; comportement inchangé | ✅ fait |
+| V3 | Filtres harmonisés : tout filtre agent a son filtre pôle (tableau des traitements, courbe, donut, fiche agent, cas complexes, grille d’écoute, coaching, appels manqués, logs équipe) ; toute période a « Période… » (classement, workflow, vue d’ensemble, statistiques, équipe, courbe d’évolution, donut, matrice canaux) | ✅ fait (module commun `js/32-filter-kit.js`) |
+| V4 | Classement : chaque agent noté par rapport aux agents de son pôle, KPI par KPI ; « Production du pôle » = canaux de l’équipe ; qualité = moyenne des grilles de la période ; vue « Tous » regroupée par pôle avec rang interne ; agent seul dans son pôle signalé | ✅ fait (aussi le mini-classement du Workflow) |
+| V5 | Latence globale + préparation prod | ✅ cache navigateur (`vercel.json`), preconnect Supabase, audit Supabase ; check-list : `docs/mise-en-production.md` |
+
 ### Reste à faire (hors ce qui est déjà annoncé)
 
-- Côté toi : R5 (Supabase / Vercel), R6 (extension 1.12.1), R7 (test réel), décision Supabase Pro ;
+- Côté toi : **SMTP + URL de redirection Supabase (mot de passe oublié)**, R5 (Supabase / Vercel), R6 (extension 1.12.1), R7 (test réel), décision Supabase Pro ;
   Paramètres › API IA : brancher une 1re API (clé) — sinon la variable GEMINI_API_KEY reste utilisée.
 - Données fictives encore en base (12 comptes démo + ancien jeu C4) : à effacer quand tu le décides.
 - Optionnel, sur décision : fusion d’onglets (`docs/organisation-interface.md`), publication Chrome Web Store.

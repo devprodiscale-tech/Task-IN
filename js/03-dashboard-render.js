@@ -142,6 +142,7 @@ function updateDateRangeLabel() {
 function getFiltered() {
   const source = document.getElementById('filter-source').value;
   let agent = document.getElementById('filter-agent').value;
+  const agentPole = typeof taskinPoleFilterValue === 'function' ? taskinPoleFilterValue('filter-agent') : '';
   const treatment = document.getElementById('filter-treatment')?.value || '';
   const search = document.getElementById('search-input').value.toLowerCase();
   const fromVal = document.getElementById('filter-date-from')?.value;
@@ -157,7 +158,7 @@ function getFiltered() {
   const fAgt = document.getElementById('f-agt')?.value || '';
   const fDur = document.getElementById('f-dur')?.value.toLowerCase() || '';
 
-  const filterKey = JSON.stringify({ source, agent, treatment, search, fromVal, toVal, currentView, dateFilterApplied, fInb, fStart, fSrc, fDescTbl, fAgt, fDur, user: currentUser?.id || '' });
+  const filterKey = JSON.stringify({ source, agent, agentPole, treatment, search, fromVal, toVal, currentView, dateFilterApplied, fInb, fStart, fSrc, fDescTbl, fAgt, fDur, user: currentUser?.id || '' });
   if (filterCache.entriesRef === entries && filterCache.key === filterKey) return filterCache.value;
 
   let list = entries;
@@ -174,6 +175,7 @@ function getFiltered() {
     if (toDate && dt > toDate) return false;
     if (source && e.source!==source) return false;
     if (agent && e.agent!==agent) return false;
+    if (!agent && agentPole && currentUser.role !== 'agent' && taskinPoleOfAgent(e.agent) !== agentPole) return false;
     if (treatment && e.treatment!==treatment && !e.desc.includes(treatment)) return false;
     if (search && !e.desc.toLowerCase().includes(search)) return false;
     if (fInb && !(e.inboundTime||'--:--').toLowerCase().includes(fInb)) return false;
@@ -208,6 +210,7 @@ function setSupPeriod(p, btn) {
   renderSupKpis();
   // P2 : synchroniser le leaderboard sur la même période
   lbPeriod = p;
+  if (typeof lbPaintRange === 'function') lbPaintRange();
   document.querySelectorAll('.lb-period-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.lbp === p);
   });
@@ -232,6 +235,7 @@ function getSupEntries() {
       return true;
     });
   }
+  if (supPeriod === 'custom' && typeof lbCustom !== 'undefined') { const b = taskinPeriodBounds('custom', lbCustom.from, lbCustom.to); return pool.filter(e => { const d = getEntryDate(e.startTimeStr); return d >= b.start && d <= b.end; }); }
   if (supPeriod === 'day')   return pool.filter(e => isToday(e.startTimeStr));
   if (supPeriod === 'week')  return pool.filter(e => isThisWeek(e.startTimeStr));
   if (supPeriod === 'month') return pool.filter(e => {

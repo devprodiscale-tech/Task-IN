@@ -272,10 +272,11 @@ function svRenderEscalations() {
   }
   const agentF = agentSelect?.value || '__all';
   let list = [...escalations];
-  if (agentF !== '__all') list = list.filter(e => e.agentId === agentF);
+  const agentPass = id => typeof taskinAgentPass === 'function' ? taskinAgentPass(agentSelect, id) : (agentF === '__all' || id === agentF);
+  list = list.filter(e => agentPass(e.agentId));
   if (typeF !== '__all') list = list.filter(e => svDifficulty(e) === typeF);
-  // La synthèse suit le filtre agent mais montre tous les types (pour comparer).
-  svRenderEscalationSummary(agentF !== '__all' ? escalations.filter(e => e.agentId === agentF) : escalations);
+  // La synthèse suit le filtre agent / pôle mais montre tous les types (pour comparer).
+  svRenderEscalationSummary(escalations.filter(e => agentPass(e.agentId)));
   if (statusF !== '__all') list = list.filter(e => e.status === statusF);
   if (prioF !== '__all') list = list.filter(e => e.priority === prioF);
   list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -816,6 +817,8 @@ function svRvGo(pole, agent = '') {
   svRvState.level = agent ? 'agent' : pole === null ? 'poles' : 'pole';
   svRvState.pole = pole || ''; svRvState.agent = agent;
   const f = document.getElementById('sv-review-agent-filter'); if (f) f.value = agent || '__all';
+  const pf = typeof taskinPoleSelectFor === 'function' ? taskinPoleSelectFor(f) : null;
+  if (pf && f) { pf.value = ['fo', 'bo', 'reconf'].includes(pole) ? pole : ''; f.dataset.lastPole = pf.value; taskinApplyPoleToOptions(f); }
   svRenderReviews();
 }
 function svRvSpark(list) {
@@ -836,6 +839,10 @@ function svRenderReviews() {
   // Le sélecteur d'agent mène directement au niveau « détails ».
   if (agentF !== '__all' && agentF !== svRvState.agent) { svRvState.agent = agentF; svRvState.pole = TEAM.find(t => t.id === agentF)?.pole || ''; svRvState.level = 'agent'; }
   if (agentF === '__all' && svRvState.level === 'agent') { svRvState.agent = ''; svRvState.level = 'pole'; }
+  // Le filtre pôle mène à la mosaïque du pôle (et « Tous les pôles » revient au Kanban).
+  const poleF = typeof taskinPoleFilterValue === 'function' ? taskinPoleFilterValue(filter) : '';
+  if (agentF === '__all' && filter.dataset.lastPole !== poleF) { svRvState.pole = poleF; svRvState.level = poleF ? 'pole' : 'poles'; }
+  filter.dataset.lastPole = poleF;
   const container = document.getElementById('sv-reviews-list');
   const chartWrap = document.getElementById('sv-review-chart-wrap');
   chartWrap.innerHTML = '';
@@ -1006,9 +1013,9 @@ async function svSaveReview() {
 // ---- COACHING 1:1 ----
 function svRenderCoaching() {
   svPopulateReviewAgentFilters();
-  const agentF = document.getElementById('sv-coaching-agent-filter').value;
+  const agentEl = document.getElementById('sv-coaching-agent-filter'), agentF = agentEl.value;
   let list = [...coachingSheets];
-  if (agentF !== '__all') list = list.filter(c => c.agentId === agentF);
+  list = list.filter(c => typeof taskinAgentPass === 'function' ? taskinAgentPass(agentEl, c.agentId) : (agentF === '__all' || c.agentId === agentF));
   list.sort((a, b) => (b.date || 0) - (a.date || 0));
   document.getElementById('sv-coaching-count-badge').textContent = `${list.length} fiche(s)`;
   const container = document.getElementById('sv-coaching-list');

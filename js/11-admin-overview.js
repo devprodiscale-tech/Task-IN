@@ -5,6 +5,8 @@
  */
 
 let adminOverviewPeriod = 'today';
+let adminOverviewRange = { from: '', to: '' };
+function adminOverviewBounds(period = adminOverviewPeriod) { return taskinPeriodBounds(period === 'week' ? '7d' : period, adminOverviewRange.from, adminOverviewRange.to); }
 
 function adminOverviewEscape(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
@@ -19,9 +21,8 @@ function adminOverviewFormatElapsed(startTime) {
   return hours > 0 ? `${hours}h${String(minutes).padStart(2,'0')}` : `${minutes}:${String(seconds).padStart(2,'0')}`;
 }
 function adminOverviewPeriodEntries(period) {
-  const start = new Date(); start.setHours(0,0,0,0);
-  if (period === 'week') start.setDate(start.getDate() - 6);
-  return (entries || []).filter(entry => new Date(entry.startTimeStr) >= start);
+  const b = adminOverviewBounds(period);
+  return (entries || []).filter(entry => { const d = new Date(entry.startTimeStr); return d >= b.start && d <= b.end; });
 }
 function adminOverviewMetricData(period) {
   const periodEntries = adminOverviewPeriodEntries(period);
@@ -30,7 +31,7 @@ function adminOverviewMetricData(period) {
   const sourceCounts = periodEntries.reduce((acc, entry) => { const key = entry.source || 'manual'; acc[key] = (acc[key] || 0) + 1; return acc; }, {});
   const sourceRows = Object.entries(sourceCounts).sort((a,b) => b[1] - a[1]);
   const daily = Array.from({length: 7}, (_, index) => {
-    const date = new Date(); date.setHours(0,0,0,0); date.setDate(date.getDate() - (6 - index));
+    const date = new Date(adminOverviewBounds(period).end); date.setHours(0,0,0,0); date.setDate(date.getDate() - (6 - index));
     const key = date.toDateString();
     const dayEntries = periodEntries.filter(e => new Date(e.startTimeStr).toDateString() === key);
     return { label: date.toLocaleDateString('fr-FR',{weekday:'short'}).replace('.',''), long: date.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}), count: dayEntries.length, sla: typeof taskinSlaSplit === 'function' ? taskinSlaSplit(dayEntries) : null };
@@ -112,9 +113,9 @@ function renderAdminOverview(activeTimers = []) {
   const sla = adminOverviewSla(periodEntries);
   const agents = typeof agentsOnly === 'function' ? agentsOnly() : (TEAM || []).filter(user => user.role === 'agent');
   const activeTimerCount = new Set((activeTimers || []).map(timer => timer.agentId)).size;
-  const periodLabel = adminOverviewPeriod === 'today' ? 'Aujourd’hui' : '7 derniers jours';
+  const periodLabel = adminOverviewPeriod === 'today' ? 'Aujourd’hui' : adminOverviewPeriod === 'custom' ? taskinPeriodLabel('custom', adminOverviewRange.from, adminOverviewRange.to) : '7 derniers jours';
   panel.innerHTML = `<section class="admin-overview-shell" aria-labelledby="admin-overview-title">
-    <div class="admin-overview-head"><div><div class="admin-overview-eyebrow">Admin · cockpit opérationnel</div><h2 id="admin-overview-title">Vue générale</h2><p>Comprendre l’activité de l’équipe en un coup d’œil.</p></div><div class="admin-overview-controls"><button type="button" class="admin-overview-period${adminOverviewPeriod === 'today' ? ' active' : ''}" data-admin-overview-period="today">Aujourd’hui</button><button type="button" class="admin-overview-period${adminOverviewPeriod === 'week' ? ' active' : ''}" data-admin-overview-period="week">7 jours</button></div></div>
+    <div class="admin-overview-head"><div><div class="admin-overview-eyebrow">Admin · cockpit opérationnel</div><h2 id="admin-overview-title">Vue générale</h2><p>Comprendre l’activité de l’équipe en un coup d’œil.</p></div><div class="admin-overview-controls"><button type="button" class="admin-overview-period${adminOverviewPeriod === 'today' ? ' active' : ''}" data-admin-overview-period="today">Aujourd’hui</button><button type="button" class="admin-overview-period${adminOverviewPeriod === 'week' ? ' active' : ''}" data-admin-overview-period="week">7 jours</button><button type="button" class="admin-overview-period${adminOverviewPeriod === 'custom' ? ' active' : ''}" data-admin-overview-period="custom">Période…</button>${adminOverviewPeriod === 'custom' ? taskinCustomRangeHtml('data-admin-overview-range', adminOverviewRange.from, adminOverviewRange.to) : ''}</div></div>
     <div class="admin-overview-kpis"><div class="admin-overview-kpi accent-ocean"><span class="admin-overview-kpi-label">Équipe active</span><strong>${activeTimerCount}</strong><small>agents actifs maintenant</small></div><div class="admin-overview-kpi accent-green"><span class="admin-overview-kpi-label">Présence du jour</span><strong>${todayAgents.size}<em>/${agents.length}</em></strong><small>agents avec une entrée</small></div><div class="admin-overview-kpi accent-clay"><span class="admin-overview-kpi-label">Temps suivi</span><strong>${adminOverviewEscape(fmtDuration(totalSeconds))}</strong><small>${periodLabel}</small></div><div class="admin-overview-kpi accent-muted"><span class="admin-overview-kpi-label">DMT moyenne</span><strong>${avgMinutes || 0}<em> min</em></strong><small>sur les traitements</small></div></div>
     <div class="admin-overview-analytics"><section class="admin-overview-chart-panel"><div class="admin-overview-block-head"><div><span class="admin-overview-section-label">Rythme d’activité</span><h3>Entrées traitées</h3></div><span class="admin-overview-count">${periodEntries.length} total</span></div><div class="admin-overview-bar-chart">${adminOverviewBarChart(daily)}</div><div class="admin-overview-chart-caption"><span>Les 7 derniers jours</span><b>Sources réelles · Supabase</b></div></section><section class="admin-overview-chart-panel admin-overview-channel-panel"><div class="admin-overview-block-head"><div><span class="admin-overview-section-label">Répartition</span><h3>Canaux utilisés</h3></div>${adminOverviewDonut(sourceRows)}</div><div class="admin-overview-legend">${adminOverviewSourceLegend(sourceRows)}</div></section><section class="admin-overview-chart-panel admin-overview-presence-panel"><div class="admin-overview-block-head"><div><span class="admin-overview-section-label">Disponibilité</span><h3>Présence équipe</h3></div>${adminOverviewProgress(activeTimerCount, agents.length)}</div><div class="admin-overview-presence-copy"><strong>${activeTimerCount} en activité</strong><span>${Math.max(0, agents.length - activeTimerCount)} hors traitement maintenant</span></div></section></div>
     <div class="admin-overview-ops-grid"><section class="admin-overview-ops-card admin-overview-heatmap-card"><div class="admin-overview-block-head"><div><span class="admin-overview-section-label">Intensité d’activité</span><h3>Heat map équipe</h3></div><span class="admin-overview-count">${periodLabel}</span></div><div id="admin-overview-heatmap"></div></section><section class="admin-overview-ops-card admin-overview-sla-card"><div class="admin-overview-block-head"><div><span class="admin-overview-section-label">Qualité de service</span><h3>État SLA</h3></div><span class="admin-overview-count">FRT</span></div><div class="admin-overview-sla-value ${sla.percent === null ? 'is-neutral' : sla.percent >= 80 ? 'is-good' : 'is-alert'}">${adminOverviewEscape(sla.label)}</div><div class="admin-overview-sla-track"><i style="width:${sla.percent === null ? 0 : sla.percent}%"></i></div><p>${adminOverviewEscape(sla.detail)}</p><button type="button" class="admin-overview-drill" onclick="switchTab('team', document.getElementById('tab-team'))">Voir les entrées →</button></section></div>
@@ -126,8 +127,19 @@ function renderAdminOverview(activeTimers = []) {
   panel.querySelectorAll('[data-admin-agent-id]').forEach(row => row.addEventListener('click', () => viewAgentDetail(row.dataset.adminAgentId)));
   panel.querySelectorAll('[data-admin-overview-period]').forEach(button => button.addEventListener('click', () => {
     adminOverviewPeriod = button.dataset.adminOverviewPeriod;
-    if (typeof hmState !== 'undefined' && hmState.overview) hmState.overview.period = adminOverviewPeriod === 'today' ? 'today' : '7d';
+    if (adminOverviewPeriod === 'custom' && !adminOverviewRange.from) adminOverviewRange = taskinDefaultCustom();
+    adminOverviewSyncHeatmap();
     renderAdminOverview(activeTimers);
   }));
-  if (typeof taskinHeatmapRender === 'function') taskinHeatmapRender('admin-overview-heatmap', { id: 'overview', compact: true, preset: { period: adminOverviewPeriod === 'today' ? 'today' : '7d' } });
+  panel.querySelectorAll('[data-admin-overview-range]').forEach(input => input.addEventListener('change', () => {
+    adminOverviewRange[input.dataset.adminOverviewRange] = input.value;
+    adminOverviewSyncHeatmap();
+    if (typeof taskinEnsureEntriesFrom === 'function' && adminOverviewRange.from) taskinEnsureEntriesFrom(adminOverviewRange.from).then(added => { if (added) renderAdminOverview(activeTimers); }).catch(() => {});
+    renderAdminOverview(activeTimers);
+  }));
+  if (typeof taskinHeatmapRender === 'function') taskinHeatmapRender('admin-overview-heatmap', { id: 'overview', compact: true, preset: adminOverviewHeatPreset() });
 }
+
+// La heatmap compacte suit la période de la vue d'ensemble (dates libres comprises).
+function adminOverviewHeatPreset() { return adminOverviewPeriod === 'custom' ? { period: 'custom', from: adminOverviewRange.from, to: adminOverviewRange.to } : { period: adminOverviewPeriod === 'today' ? 'today' : '7d' }; }
+function adminOverviewSyncHeatmap() { if (typeof hmState !== 'undefined' && hmState.overview) Object.assign(hmState.overview, adminOverviewHeatPreset()); }

@@ -101,7 +101,8 @@ function renderMosaicKpis(activeTimers) {
 function exportLeaderboardPDF() {
   const periodLabels = { day: "Aujourd'hui", week: "Cette semaine", month: "Ce mois", all: "Tout" };
   const sub = document.getElementById('lb-print-sub');
-  if (sub) sub.textContent = `Période : ${periodLabels[lbPeriod] || lbPeriod} — Généré le ${new Date().toLocaleDateString('fr-FR')}`;
+  const periodText = lbPeriod === 'custom' && typeof taskinPeriodLabel === 'function' ? taskinPeriodLabel('custom', lbCustom.from, lbCustom.to) : (periodLabels[lbPeriod] || lbPeriod);
+  if (sub) sub.textContent = `Période : ${periodText} — Généré le ${new Date().toLocaleDateString('fr-FR')}`;
   const header = document.getElementById('lb-print-header');
   if (header) header.style.display = 'block';
   window.print();
@@ -291,8 +292,9 @@ function renderDonutChart() {
   const period = document.getElementById('donut-period')?.value || 'week';
   const agentScope = document.getElementById('donut-agent')?.value || 'team';
   const now = new Date();
-  let pool = agentScope === 'team' ? entries : entries.filter(e => e.agent === agentScope);
-  if (period === 'week')  pool = pool.filter(e => isThisWeek(e.startTimeStr));
+  let pool = typeof taskinAgentPass === 'function' ? entries.filter(e => taskinAgentPass('donut-agent', e.agent)) : agentScope === 'team' ? entries : entries.filter(e => e.agent === agentScope);
+  if (period === 'custom' && typeof taskinSelectBounds === 'function') { const b = taskinSelectBounds('donut-period'); pool = pool.filter(e => taskinInPeriod(getEntryDate(e.startTimeStr), b)); }
+  else if (period === 'week')  pool = pool.filter(e => isThisWeek(e.startTimeStr));
   else if (period === 'month') pool = pool.filter(e => {
     const d = getEntryDate(e.startTimeStr);
     return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();

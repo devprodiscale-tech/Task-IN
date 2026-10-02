@@ -118,7 +118,7 @@ window.taskinHeatmapRender = taskinHeatmapRender;
 // Couleurs fixes par entité (équipe = bleu, agent = orange), palette validée clair / sombre.
 const trState = {};
 const TR_GRAN = { day: 'Jour', week: 'Semaine', month: 'Mois' };
-const TR_SPAN = { '3m': '3 mois', '6m': '6 mois', '12m': '12 mois', all: 'Tout l’historique' };
+const TR_SPAN = { '3m': '3 mois', '6m': '6 mois', '12m': '12 mois', all: 'Tout l’historique', custom: 'Période…' };
 
 function trDefaults(id, preset = {}) {
   if (!trState[id]) trState[id] = { gran: 'month', span: '12m', pole: 'all', agent: 'all', measure: 'count', ...preset };
@@ -170,13 +170,16 @@ function trCompute(st) {
   const scoped = trPoints().filter(x => poleOf[x.agent] !== undefined && (st.pole === 'all' || poleOf[x.agent] === st.pole));
   const now = new Date();
   let start = new Date(now);
-  if (st.span === 'all') start = scoped.length ? new Date(scoped.reduce((m, x) => Math.min(m, x.d.getTime()), Infinity)) : new Date(now.getFullYear(), now.getMonth(), 1);
+  let end = now;
+  if (st.span === 'custom') { const b = taskinPeriodBounds('custom', st.from, st.to); start = b.start; end = b.end; }
+  else if (st.span === 'all') start = scoped.length ? new Date(scoped.reduce((m, x) => Math.min(m, x.d.getTime()), Infinity)) : new Date(now.getFullYear(), now.getMonth(), 1);
   else start.setMonth(start.getMonth() - Number(st.span.replace('m', '')) + 1, 1);
-  if (st.span !== 'all') start.setDate(1);
+  if (!['all', 'custom'].includes(st.span)) start.setDate(1);
   const buckets = [];
-  for (let b = trBucketStart(start, st.gran); b <= now && buckets.length < 800; b = trNext(b, st.gran)) buckets.push({ start: b, team: 0, agents: new Set(), agent: 0 });
+  for (let b = trBucketStart(start, st.gran); b <= end && buckets.length < 800; b = trNext(b, st.gran)) buckets.push({ start: b, team: 0, agents: new Set(), agent: 0 });
   const index = new Map(buckets.map((b, i) => [b.start.getTime(), i]));
   scoped.forEach(({ agent, d, n, secs }) => {
+    if (st.span === 'custom' && (d < start || d > end)) return;
     const i = index.get(trBucketStart(d, st.gran).getTime());
     if (i === undefined) return;
     const v = st.measure === 'time' ? secs / 3600 : n;
@@ -226,6 +229,7 @@ function taskinTrendRender(container, opts = {}) {
   el.innerHTML = `<div class="tr">
     <div class="hm-filters">
       ${sel('gran', Object.entries(TR_GRAN))}${sel('span', Object.entries(TR_SPAN))}
+      ${st.span === 'custom' ? taskinCustomRangeHtml('data-tr', st.from, st.to) : ''}
       ${sel('pole', [['all', 'Tous les pôles'], ['fo', 'FO'], ['bo', 'BO'], ['reconf', 'Reconf']])}
       ${sel('agent', [['all', 'Équipe (sans comparaison)'], ...agents.map(a => [a.id, `${escHtml(a.name)} vs équipe`])])}
       ${sel('measure', [['count', 'Nombre de traitements'], ['time', 'Temps traité (heures)']])}
@@ -241,6 +245,7 @@ function taskinTrendRender(container, opts = {}) {
   el.querySelectorAll('[data-tr]').forEach(input => input.addEventListener('change', () => {
     st[input.dataset.tr] = input.value;
     if (input.dataset.tr === 'gran' && input.value === 'day' && ['12m', 'all'].includes(st.span)) st.span = '3m'; // lisibilité
+    if (input.dataset.tr === 'span' && st.span === 'custom' && !st.from) { const d = taskinPeriodBounds('28d'); st.from = d.from; st.to = d.to; if (st.gran === 'month') st.gran = 'week'; }
     taskinTrendRender(el, opts);
   }));
   // Survol : réticule + infobulle avec les valeurs de chaque série.

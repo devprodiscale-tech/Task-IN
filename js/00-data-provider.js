@@ -179,6 +179,28 @@
     await parseResponse(response, 'Password');
   }
 
+  // Mot de passe oublié : Supabase envoie un lien de réinitialisation à l'adresse (s'il existe un compte).
+  // Le lien ramène sur redirectTo avec #access_token=…&type=recovery (traité par consumeRecoveryHash).
+  async function requestPasswordReset(email, redirectTo) {
+    assertConfigured();
+    const url = `${baseUrl}/auth/v1/recover${redirectTo ? `?redirect_to=${encodeURIComponent(redirectTo)}` : ''}`;
+    const response = await fetch(url, { method: 'POST', headers: { apikey: config.anonKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: String(email || '').trim() }) });
+    if (response.status === 429) throw new Error('Trop de demandes : réessaie dans quelques minutes.');
+    if (!response.ok) { const p = await response.json().catch(() => null); throw new Error(p?.msg || p?.message || p?.error_description || `Envoi impossible (HTTP ${response.status}).`); }
+    return true;
+  }
+  // Retour du lien e-mail : { type: 'recovery' } (session de réinitialisation enregistrée), { error } ou null.
+  function consumeRecoveryHash(hash = global.location?.hash || '') {
+    const params = new URLSearchParams(String(hash).replace(/^#/, ''));
+    if (params.get('error') || params.get('error_code')) {
+      const code = params.get('error_code') || params.get('error');
+      return { error: code === 'otp_expired' ? 'Ce lien a expiré ou a déjà servi : demande un nouveau lien.' : (params.get('error_description') || 'Lien invalide.').replace(/\+/g, ' ') };
+    }
+    if (params.get('type') !== 'recovery' || !params.get('access_token')) return null;
+    storeSession({ access_token: params.get('access_token'), refresh_token: params.get('refresh_token') || '', user: null });
+    return { type: 'recovery' };
+  }
+
   async function signOut() {
     const accessToken = global.localStorage?.getItem(ACCESS_TOKEN_KEY);
     try {
@@ -233,6 +255,8 @@
     authFetch,
     getUser,
     updatePassword,
+    requestPasswordReset,
+    consumeRecoveryHash,
     async getCurrentProfile() {
       const user = await getUser();
       return user ? toTaskinProfile(await getProfile(user.id)) : null;
