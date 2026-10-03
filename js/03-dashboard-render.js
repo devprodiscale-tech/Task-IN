@@ -790,10 +790,10 @@ async function renderRoleHome(routeSequence) {
     renderAdminOverview(activeTimers);
   }
   renderTeamLiveList(activeTimers);
-  // Admin · Équipe : vue par pôle (donuts) et fiche de chaque compte (module chargé à la demande).
+  // Admin et superviseur · Équipe : vue par pôle (donuts) et fiche de chaque compte (module chargé à la demande).
   const polesPanel = document.getElementById('team-poles-panel');
   if (polesPanel) {
-    const showPoles = currentUser.role === 'admin' && currentView === 'team';
+    const showPoles = ['admin', 'supervisor'].includes(currentUser.role) && currentView === 'team';
     polesPanel.classList.toggle('hidden', !showPoles);
     if (showPoles) loadModule('30-admin-team.js').then(() => window.taskinTeamPolesRender?.(activeTimers)).catch(e => console.warn('Vue par pôle indisponible :', e.message));
   }

@@ -98,6 +98,7 @@ Ensuite seulement : injection des données fictives (5 FO, 3 BO, 3 Reconf) pour 
 | V2 | Accueil : couleurs Task’in (bleu océan, marine du logo, violet) au lieu du bleu roi / ambre Onspot ; comportement inchangé | ✅ fait |
 | V3 | Filtres harmonisés : tout filtre agent a son filtre pôle (tableau des traitements, courbe, donut, fiche agent, cas complexes, grille d’écoute, coaching, appels manqués, logs équipe) ; toute période a « Période… » (classement, workflow, vue d’ensemble, statistiques, équipe, courbe d’évolution, donut, matrice canaux) | ✅ fait (module commun `js/32-filter-kit.js`) |
 | V4 | Classement : chaque agent noté par rapport aux agents de son pôle, KPI par KPI ; « Production du pôle » = canaux de l’équipe ; qualité = moyenne des grilles de la période ; vue « Tous » regroupée par pôle avec rang interne ; agent seul dans son pôle signalé | ✅ fait (aussi le mini-classement du Workflow) |
+| V6 | Superviseur › Équipe : même vue « Répartition du travail » que l’admin (donuts par pôle et par agent, fiche en lecture) | ✅ fait |
 | V5 | Latence globale + préparation prod | ✅ cache navigateur (`vercel.json`), preconnect Supabase, audit Supabase ; check-list : `docs/mise-en-production.md` |
 
 ### Reste à faire (hors ce qui est déjà annoncé)
